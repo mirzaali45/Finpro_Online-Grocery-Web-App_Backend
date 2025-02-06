@@ -41,6 +41,7 @@ export class ProductRouter {
       "/",
       this.productController.getProducts as unknown as RequestHandler
     );
+    this.router.get("/products", this.productController.getProducts as unknown as RequestHandler)
 
     this.router.get(
       "/:product_id",

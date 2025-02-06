@@ -12,6 +12,7 @@ import { InventoryRouter } from "./routers/inventory.router";
 import { StoreRouter } from "./routers/store.router";
 import { CategoryRouter } from "./routers/category.router";
 import { ProductImageRouter } from "./routers/product-image.router";
+import { CartRouter } from "./routers/cart.router";
 // import { RajaOngkirRouter } from "./routers/rajaongkir.router";
 
 const PORT: number = 8000;
@@ -31,33 +32,33 @@ app.use(
 );
 
 const authRouter = new AuthRouter();
-const customerRouter = new CustomerRouter()
-const superAdminRouter = new SuperAdminRouter()
-const storeAdminRouter = new StoreAdminRouter()
-const productRouter = new ProductRouter()
-const inventoryRouter = new InventoryRouter()
-const storeRouter = new StoreRouter()
-const categoryRouter = new CategoryRouter()
-const productImageRouter = new ProductImageRouter()
+const customerRouter = new CustomerRouter();
+const superAdminRouter = new SuperAdminRouter();
+const storeAdminRouter = new StoreAdminRouter();
+const productRouter = new ProductRouter();
+const inventoryRouter = new InventoryRouter();
+const storeRouter = new StoreRouter();
+const categoryRouter = new CategoryRouter();
+const productImageRouter = new ProductImageRouter();
+const cartRouter = new CartRouter();
 // const rajaOngkirRouter = new RajaOngkirRouter();
 
 app.use("/api/auth", authRouter.getRouter()); // sasa
-app.use("/api/customer", customerRouter.getRouter()) // sasa
-app.use("/api/super-admin", superAdminRouter.getRouter()) // zaki
-app.use("/api/store-admin",storeAdminRouter.getRouter()) // zaki
-app.use("/api/product",productRouter.getRouter()) // zaki
-app.use("/api/inventory",inventoryRouter.getRouter()) // zaki
-app.use("/api/store",storeRouter.getRouter()) // zaki
-app.use("/api/category",categoryRouter.getRouter()) // zaki
-app.use("/api/product-image",productImageRouter.getRouter()) // zaki
+app.use("/api/customer", customerRouter.getRouter()); // sasa
+app.use("/api/super-admin", superAdminRouter.getRouter()); // zaki
+app.use("/api/store-admin", storeAdminRouter.getRouter()); // zaki
+app.use("/api/product", productRouter.getRouter()); // zaki
+app.use("/api/inventory", inventoryRouter.getRouter()); // zaki
+app.use("/api/store", storeRouter.getRouter()); // zaki
+app.use("/api/category", categoryRouter.getRouter()); // zaki
+app.use("/api/product-image", productImageRouter.getRouter()); // zaki
+app.use("/api/cart", cartRouter.getRouter());//mirza
 // app.use("/api/rajaongkir", rajaOngkirRouter.getRouter()); //all
 
-
 app.get("/api", (req, res) => {
-  res.send("Welcome to the API!"); 
+  res.send("Welcome to the API!");
 });
 
 app.listen(PORT, () => {
   console.log(`Server is running on -> http://localhost:${PORT}/api`);
 });
-
