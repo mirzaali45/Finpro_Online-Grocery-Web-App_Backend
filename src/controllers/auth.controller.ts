@@ -98,6 +98,7 @@ export class AuthController {
       return res.status(500).json({ error: "Could Reach The Server Database" });
     }
   }
+  
   async loginAny(req: Request, res: Response) {
     try {
       const user = await prisma.user.findUnique({

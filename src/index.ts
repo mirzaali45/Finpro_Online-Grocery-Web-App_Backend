@@ -12,6 +12,7 @@ import { InventoryRouter } from "./routers/inventory.router";
 import { StoreRouter } from "./routers/store.router";
 import { CategoryRouter } from "./routers/category.router";
 import { ProductImageRouter } from "./routers/product-image.router";
+import { CartRouter } from "./routers/cart.router";
 // import { RajaOngkirRouter } from "./routers/rajaongkir.router";
 
 const PORT: number = 8000;
@@ -39,6 +40,7 @@ const inventoryRouter = new InventoryRouter()
 const storeRouter = new StoreRouter()
 const categoryRouter = new CategoryRouter()
 const productImageRouter = new ProductImageRouter()
+const cartRouter = new CartRouter();
 // const rajaOngkirRouter = new RajaOngkirRouter();
 
 app.use("/api/auth", authRouter.getRouter()); // sasa
@@ -50,6 +52,7 @@ app.use("/api/inventory",inventoryRouter.getRouter()) // zaki
 app.use("/api/store",storeRouter.getRouter()) // zaki
 app.use("/api/category",categoryRouter.getRouter()) // zaki
 app.use("/api/product-image",productImageRouter.getRouter()) // zaki
+app.use("/api/cart", cartRouter.getRouter());//mirza
 // app.use("/api/rajaongkir", rajaOngkirRouter.getRouter()); //all
 
 
