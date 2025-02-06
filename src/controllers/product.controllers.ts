@@ -129,6 +129,7 @@ export class ProductController {
       const product = await prisma.product.findUnique({
         where: { product_id: parseInt(product_id) },
         include: {
+          store:true,
           category: true,
           Inventory: true,
           ProductImage: true,
@@ -150,8 +151,11 @@ export class ProductController {
   
       const products = await prisma.product.findMany({
         include: {
-          ProductImage: true,  // Include ProductImage relation
-        }
+          store: true,
+          category: true,
+          Inventory: true,
+          ProductImage: true, // Include ProductImage relation
+        },
       });
       const product = products.find(p => generateSlug(p.name) === slug);
   
