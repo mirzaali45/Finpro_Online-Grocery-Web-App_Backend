@@ -1,5 +1,6 @@
 import { PrismaClient } from "@prisma/client";
 import { Request, Response } from "express";
+import { generateSlug } from "../helpers/generateSlug";
 
 const prisma = new PrismaClient();
 
@@ -136,6 +137,26 @@ export class ProductController {
 
       if (!product) throw new Error("Product not found");
 
+      return res.status(200).json(product);
+    } catch (error: unknown) {
+      const message =
+        error instanceof Error ? error.message : "Unknown error occurred";
+      return res.status(500).json({ error: message });
+    }
+  }
+  async getProductBySlug(req: Request, res: Response) {
+    try {
+      const { slug } = req.params;
+  
+      const products = await prisma.product.findMany({
+        include: {
+          ProductImage: true,  // Include ProductImage relation
+        }
+      });
+      const product = products.find(p => generateSlug(p.name) === slug);
+  
+      if (!product) throw new Error("Product not found");
+  
       return res.status(200).json(product);
     } catch (error: unknown) {
       const message =
