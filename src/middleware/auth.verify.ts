@@ -1,6 +1,6 @@
 import { responseError } from "../helpers/responseError";
 import { NextFunction, Request, Response } from "express";
-import { decode, verify } from "jsonwebtoken";
+import { decode, JwtPayload, TokenExpiredError, verify } from "jsonwebtoken";
 
 type User = {
   id: number;
@@ -26,6 +26,30 @@ export class AuthMiddleware {
       next();
     } catch (error) {
       responseError(res, error);
+    }
+  }
+  
+  verifyExpiredToken(req: Request, res: Response, next: NextFunction) {
+    try {
+      let token = req.headers.authorization?.replace("Bearer ", "");
+
+      if (!token) throw "Verification Failed";
+
+      const user = verify(token, process.env.SECRET_KEY!) as JwtPayload;
+
+      // Validasi manual token expired
+      if (user.exp && Date.now() >= user.exp * 86400) {
+        throw new TokenExpiredError("Token expired", new Date(user.exp * 86400));
+      }
+
+      req.user = { id: user.id as number, role: user.role as string };
+      next();
+    } catch (error) {
+      if (error instanceof TokenExpiredError) {
+        return res.status(300);
+      } else {
+        return res.status(200);
+      }
     }
   }
 

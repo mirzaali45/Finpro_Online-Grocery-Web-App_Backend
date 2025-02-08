@@ -46,11 +46,14 @@ export class ProductRouter {
       "/:product_id",
       this.productController.getProductById as unknown as RequestHandler
     );
+<<<<<<< HEAD
 
     this.router.get(
       "/slug/:slug",
       this.productController.getProductBySlug as unknown as RequestHandler
     );
+=======
+>>>>>>> e7ba88bb48d3673f0f35b05b21636a9b513df45a
   }
 
   getRouter(): Router {

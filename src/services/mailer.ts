@@ -25,13 +25,13 @@ export const sendVerificationEmail = async (email: string, token: string) => {
     const template = handlebars.compile(source);
 
     const html = template({
-      link: `${process.env.BASE_URL_FRONTEND}/verification/${token}`,
+      link: `${process.env.BASE_URL_FE}/verification/register/${token}`,
     });
 
     await transporter.sendMail({
       from: process.env.MAIL_FROM,
       to: email,
-      subject: "Welcome to DSM",
+      subject: "Verify Youre Email Address",
       html,
       attachments: [
         {
@@ -61,7 +61,7 @@ export const sendResetPassEmail = async (email: string, token: string) => {
     const templateSource = fs.readFileSync(templatePath, "utf-8");
     const compiledTemplate = handlebars.compile(templateSource);
     const html = compiledTemplate({
-      link: `${process.env.BASE_URL_FRONTEND}/resetpassword/${token}`,
+      link: `${process.env.BASE_URL_FE}/verification/reset-password/${token}`,
     });
 
     await transporter.sendMail({
@@ -69,6 +69,13 @@ export const sendResetPassEmail = async (email: string, token: string) => {
       to: email,
       subject: "Reset your password",
       html,
+      attachments: [
+        {
+          filename: "/LIT.png",
+          path: path.join(__dirname, "../../public/LIT.png"),
+          cid: "logo",
+        },
+      ],
     });
   } catch (error) {
     throw error;
