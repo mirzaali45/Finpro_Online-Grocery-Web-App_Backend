@@ -27,8 +27,6 @@ export class StoreRouter {
     // Get all stores - Super Admin only
     this.router.get(
       "/",
-      this.authMiddleware.verifyToken as unknown as RequestHandler,
-      this.authMiddleware.checkSuperAdmin as unknown as RequestHandler,
       this.storeController.getStores as unknown as RequestHandler
     );
 
