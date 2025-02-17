@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { CartController } from "../controllers/cart.controller";
-import { AuthMiddleware } from "../middleware/auth.verify";
+import { AuthMiddleware } from "../middleware/auth.verify"; // Your existing middleware
 
 export class CartRouter {
   private router: Router;
@@ -13,18 +13,41 @@ export class CartRouter {
     this.authMiddleware = new AuthMiddleware();
     this.initializeRoutes();
   }
+
   private initializeRoutes() {
-    this.router.get("/get", this.authMiddleware.verifyToken , this.cartController.getCart);
-    this.router.get("/user/:userId", this.cartController.getCartbyId);
-    this.router.post("/add", this.cartController.addToCart);
-    this.router.put("/updatecart", this.cartController.updateCart);
+    // Add verifyToken middleware to all routes
+    this.router.get(
+      "/get", 
+      this.authMiddleware.verifyToken,
+      this.cartController.getCart
+    );
+
+    this.router.get(
+      "/user/:userId", 
+      this.authMiddleware.verifyToken,
+      this.cartController.getCartbyId
+    );
+
+    this.router.post(
+      "/add", 
+      this.authMiddleware.verifyToken,
+      this.cartController.addToCart
+    );
+
+    this.router.put(
+      "/updatecart", 
+      this.authMiddleware.verifyToken,
+      this.cartController.updateCart
+    );
+
     this.router.delete(
-      "/remove/:cartItemId",
+      "/remove/:cartItemId", 
+      this.authMiddleware.verifyToken,
       this.cartController.removeFromCart
     );
   }
+
   getRouter(): Router {
     return this.router;
   }
 }
- 
