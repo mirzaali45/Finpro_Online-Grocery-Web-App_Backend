@@ -19,6 +19,6 @@
   "include": [
     "src/**/*.ts",
     "src/types/**/*.d.ts"
-  ],
+, "src/utils/midtrans.ts"  ],
   "exclude": ["node_modules"]
 }
