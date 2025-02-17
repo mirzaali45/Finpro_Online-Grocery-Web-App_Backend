@@ -124,7 +124,7 @@ export class DiscountController {
       const {
         store_id,
         product_id,
-        discount_thumbnail,
+        thumbnail,
         discount_code,
         discount_type,
         discount_value,
@@ -151,7 +151,7 @@ export class DiscountController {
         data: {
           store_id,
           product_id,
-          discount_thumbnail,
+          thumbnail,
           discount_code,
           discount_type,
           discount_value,
@@ -183,7 +183,7 @@ export class DiscountController {
       const {
         store_id,
         product_id,
-        discount_thumbnail,
+        thumbnail,
         discount_code,
         discount_type,
         discount_value,
@@ -206,7 +206,7 @@ export class DiscountController {
         data: {
           store_id,
           product_id,
-          discount_thumbnail,
+          thumbnail,
           discount_code,
           discount_type,
           discount_value,
