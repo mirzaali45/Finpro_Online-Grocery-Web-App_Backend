@@ -17,6 +17,7 @@
     }
   },
   "include": [
+    "src",
     "src/**/*.ts",
     "src/types/**/*.d.ts"
 , "src/utils/midtrans.ts"  ],

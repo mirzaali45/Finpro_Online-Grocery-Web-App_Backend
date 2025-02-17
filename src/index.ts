@@ -16,8 +16,8 @@ import { CartRouter } from "./routers/cart.router";
 // import { RajaOngkirRouter } from "./routers/rajaongkir.router";
 import { RajaOngkirRouter } from "./routers/rajaongkir.router";
 import { CekOngkirRouter } from "./routers/cekongkir.router";
-import { OrderRouter } from "./routers/orders.router";
-import { PaymentRouter } from "./routers/payments.router";
+import { OrdersRouter } from "./routers/orders.router";
+import { PaymentsRouter } from "./routers/payments.router";
 
 const PORT: number = 8000;
 const base_url_fe = process.env.BASE_URL_FE;
@@ -36,44 +36,41 @@ app.use(
 );
 
 const authRouter = new AuthRouter();
-const customerRouter = new CustomerRouter()
-const superAdminRouter = new SuperAdminRouter()
-const storeAdminRouter = new StoreAdminRouter()
-const productRouter = new ProductRouter()
-const inventoryRouter = new InventoryRouter()
-const storeRouter = new StoreRouter()
-const categoryRouter = new CategoryRouter()
-const productImageRouter = new ProductImageRouter()
+const customerRouter = new CustomerRouter();
+const superAdminRouter = new SuperAdminRouter();
+const storeAdminRouter = new StoreAdminRouter();
+const productRouter = new ProductRouter();
+const inventoryRouter = new InventoryRouter();
+const storeRouter = new StoreRouter();
+const categoryRouter = new CategoryRouter();
+const productImageRouter = new ProductImageRouter();
 const cartRouter = new CartRouter();
 // const rajaOngkirRouter = new RajaOngkirRouter();
 const rajaOngkirRouter = new RajaOngkirRouter();
 const cekOngkir = new CekOngkirRouter();
-const orderRouter = new OrderRouter()
-const paymentRouter = new PaymentRouter()
+const ordersRouter = new OrdersRouter();
+const paymentsRouter = new PaymentsRouter();
 
 app.use("/api/auth", authRouter.getRouter()); // sasa
-app.use("/api/customer", customerRouter.getRouter()) // sasa
-app.use("/api/super-admin", superAdminRouter.getRouter()) // zaki
-app.use("/api/store-admin",storeAdminRouter.getRouter()) // zaki
-app.use("/api/product",productRouter.getRouter()) // zaki
-app.use("/api/inventory",inventoryRouter.getRouter()) // zaki
-app.use("/api/store",storeRouter.getRouter()) // zaki
-app.use("/api/category",categoryRouter.getRouter()) // zaki
-app.use("/api/product-image",productImageRouter.getRouter()) // zaki
-app.use("/api/cart", cartRouter.getRouter());//mirza
-app.use("/api/order", orderRouter.getRouter())
-app.use("/api/payment", paymentRouter.getRouter())
+app.use("/api/customer", customerRouter.getRouter()); // sasa
+app.use("/api/super-admin", superAdminRouter.getRouter()); // zaki
+app.use("/api/store-admin", storeAdminRouter.getRouter()); // zaki
+app.use("/api/product", productRouter.getRouter()); // zaki
+app.use("/api/inventory", inventoryRouter.getRouter()); // zaki
+app.use("/api/store", storeRouter.getRouter()); // zaki
+app.use("/api/category", categoryRouter.getRouter()); // zaki
+app.use("/api/product-image", productImageRouter.getRouter()); // zaki
+app.use("/api/cart", cartRouter.getRouter()); //mirza
+app.use("/api/orders", ordersRouter.getRouter());
+app.use("/api/payments", paymentsRouter.getRouter());
 // app.use("/api/rajaongkir", rajaOngkirRouter.getRouter()); //all
 // app.use("/api/rajaongkir", rajaOngkirRouter.getRouter()); //raja ongkir gabisa dipake soalnya gatau udah ga aktif atau gabisa akses
-app.use("/api/cek-ongkir",cekOngkir.getRouter()) // api baru dan yang ini dipake, memakai api binderbyte https://docs.binderbyte.com/api/cek-tarif
-
-
+app.use("/api/cek-ongkir", cekOngkir.getRouter()); // api baru dan yang ini dipake, memakai api binderbyte https://docs.binderbyte.com/api/cek-tarif
 
 app.get("/api", (req, res) => {
-  res.send("Welcome to the API!"); 
+  res.send("Welcome to the API!");
 });
 
 app.listen(PORT, () => {
   console.log(`Server is running on -> http://localhost:${PORT}/api`);
 });
-

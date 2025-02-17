@@ -1,135 +1,154 @@
 import { Request, Response } from "express";
-// @ts-ignore
-import midtransClient from "midtrans-client";
 import { PrismaClient, OrderStatus } from "@prisma/client";
-import * as crypto from "node:crypto";
+import { snap } from "../utils/midtrans";
+// <-- Contoh import Snap config (sesuaikan path & nama file Anda)
 
 const prisma = new PrismaClient();
 
-// Konfigurasi Midtrans
-const snap = new midtransClient.Snap({
-  isProduction: false, // Ganti ke true jika di production
-  serverKey: process.env.MIDTRANS_SERVER_KEY!,
-});
-
-export class PaymentController {
-  // Membuat transaksi Midtrans
-  async createPayment(req: Request, res: Response): Promise<void> {
+export class PaymentsController {
+  /**
+   * GET /payments/:order_id/snap-token
+   * Mengambil / generate token SNAP dari Midtrans untuk melanjutkan pembayaran.
+   *
+   * Client side akan menggunakan "token" ini untuk menampilkan Popup Midtrans.
+   */
+  async getSnapToken(req: Request, res: Response): Promise<void> {
     try {
-      const { order_id } = req.body;
+      const { order_id } = req.params;
 
-      // Cek apakah order ada
+      // Cari order di DB
       const order = await prisma.order.findUnique({
         where: { order_id: Number(order_id) },
-        include: { user: true }, // Pastikan ada data user
+        include: {
+          user: true,
+          store: true,
+        },
       });
-
       if (!order) {
-        res.status(404).json({ message: "Order not found" });
+        res.status(404).json({ error: "Order tidak ditemukan." });
         return;
       }
 
-      // Pastikan order masih dalam status awaiting_payment
-      if (order.order_status !== OrderStatus.awaiting_payment) {
-        res.status(400).json({ message: "Order is not eligible for payment" });
+      // Cek apakah order_status masih "awaiting_payment" atau "pending"
+      if (
+        order.order_status !== OrderStatus.awaiting_payment &&
+        order.order_status !== OrderStatus.pending
+      ) {
+        res.status(400).json({
+          error: `Order dengan status '${order.order_status}' tidak bisa diproses untuk pembayaran.`,
+        });
         return;
       }
 
-      // Buat parameter transaksi
+      // Contoh gabungkan first_name + last_name
+      const fullName = `${order.user?.first_name || ""} ${
+        order.user?.last_name || ""
+      }`.trim();
+
+      // Siapkan parameter Midtrans
       const parameter = {
         transaction_details: {
-          order_id: `ORDER-${order_id}-${Date.now()}`, // Format lebih aman
-          gross_amount: order.total_price,
+          order_id: `order-${order.order_id}`,
+          gross_amount: Math.floor(order.total_price),
         },
         customer_details: {
-          first_name:
-            order.user?.first_name || order.user?.username || "Customer",
-          last_name: order.user?.last_name || "",
+          first_name: fullName || "NoName",
           email: order.user?.email || "noemail@example.com",
+          // Anda juga bisa menambahkan phone, dsb.
         },
       };
 
+      // Dapatkan token Snap
       const transaction = await snap.createTransaction(parameter);
 
-      res.json({ payment_url: transaction.redirect_url });
-    } catch (error) {
-      console.error("Error creating payment:", error);
-      res.status(500).json({ message: "Internal server error" });
+      // Kembalikan token & redirect_url ke client
+      res.status(200).json({
+        token: transaction.token,
+        redirect_url: transaction.redirect_url,
+      });
+      return;
+    } catch (error: any) {
+      console.error("getSnapToken error:", error);
+      res.status(500).json({ error: error.message });
+      return;
     }
   }
 
-  async handleWebhook(req: Request, res: Response): Promise<void> {
+  /**
+   * POST /payments/notification
+   * Endpoint untuk menerima callback / notifikasi pembayaran dari Midtrans.
+   * Midtrans akan mengirim JSON ke URL ini ketika status pembayaran berubah.
+   *
+   * Pastikan URL ini ter‐expose (mis. via ngrok) dan didaftarkan di Dashboard Midtrans.
+   */
+  async midtransNotification(req: Request, res: Response): Promise<void> {
     try {
-      console.log("Received Webhook Payload:", req.body);
+      const notification = req.body;
 
-      const {
-        order_id,
-        transaction_status,
-        signature_key,
-        gross_amount,
-        status_code,
-      } = req.body;
+      // Dapatkan order_id dari notifikasi midtrans (sesuai transaction_details.order_id)
+      // Jika di atas kita menambahkan prefix "order-{order_id}", kita harus parsing:
+      const orderIdFromMidtrans = notification.order_id; // ex: "order-123"
+      const splitted = orderIdFromMidtrans.split("-");
+      if (splitted.length < 2) {
+        // Format tidak sesuai
+        res
+          .status(400)
+          .json({ error: "Format order_id tidak valid di notifikasi." });
+        return;
+      }
+      const orderId = Number(splitted[1]); // "123"
 
-      if (!order_id || !signature_key || !gross_amount) {
-        res.status(400).json({ message: "Invalid webhook data" });
+      const transactionStatus = notification.transaction_status; // capture, settlement, cancel, expire, etc.
+      const fraudStatus = notification.fraud_status; // accept, deny, challenge
+
+      // Cari order di DB
+      const order = await prisma.order.findUnique({
+        where: { order_id: orderId },
+      });
+      if (!order) {
+        res.status(404).json({ message: "Order not found in DB." });
         return;
       }
 
-      // Gunakan status_code jika ada, kalau tidak default 200
-      const statusCode = status_code || "200";
+      // Tentukan status order berdasarkan transactionStatus
+      let newStatus: OrderStatus | null = null;
 
-      // Pastikan gross_amount dalam bentuk string
-      const grossAmountStr = String(gross_amount);
-
-      // Ambil MIDTRANS_SERVER_KEY dari environment
-      const serverKey = process.env.MIDTRANS_SERVER_KEY;
-      if (!serverKey) {
-        console.error(
-          "MIDTRANS_SERVER_KEY is not set in environment variables."
-        );
-        res.status(500).json({ message: "Server key not found" });
-        return;
-      }
-
-      // Buat hash signature
-      const expectedSignature = crypto
-        .createHash("sha512")
-        .update(`${order_id}${statusCode}${grossAmountStr}${serverKey}`)
-        .digest("hex");
-
-      console.log("Expected Signature:", expectedSignature);
-      console.log("Received Signature:", signature_key);
-
-      // Validasi Signature Key
-      if (signature_key !== expectedSignature) {
-        res.status(401).json({ message: "Invalid signature" });
-        return;
-      }
-
-      let status: OrderStatus | null = null;
-
-      if (
-        transaction_status === "capture" ||
-        transaction_status === "settlement"
+      if (transactionStatus === "capture") {
+        if (fraudStatus === "challenge") {
+          // Tergantung flow, misal tetap "awaiting_payment" atau "pending"
+          newStatus = OrderStatus.pending;
+        } else if (fraudStatus === "accept") {
+          // Pembayaran sukses -> 'processing'
+          newStatus = OrderStatus.processing;
+        }
+      } else if (transactionStatus === "settlement") {
+        // settlement = pembayaran berhasil
+        newStatus = OrderStatus.processing;
+      } else if (
+        transactionStatus === "cancel" ||
+        transactionStatus === "deny" ||
+        transactionStatus === "expire"
       ) {
-        status = OrderStatus.processing;
-      } else if (transaction_status === "pending") {
-        status = OrderStatus.awaiting_payment;
-      } else if (["cancel", "expire", "deny"].includes(transaction_status)) {
-        status = OrderStatus.cancelled;
+        newStatus = OrderStatus.cancelled;
+      } else if (transactionStatus === "pending") {
+        newStatus = OrderStatus.awaiting_payment;
       }
 
-      if (status) {
+      // Jika ada perubahan status, update di DB
+      if (newStatus && newStatus !== order.order_status) {
         await prisma.order.update({
-          where: { order_id: Number(order_id.split("-")[1]) },
-          data: { order_status: status },
+          where: { order_id: orderId },
+          data: { order_status: newStatus },
         });
       }
 
-      res.status(200).json({ message: "Webhook processed successfully" });
-    } catch (error) {
-      console.error("Error handling webhook:", error);
-      res.status(500).json({ message: "Internal server error" });
+      // Beri respon 200 ke Midtrans agar mereka tahu notifikasi telah diproses
+      res.status(200).json({ message: "OK" });
+      return;
+    } catch (error: any) {
+      console.error("midtransNotification error:", error);
+      res.status(500).json({ error: error.message });
+      return;
     }
   }
 }

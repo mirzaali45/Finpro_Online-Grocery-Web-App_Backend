@@ -1,16 +1,14 @@
-import crypto from "crypto";
-import dotenv from "dotenv";
+// src/config/midtrans.ts
+import midtransClient from 'midtrans-client';
 
-dotenv.config();
-
-export const verifyMidtransSignature = (body: any): boolean => {
-  const { order_id, status_code, gross_amount, signature_key } = body;
-
-  const serverKey = process.env.MIDTRANS_SERVER_KEY || "";
-  const expectedSignature = crypto
-    .createHash("sha512")
-    .update(`${order_id}${status_code}${gross_amount}${serverKey}`)
-    .digest("hex");
-
-  return expectedSignature === signature_key;
-};
+/**
+ * Pastikan Anda sudah set environment variable:
+ * - MIDTRANS_SERVER_KEY
+ * - MIDTRANS_CLIENT_KEY
+ * isProduction bisa di-set sesuai kebutuhan
+ */
+export const snap = new midtransClient.Snap({
+  isProduction: false, // ubah ke true jika production
+  serverKey: process.env.MIDTRANS_SERVER_KEY || '',
+  clientKey: process.env.MIDTRANS_CLIENT_KEY || '',
+});
