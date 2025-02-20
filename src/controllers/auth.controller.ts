@@ -14,7 +14,8 @@ export class AuthController {
     try {
       const { email, name, picture } = req.body;
 
-      if (!email) return res.status(400).json({ error: "Email tidak ditemukan" });
+      if (!email)
+        return res.status(400).json({ error: "Email tidak ditemukan" });
 
       let user = await prisma.user.findUnique({
         where: { email },
@@ -23,13 +24,19 @@ export class AuthController {
       if (!user) {
         // Buat user baru jika belum ada
         user = await prisma.user.create({
-          data: { email, role: "customer", username: name, avatar: picture, verified: true },
+          data: {
+            email,
+            role: "customer",
+            username: name,
+            avatar: picture,
+            verified: true,
+          },
         });
       }
 
       const token = tokenService.createLoginToken({
         id: user.user_id,
-        role: user.role
+        role: user.role,
       });
 
       // await sendVerificationEmail(email, token);
@@ -37,13 +44,14 @@ export class AuthController {
       return res.status(201).json({
         status: "success",
         token: token,
-        message:
-          "Login google successfully.",
+        message: "Login google successfully.",
         user: user,
       });
     } catch (error) {
       console.error(error);
-      return res.status(500).json({ message: "Could Reach The Server Database" });
+      return res
+        .status(500)
+        .json({ message: "Could Reach The Server Database" });
     }
   }
 
@@ -56,10 +64,10 @@ export class AuthController {
       });
 
       if (existingUser) {
-        return res.status(400).json({ message: "Email address already exists" });
+        return res
+          .status(400)
+          .json({ message: "Email address already exists" });
       }
-
-      // const token = tokenService.createEmailToken({ id: 0, role: "customer", email });
 
       const newUser = await prisma.user.create({
         data: {
@@ -77,8 +85,8 @@ export class AuthController {
 
       await prisma.user.update({
         where: { user_id: newUser.user_id },
-        data: { verify_token: token }
-      })
+        data: { verify_token: token },
+      });
 
       await sendVerificationEmail(email, token);
 
@@ -91,7 +99,9 @@ export class AuthController {
       });
     } catch (error) {
       console.error(error);
-      return res.status(500).json({ message: "Could Reach The Server Database" });
+      return res
+        .status(500)
+        .json({ message: "Could Not Reach The Server Database" });
     }
   }
 
@@ -104,7 +114,9 @@ export class AuthController {
       });
 
       if (existingUser) {
-        return res.status(400).json({ message: "Email address already exists" });
+        return res
+          .status(400)
+          .json({ message: "Email address already exists" });
       }
 
       // const token = tokenService.createEmailToken({ id: 0, role: "customer", email });
@@ -125,8 +137,8 @@ export class AuthController {
 
       await prisma.user.update({
         where: { user_id: newUser.user_id },
-        data: { verify_token: token }
-      })
+        data: { verify_token: token },
+      });
 
       await sendVerificationEmail(email, token);
 
@@ -139,7 +151,9 @@ export class AuthController {
       });
     } catch (error) {
       console.error(error);
-      return res.status(500).json({ message: "Could Reach The Server Database" });
+      return res
+        .status(500)
+        .json({ message: "Could Reach The Server Database" });
     }
   }
 
@@ -168,7 +182,9 @@ export class AuthController {
       });
 
       if (!user || user.verified) {
-        return res.status(400).json({ message: "Invalid verification request" });
+        return res
+          .status(400)
+          .json({ message: "Invalid verification request" });
       }
 
       const hashedPassword = await hashPass(password);
@@ -182,14 +198,14 @@ export class AuthController {
           phone,
           password: hashedPassword,
           verified: true,
-          verify_token: null
+          verify_token: null,
         },
       });
 
       return res.status(200).json({
         status: "success",
         message: "Email verified successfully",
-        role: user.role
+        role: user.role,
       });
     } catch (error) {
       console.error(error);
@@ -202,15 +218,15 @@ export class AuthController {
       const { email } = req.body;
 
       const isNewbie = await prisma.user.findFirst({
-        where: { email, password: null }
-      })
+        where: { email, password: null },
+      });
 
       if (isNewbie) {
         return res.status(403).json({
           status: "error",
           token: "",
           message:
-          "The email is have no password, Please choose antoher account.",
+            "The email is have no password, Please choose antoher account.",
         });
       }
 
@@ -235,8 +251,7 @@ export class AuthController {
         return res.status(403).json({
           status: "error",
           token: "",
-          message:
-          "User not found.",
+          message: "User not found.",
         });
       }
 
@@ -245,19 +260,19 @@ export class AuthController {
         role: findUser.role,
         resetPassword: findUser.role,
       });
-      
+
       await prisma.user.update({
         where: { user_id: findUser?.user_id },
-        data: { password_reset_token: token }
-      })
-      
+        data: { password_reset_token: token },
+      });
+
       await sendResetPassEmail(email, token);
-      
+
       return res.status(201).json({
         status: "success",
         token: token,
         message:
-        "Reset Password Link send successfully. Please check your email for verification.",
+          "Reset Password Link send successfully. Please check your email for verification.",
         user: findUser,
       });
     } catch (error) {
@@ -277,20 +292,24 @@ export class AuthController {
       if (password !== confirmPassword) {
         return res.status(400).json({ message: "Passwords do not match" });
       }
-      
+
       if (!oldPassword || !password) {
-        return res.status(400).json({ message: "Both old and new passwords are required" });
+        return res
+          .status(400)
+          .json({ message: "Both old and new passwords are required" });
       }
-      
+
       const userId = req.user.id;
-      
+
       // Cari pengguna berdasarkan ID
       const user = await prisma.user.findUnique({
         where: { user_id: userId },
       });
 
       if (!user) {
-        return res.status(400).json({ message: "Invalid Reset password request" });
+        return res
+          .status(400)
+          .json({ message: "Invalid Reset password request" });
       }
 
       // Bandingkan password yang belum di-hash dengan password yang sudah di-hash
@@ -300,7 +319,7 @@ export class AuthController {
         return res.status(400).json({ message: "Old password is incorrect" });
       }
 
-      console.log(user)
+      console.log(user);
 
       // Hash dan simpan password baru
       const hashedPassword = await hashPass(password);
@@ -310,35 +329,39 @@ export class AuthController {
         data: {
           password: hashedPassword,
           verify_token: null,
-          password_reset_token: null
+          password_reset_token: null,
         },
       });
 
       return res.status(200).json({
         status: "success",
         message: "Password Reset successfully",
-        role: user.role
+        role: user.role,
       });
     } catch (error) {
       console.error(error);
-      return res.status(500).json({ message: "Could Reach The Server Database" });
+      return res
+        .status(500)
+        .json({ message: "Could Reach The Server Database" });
     }
   }
 
   async loginAny(req: Request, res: Response) {
     // validation
     if (!req.body.email || !req.body.password) {
-      return res.status(400).json({ message: "Email and password are required" });
+      return res
+        .status(400)
+        .json({ message: "Email and password are required" });
     }
     try {
       const user = await prisma.user.findUnique({
         where: { email: req.body.email },
       });
-      
+
       if (!user) {
         return res.status(400).json({ message: "User not found" });
       }
-      
+
       const validPass = await bcrypt.compare(req.body.password, user.password!);
       if (!validPass) {
         return res.status(400).json({ message: "Password incorrect!" });
@@ -354,9 +377,9 @@ export class AuthController {
     } catch (error) {
       console.error(error);
       return res.status(500).json({ message: "Internal server error" });
-    }    
+    }
   }
-  
+
   async checkExpTokenEmailVerif(req: Request, res: Response) {
     const { token } = req.params;
 
@@ -367,18 +390,18 @@ export class AuthController {
     try {
       // Verifikasi token
       const decoded: any = jwt.verify(token, JWT_SECRET);
-      
+
       // Cek apakah token sudah lebih dari 1 jam sejak dibuat
       const tokenAge = Math.floor(Date.now() / 1000) - decoded.iat; // Selisih waktu dalam detik
-      if (tokenAge > 3600) { // 1 jam = 3600 detik
+      if (tokenAge > 3600) {
+        // 1 jam = 3600 detik
         return res.status(409).json({ status: "no", message: "Token Expired" });
       }
 
       return res.status(200).json({ status: "ok", message: "Token Active" });
-
     } catch (error) {
       console.error(error);
       return res.status(400).json({ error: "Invalid or expired token" });
     }
-  };
+  }
 }

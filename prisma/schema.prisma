@@ -99,7 +99,7 @@ model Address {
 
 model Referral {
   ref_id        Int    @id @default(autoincrement())
-  referrer_id   Int    @unique
+  referrer_id   Int    
   referred_id   Int?
   referral_code String @unique
   reward_id     Int?
