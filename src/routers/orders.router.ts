@@ -16,16 +16,16 @@ export class OrdersRouter {
   private initializeRoutes() {
     this.router.post(
       "/",
-      // this.authMiddleware.verifyToken,
+      this.authMiddleware.verifyToken,
       this.ordersController.createOrder
     );
     this.router.get(
       "/",
-      // this.authMiddleware.checkSuperAdmin,
+      this.authMiddleware.verifyToken,
       this.ordersController.getOrders
     );
-    this.router.patch("/:orderId/cancel", this.ordersController.cancelOrder);
-    this.router.patch("/:orderId/confirm", this.ordersController.confirmOrder);
+    this.router.patch("/:order_id/cancel", this.ordersController.cancelOrder);
+    this.router.patch("/:order_d/confirm", this.ordersController.confirmOrder);
   }
   getRouter(): Router {
     return this.router;

@@ -83,70 +83,90 @@ export class PaymentsController {
    */
   async midtransNotification(req: Request, res: Response): Promise<void> {
     try {
+      // 1. Dapatkan payload notifikasi dari Midtrans
       const notification = req.body;
 
-      // Dapatkan order_id dari notifikasi midtrans (sesuai transaction_details.order_id)
-      // Jika di atas kita menambahkan prefix "order-{order_id}", kita harus parsing:
-      const orderIdFromMidtrans = notification.order_id; // ex: "order-123"
-      const splitted = orderIdFromMidtrans.split("-");
-      if (splitted.length < 2) {
-        // Format tidak sesuai
+      // 2. Pastikan 'order_id' ada di payload
+      if (!notification.order_id) {
         res
           .status(400)
-          .json({ error: "Format order_id tidak valid di notifikasi." });
+          .json({ error: 'No "order_id" found in notification payload.' });
         return;
       }
-      const orderId = Number(splitted[1]); // "123"
 
-      const transactionStatus = notification.transaction_status; // capture, settlement, cancel, expire, etc.
-      const fraudStatus = notification.fraud_status; // accept, deny, challenge
+      const orderIdFromMidtrans = notification.order_id as string;
 
-      // Cari order di DB
+      // 3. Jika Anda menambahkan prefix "order-" di createTransaction, parse di sini
+      let numericOrderId: number;
+      if (orderIdFromMidtrans.includes("-")) {
+        // misal "order-5" => ["order", "5"]
+        const splitted = orderIdFromMidtrans.split("-");
+        if (splitted.length < 2) {
+          res.status(400).json({ error: "Invalid order_id format." });
+          return;
+        }
+        numericOrderId = Number(splitted[1]);
+      } else {
+        // Jika tidak menambahkan prefix, langsung parse ke number
+        numericOrderId = Number(orderIdFromMidtrans);
+      }
+
+      // 4. Cari order di DB
       const order = await prisma.order.findUnique({
-        where: { order_id: orderId },
+        where: { order_id: numericOrderId },
       });
       if (!order) {
-        res.status(404).json({ message: "Order not found in DB." });
+        res
+          .status(404)
+          .json({ error: `Order with ID ${numericOrderId} not found in DB.` });
         return;
       }
 
-      // Tentukan status order berdasarkan transactionStatus
-      let newStatus: OrderStatus | null = null;
+      // 5. Baca status notifikasi dari Midtrans
+      const transactionStatus = notification.transaction_status; // capture, settlement, cancel, expire, etc.
+      const fraudStatus = notification.fraud_status; // accept, deny, challenge, etc.
+
+      // 6. Tentukan status baru di DB berdasarkan status Midtrans
+      let newStatus: OrderStatus | undefined;
 
       if (transactionStatus === "capture") {
         if (fraudStatus === "challenge") {
-          // Tergantung flow, misal tetap "awaiting_payment" atau "pending"
+          // Contoh: jika 'challenge' => tetap awaiting_payment atau pending
           newStatus = OrderStatus.pending;
         } else if (fraudStatus === "accept") {
-          // Pembayaran sukses -> 'processing'
+          // capture + accept => pembayaran sukses => processing
           newStatus = OrderStatus.processing;
         }
       } else if (transactionStatus === "settlement") {
-        // settlement = pembayaran berhasil
+        // settlement = pembayaran sukses
         newStatus = OrderStatus.processing;
       } else if (
         transactionStatus === "cancel" ||
         transactionStatus === "deny" ||
         transactionStatus === "expire"
       ) {
+        // ketiganya => dibatalkan
         newStatus = OrderStatus.cancelled;
       } else if (transactionStatus === "pending") {
+        // pending => belum bayar
         newStatus = OrderStatus.awaiting_payment;
       }
 
-      // Jika ada perubahan status, update di DB
+      // 7. Update status di DB jika ada perubahan
+      // (pastikan newStatus berbeda dari order.order_status)
       if (newStatus && newStatus !== order.order_status) {
         await prisma.order.update({
-          where: { order_id: orderId },
+          where: { order_id: numericOrderId },
           data: { order_status: newStatus },
         });
       }
 
-      // Beri respon 200 ke Midtrans agar mereka tahu notifikasi telah diproses
+      // 8. Response 200 ke Midtrans agar notifikasi dianggap "diterima dengan sukses"
       res.status(200).json({ message: "OK" });
       return;
     } catch (error: any) {
       console.error("midtransNotification error:", error);
+      // 9. Jika ada error di server, beri response 500
       res.status(500).json({ error: error.message });
       return;
     }

@@ -14,8 +14,8 @@ export class PaymentsRouter {
     this.initializeRoutes();
   }
   private initializeRoutes() {
-    this.router.post(
-      "/snap-token/:order_id",
+    this.router.get(
+      "/:order_id/snap-token",
       this.authMiddleware.verifyToken,
       this.paymentsController.getSnapToken.bind(this.paymentsController)
     );
