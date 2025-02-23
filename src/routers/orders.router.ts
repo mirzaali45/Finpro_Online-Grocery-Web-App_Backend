@@ -19,13 +19,6 @@ export class OrdersRouter {
       this.authMiddleware.verifyToken,
       this.ordersController.createOrder
     );
-    this.router.get(
-      "/",
-      this.authMiddleware.verifyToken,
-      this.ordersController.getOrders
-    );
-    this.router.patch("/:order_id/cancel", this.ordersController.cancelOrder);
-    this.router.patch("/:order_d/confirm", this.ordersController.confirmOrder);
   }
   getRouter(): Router {
     return this.router;
