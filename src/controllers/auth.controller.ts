@@ -5,7 +5,8 @@ import { sendResetPassEmail, sendVerificationEmail } from "../services/mailer";
 import { hashPass } from "../helpers/hashpassword";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
-const JWT_SECRET = process.env.SECRET_KEY || "osdjfksdhfishd"; 
+import { generateReferralCode } from "../helpers/reffcode";
+const JWT_SECRET = process.env.SECRET_KEY || "osdjfksdhfishd";
 
 const prisma = new PrismaClient();
 
@@ -30,6 +31,10 @@ export class AuthController {
             username: name,
             avatar: picture,
             verified: true,
+            referral_code: generateReferralCode(8),
+            first_name: name.split(" ")[0],
+            last_name: name.split(" ")[1],
+            is_google: true,
           },
         });
       }
@@ -74,6 +79,7 @@ export class AuthController {
           email,
           role: "customer",
           verified: false,
+          referral_code: generateReferralCode(8),
         },
       });
 
@@ -101,7 +107,7 @@ export class AuthController {
       console.error(error);
       return res
         .status(500)
-        .json({ message: "Could Not Reach The Server Database" });
+        .json({ message: "Could Reach The Server Database" });
     }
   }
 
@@ -126,6 +132,7 @@ export class AuthController {
           email,
           role: "store_admin",
           verified: false,
+          referral_code: generateReferralCode(8),
         },
       });
 
@@ -226,7 +233,7 @@ export class AuthController {
           status: "error",
           token: "",
           message:
-            "The email is have no password, Please choose antoher account.",
+            "The email is have no password, Please choose another account.",
         });
       }
 
