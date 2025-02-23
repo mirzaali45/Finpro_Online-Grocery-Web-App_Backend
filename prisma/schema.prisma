@@ -51,24 +51,24 @@ enum ChangeType {
 }
 
 model User {
-  user_id    Int       @id @default(autoincrement())
-  email      String    @unique
-  username   String?
-  password   String?
-  phone      String?   @unique
-  first_name String?
-  last_name  String?
-  date_ob    DateTime?
-  avatar     String?
-  is_google  Boolean  @default(false)
-  role       Role
-  verified   Boolean   @default(false)
-  created_at DateTime  @default(now())
-  updated_at DateTime  @default(now())
-  verify_token String? 
-  password_reset_token String? 
-  referral_code     String
+  user_id              Int       @id @default(autoincrement())
+  email                String    @unique
+  username             String?
+  password             String?
+  phone                String?   @unique
+  first_name           String?
+  last_name            String?
+  date_ob              DateTime?
+  avatar               String?
+  google_id            Int?
+  role                 Role
+  verified             Boolean   @default(false)
+  created_at           DateTime  @default(now())
+  updated_at           DateTime  @default(now())
+  verify_token         String?
+  password_reset_token String?
 
+  referralsSent     Referral[] @relation("ReferrerRelation")
   referralsReceived Referral[] @relation("ReferredRelation")
   Store             Store?
   discounts         Discount[]
@@ -104,6 +104,7 @@ model Referral {
   referral_code String @unique
   reward_id     Int?
 
+  referrer User     @relation("ReferrerRelation", fields: [referrer_id], references: [user_id])
   referred User?    @relation("ReferredRelation", fields: [referred_id], references: [user_id])
   reward   Voucher? @relation(fields: [reward_id], references: [voucher_id])
 }
@@ -255,17 +256,4 @@ model CartItem {
   updated_at  DateTime @default(now())
   user        User     @relation(fields: [user_id], references: [user_id])
   product     Product  @relation(fields: [product_id], references: [product_id])
-}
-
-model Province {
-  id          Int @id
-  name        String
-  City        City[]
-}
-
-model City {
-  id          Int @id
-  name        String
-  province_id Int
-  province    Province @relation(fields: [province_id], references: [id])
 }

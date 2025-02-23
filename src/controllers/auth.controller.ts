@@ -5,8 +5,7 @@ import { sendResetPassEmail, sendVerificationEmail } from "../services/mailer";
 import { hashPass } from "../helpers/hashpassword";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
-import { generateReferralCode } from "../helpers/reffcode";
-const JWT_SECRET = process.env.SECRET_KEY || "osdjfksdhfishd";
+const JWT_SECRET = process.env.SECRET_KEY || "osdjfksdhfishd"; 
 
 const prisma = new PrismaClient();
 
@@ -24,7 +23,7 @@ export class AuthController {
       if (!user) {
         // Buat user baru jika belum ada
         user = await prisma.user.create({
-          data: { email, role: "customer", username: name, avatar: picture, verified: true, referral_code: generateReferralCode(8), first_name: name.split(" ")[0], last_name: name.split(" ")[1], is_google: true },
+          data: { email, role: "customer", username: name, avatar: picture, verified: true },
         });
       }
 
@@ -67,7 +66,6 @@ export class AuthController {
           email,
           role: "customer",
           verified: false,
-          referral_code: generateReferralCode(8)
         },
       });
 
@@ -116,7 +114,6 @@ export class AuthController {
           email,
           role: "store_admin",
           verified: false,
-          referral_code: generateReferralCode(8)
         },
       });
 
@@ -213,7 +210,7 @@ export class AuthController {
           status: "error",
           token: "",
           message:
-            "The email is have no password, Please choose another account.",
+          "The email is have no password, Please choose antoher account.",
         });
       }
 
@@ -239,7 +236,7 @@ export class AuthController {
           status: "error",
           token: "",
           message:
-            "User not found.",
+          "User not found.",
         });
       }
 
@@ -248,19 +245,19 @@ export class AuthController {
         role: findUser.role,
         resetPassword: findUser.role,
       });
-
+      
       await prisma.user.update({
         where: { user_id: findUser?.user_id },
         data: { password_reset_token: token }
       })
-
+      
       await sendResetPassEmail(email, token);
-
+      
       return res.status(201).json({
         status: "success",
         token: token,
         message:
-          "Reset Password Link send successfully. Please check your email for verification.",
+        "Reset Password Link send successfully. Please check your email for verification.",
         user: findUser,
       });
     } catch (error) {
@@ -280,13 +277,13 @@ export class AuthController {
       if (password !== confirmPassword) {
         return res.status(400).json({ message: "Passwords do not match" });
       }
-
+      
       if (!oldPassword || !password) {
         return res.status(400).json({ message: "Both old and new passwords are required" });
       }
-
+      
       const userId = req.user.id;
-
+      
       // Cari pengguna berdasarkan ID
       const user = await prisma.user.findUnique({
         where: { user_id: userId },
@@ -337,11 +334,11 @@ export class AuthController {
       const user = await prisma.user.findUnique({
         where: { email: req.body.email },
       });
-
+      
       if (!user) {
         return res.status(400).json({ message: "User not found" });
       }
-
+      
       const validPass = await bcrypt.compare(req.body.password, user.password!);
       if (!validPass) {
         return res.status(400).json({ message: "Password incorrect!" });
@@ -357,9 +354,9 @@ export class AuthController {
     } catch (error) {
       console.error(error);
       return res.status(500).json({ message: "Internal server error" });
-    }
+    }    
   }
-
+  
   async checkExpTokenEmailVerif(req: Request, res: Response) {
     const { token } = req.params;
 
@@ -370,7 +367,7 @@ export class AuthController {
     try {
       // Verifikasi token
       const decoded: any = jwt.verify(token, JWT_SECRET);
-
+      
       // Cek apakah token sudah lebih dari 1 jam sejak dibuat
       const tokenAge = Math.floor(Date.now() / 1000) - decoded.iat; // Selisih waktu dalam detik
       if (tokenAge > 3600) { // 1 jam = 3600 detik

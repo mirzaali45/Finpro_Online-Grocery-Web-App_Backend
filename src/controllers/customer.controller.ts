@@ -26,8 +26,6 @@ export class CustomerController {
           last_name: true,
           phone: true,
           role: true,
-          is_google: true,
-          referral_code: true,
           verified: true,
           created_at: true,
           updated_at: true,
@@ -99,23 +97,6 @@ export class CustomerController {
         email,
         phone,
       } = req.body;
-
-      const customer = await prisma.user.findFirst({
-        where: {
-          user_id: req.user.id,
-          role: "customer",
-          email: email
-        }
-      });
-
-      if (!customer) {
-        await prisma.user.update({
-          where: { user_id: req.user.id },
-          data: {
-            verified: false
-          }
-        })
-      }
 
       const updateCust = await prisma.user.update({
         where: { user_id: req.user.id },

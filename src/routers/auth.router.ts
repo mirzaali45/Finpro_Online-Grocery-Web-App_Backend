@@ -14,7 +14,6 @@ export class AuthRouter {
     this.authMiddleware = new AuthMiddleware();
     this.initializeRoutes();
   }
-  
 
   private initializeRoutes() {
     this.router.post(
