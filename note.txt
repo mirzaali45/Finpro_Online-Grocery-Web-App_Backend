@@ -1,0 +1,21 @@
+# Connect to Supabase via connection pooling with Supavisor.
+DATABASE_URL="postgresql://postgres.dmvbrvhgpxqsklacrald:@Finproasd12345@aws-0-ap-southeast-1.pooler.supabase.com:6543/postgres?pgbouncer=true"
+
+# Direct connection to the database. Used for migrations.
+DIRECT_URL="postgresql://postgres.dmvbrvhgpxqsklacrald:@Finproasd12345@aws-0-ap-southeast-1.pooler.supabase.com:5432/postgres"
+        
+BASE_URL_FE="http://localhost:3000"
+
+SECRET_KEY="FinproAjaDeh"
+
+MAIL_USER="finalprojectkel@gmail.com"
+MAIL_PASS="ajof dqzw hggx uftx"
+
+RAJAONGKIR_API_KEY=WXgb2djxe5538ad60af7529daZBKhMhA
+RAJAONGKIR_BASE_URL=https://api.rajaongkir.com/starter
+
+BINDERBYTE_API_KEY=89e1520d74f6e805da66d1056b78d081b143a7300d8c25fcd5b0d78f3e6d9c0b
+
+CLOUDINARY_CLOUD_NAME=dak07ttxh
+CLOUDINARY_API_KEY=121592298285875
+CLOUDINARY_API_SECRET=w_aBn_fm-9PFEb4ZY11LvcJRklg
