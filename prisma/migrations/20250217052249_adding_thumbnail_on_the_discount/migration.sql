@@ -5,11 +5,20 @@
 
 */
 -- AlterTable
+<<<<<<< HEAD
+-- ALTER TABLE "Address" ADD COLUMN     "address_name" TEXT NOT NULL;
+=======
 ALTER TABLE "Address" ADD COLUMN     "address_name" TEXT NOT NULL;
+>>>>>>> d5feeb783728d74ed0b8efc91a7a3c1f5aa9af93
 
 -- AlterTable
 ALTER TABLE "Discount" ADD COLUMN     "thumbnail" TEXT;
 
 -- AlterTable
+<<<<<<< HEAD
+-- ALTER TABLE "User" ADD COLUMN     "password_reset_token" TEXT,
+-- ADD COLUMN     "verify_token" TEXT;
+=======
 ALTER TABLE "User" ADD COLUMN     "password_reset_token" TEXT,
 ADD COLUMN     "verify_token" TEXT;
+>>>>>>> d5feeb783728d74ed0b8efc91a7a3c1f5aa9af93

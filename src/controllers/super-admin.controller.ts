@@ -1,6 +1,7 @@
 import { PrismaClient } from "@prisma/client";
 import { Request, Response } from "express";
 import bcrypt from "bcrypt";
+import { generateReferralCode } from "../helpers/reffcode";
 
 const prisma = new PrismaClient();
 
@@ -30,6 +31,7 @@ export class SuperAdminController {
           last_name: lastName,
           phone,
           verified: true,
+          referral_code: generateReferralCode(8),
         },
       });
 
