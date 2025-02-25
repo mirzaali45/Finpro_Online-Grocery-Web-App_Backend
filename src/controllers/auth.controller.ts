@@ -74,8 +74,6 @@ export class AuthController {
           .json({ message: "Email address already exists" });
       }
 
-      // const token = tokenService.createEmailToken({ id: 0, role: "customer", email });
-
       const newUser = await prisma.user.create({
         data: {
           email,

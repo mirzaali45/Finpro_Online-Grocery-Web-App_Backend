@@ -18,6 +18,7 @@ import { RajaOngkirRouter } from "./routers/rajaongkir.router";
 import { CekOngkirRouter } from "./routers/cekongkir.router";
 import { OrdersRouter } from "./routers/order.router";
 import { PaymentsRouter } from "./routers/payments.router";
+import { DiscountRouter } from "./routers/discount-router";
 
 const PORT: number = 8000;
 const base_url_fe = process.env.BASE_URL_FE;
@@ -50,6 +51,7 @@ const rajaOngkirRouter = new RajaOngkirRouter();
 const cekOngkir = new CekOngkirRouter();
 const ordersRouter = new OrdersRouter();
 const paymentsRouter = new PaymentsRouter();
+const discountRouter = new DiscountRouter()
 
 app.use("/api/auth", authRouter.getRouter()); // sasa
 app.use("/api/customer", customerRouter.getRouter()) // sasa
@@ -66,7 +68,7 @@ app.use("/api/payments", paymentsRouter.getRouter());//mirza
 // app.use("/api/rajaongkir", rajaOngkirRouter.getRouter()); //all
 // app.use("/api/rajaongkir", rajaOngkirRouter.getRouter()); //raja ongkir gabisa dipake soalnya gatau udah ga aktif atau gabisa akses
 app.use("/api/cek-ongkir",cekOngkir.getRouter()) // api baru dan yang ini dipake, memakai api binderbyte https://docs.binderbyte.com/api/cek-tarif
-
+app.use("/api/discount", discountRouter.getRouter())
 
 
 app.get("/api", (req, res) => {

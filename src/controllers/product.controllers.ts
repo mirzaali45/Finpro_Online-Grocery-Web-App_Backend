@@ -1,4 +1,4 @@
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient,Prisma } from "@prisma/client";
 import { Request, Response } from "express";
 import { generateSlug } from "../helpers/generateSlug";
 
@@ -77,7 +77,6 @@ export class ProductController {
     try {
       const { product_id } = req.params;
 
-
       await prisma.inventory.deleteMany({
         where: {
           product_id: parseInt(product_id),
@@ -106,19 +105,49 @@ export class ProductController {
 
   async getProducts(req: Request, res: Response) {
     try {
+      const page = parseInt(req.query.page as string) || 1;
+      const limit = parseInt(req.query.limit as string) || 8;
+      const featured = req.query.featured === "true";
+      const categoryId = req.query.categoryId
+        ? parseInt(req.query.categoryId as string)
+        : undefined;
+
+      // Prepare where condition
+      const whereCondition: Prisma.ProductWhereInput = {};
+
+      // Add category filter if categoryId is provided
+      if (categoryId) {
+        whereCondition.category_id = categoryId;
+      }
+
+      // If featured, prioritize by price
       const products = await prisma.product.findMany({
+        where: whereCondition,
+        skip: featured ? 0 : (page - 1) * limit,
+        take: limit,
         include: {
-          store:true,
+          store: true,
           category: true,
           Inventory: true,
           ProductImage: true,
         },
+        orderBy: featured ? { price: "desc" } : { created_at: "desc" },
       });
-      return res.status(200).json(products);
-    } catch (error: unknown) {
-      const message =
-        error instanceof Error ? error.message : "Unknown error occurred";
-      return res.status(500).json({ error: message });
+
+      const totalProducts = await prisma.product.count({
+        where: whereCondition,
+      });
+
+      const totalPages = Math.ceil(totalProducts / limit);
+
+      return res.status(200).json({
+        products,
+        totalPages,
+        currentPage: page,
+      });
+    } catch (error) {
+      console.error("Error fetching products:", error);
+      return res.status(500).json({ error: "Failed to fetch products" });
     }
   }
 
@@ -129,7 +158,7 @@ export class ProductController {
       const product = await prisma.product.findUnique({
         where: { product_id: parseInt(product_id) },
         include: {
-          store:true,
+          store: true,
           category: true,
           Inventory: true,
           ProductImage: true,
@@ -145,10 +174,11 @@ export class ProductController {
       return res.status(500).json({ error: message });
     }
   }
+
   async getProductBySlug(req: Request, res: Response) {
     try {
       const { slug } = req.params;
-  
+
       const products = await prisma.product.findMany({
         include: {
           store: true,
@@ -157,10 +187,10 @@ export class ProductController {
           ProductImage: true, // Include ProductImage relation
         },
       });
-      const product = products.find(p => generateSlug(p.name) === slug);
-  
+      const product = products.find((p) => generateSlug(p.name) === slug);
+
       if (!product) throw new Error("Product not found");
-  
+
       return res.status(200).json(product);
     } catch (error: unknown) {
       const message =
