@@ -1,3 +1,5 @@
+old schema
+
 // This is your Prisma schema file,
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
@@ -50,6 +52,11 @@ enum ChangeType {
   name
 }
 
+enum ProviderType {
+  GOOGLE
+  FACEBOOK
+}
+
 model User {
   user_id    Int       @id @default(autoincrement())
   email      String    @unique
@@ -60,15 +67,12 @@ model User {
   last_name  String?
   date_ob    DateTime?
   avatar     String?
-  is_google  Boolean  @default(false)
   role       Role
   verified   Boolean   @default(false)
   created_at DateTime  @default(now())
   updated_at DateTime  @default(now())
-  verify_token String? 
-  password_reset_token String? 
-  referral_code     String
 
+  referralsSent     Referral[] @relation("ReferrerRelation")
   referralsReceived Referral[] @relation("ReferredRelation")
   Store             Store?
   discounts         Discount[]
@@ -76,25 +80,45 @@ model User {
   Address           Address[]
   Voucher           Voucher[]
   cartItems         CartItem[]
+  Provider          Provider[]
+}
+
+model Provider {
+  provider_id   Int          @id @default(autoincrement())
+  user_id       Int
+  provider_name ProviderType
+  created_at    DateTime     @default(now())
+  updated_at    DateTime     @default(now())
+
+  user User @relation(fields: [user_id], references: [user_id])
 }
 
 model Address {
-  address_id   Int      @id @default(autoincrement())
-  user_id      Int
-  address_name String   @db.Text
-  address      String   @db.Text
-  subdistrict  String?
-  city         String
-  city_id      String
-  province     String
-  province_id  String
-  postcode     String?
-  latitude     Float
-  longitude    Float
-  is_primary   Boolean  @default(false)
-  created_at   DateTime @default(now())
-  updated_at   DateTime @default(now())
-  user         User     @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+  address_id  Int      @id @default(autoincrement())
+  user_id     Int
+  address     String   @db.Text
+  subdistrict String?
+  city        String
+  city_id     String
+  province    String
+  province_id String
+  postcode    String?
+  latitude    Float
+  longitude   Float
+  is_primary  Boolean  @default(false)
+  created_at  DateTime @default(now())
+  updated_at  DateTime @default(now())
+  user        User     @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+}
+
+model RajaOngkir {
+  ongkir_id   Int    @id @default(autoincrement())
+  city_id     String @unique
+  city_name   String
+  province_id String
+  province    String
+  type        String
+  postal_code String
 }
 
 model Referral {
@@ -104,6 +128,7 @@ model Referral {
   referral_code String @unique
   reward_id     Int?
 
+  referrer User     @relation("ReferrerRelation", fields: [referrer_id], references: [user_id])
   referred User?    @relation("ReferredRelation", fields: [referred_id], references: [user_id])
   reward   Voucher? @relation(fields: [reward_id], references: [voucher_id])
 }
@@ -126,7 +151,6 @@ model Discount {
   discount_id    Int       @id @default(autoincrement())
   store_id       Int?
   product_id     Int?
-  thumbnail      String?
   discount_code  String    @unique
   discount_type  Type
   discount_value Int
@@ -147,7 +171,9 @@ model Store {
   address     String
   subdistrict String?
   city        String
+  city_id     String
   province    String
+  province_id String
   postcode    String
   latitude    Float
   longitude   Float
@@ -162,13 +188,12 @@ model Store {
 }
 
 model Category {
-  category_id        Int       @id @default(autoincrement())
-  category_name      String
-  description        String    @db.Text
-  category_thumbnail String?
-  created_at         DateTime  @default(now())
-  updated_at         DateTime  @default(now())
-  Product            Product[]
+  category_id   Int       @id @default(autoincrement())
+  category_name String
+  description   String    @db.Text
+  created_at    DateTime  @default(now())
+  updated_at    DateTime  @default(now())
+  Product       Product[]
 }
 
 model Product {
@@ -255,17 +280,4 @@ model CartItem {
   updated_at  DateTime @default(now())
   user        User     @relation(fields: [user_id], references: [user_id])
   product     Product  @relation(fields: [product_id], references: [product_id])
-}
-
-model Province {
-  id          Int @id
-  name        String
-  City        City[]
-}
-
-model City {
-  id          Int @id
-  name        String
-  province_id Int
-  province    Province @relation(fields: [province_id], references: [id])
 }
