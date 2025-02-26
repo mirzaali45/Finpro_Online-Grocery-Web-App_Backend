@@ -143,7 +143,7 @@ export class DiscountController {
     try {
       const {
         page = 1,
-        limit = 100, // Increased limit to fetch more discounts
+        limit = 8, 
         storeId,
         productId,
         discountType,
@@ -152,11 +152,7 @@ export class DiscountController {
       const pageNum = Number(page);
       const limitNum = Number(limit);
       const offset = (pageNum - 1) * limitNum;
-
-      // Build where condition dynamically
-      const whereCondition: any = {
-        // Removed expires_at condition to fetch all discounts
-      };
+      const whereCondition: any = {};
 
       if (storeId) {
         whereCondition.store_id = Number(storeId);
@@ -169,8 +165,6 @@ export class DiscountController {
       if (discountType) {
         whereCondition.discount_type = discountType as Type;
       }
-
-      // Fetch discounts with pagination and include related product/store info
       const discounts = await prisma.discount.findMany({
         where: whereCondition,
         include: {
@@ -196,8 +190,6 @@ export class DiscountController {
           created_at: "desc",
         },
       });
-
-      // Count total discounts for pagination
       const totalDiscounts = await prisma.discount.count({
         where: whereCondition,
       });
