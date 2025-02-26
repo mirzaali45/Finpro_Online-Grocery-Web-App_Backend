@@ -27,6 +27,10 @@ export class ProductRouter {
       this.authMiddleware.verifyToken as unknown as RequestHandler,
       this.productController.getProductsByStore as unknown as RequestHandler
     );
+    this.router.get(
+      "/discounted",
+      this.productController.getDiscountedProducts as unknown as RequestHandler
+    );
     this.router.patch(
       "/:product_id",
       this.authMiddleware.verifyToken as unknown as RequestHandler,

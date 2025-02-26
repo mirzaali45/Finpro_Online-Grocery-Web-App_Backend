@@ -143,10 +143,11 @@ export class DiscountController {
     try {
       const {
         page = 1,
-        limit = 8, 
+        limit = 8,
         storeId,
         productId,
         discountType,
+        unassigned,
       } = req.query;
 
       const pageNum = Number(page);
@@ -158,13 +159,17 @@ export class DiscountController {
         whereCondition.store_id = Number(storeId);
       }
 
-      if (productId) {
+      // If unassigned is true, we filter out any discounts that have a product assigned.
+      if (unassigned === "true") {
+        whereCondition.product_id = null;
+      } else if (productId) {
         whereCondition.product_id = Number(productId);
       }
 
       if (discountType) {
         whereCondition.discount_type = discountType as Type;
       }
+
       const discounts = await prisma.discount.findMany({
         where: whereCondition,
         include: {
@@ -190,6 +195,7 @@ export class DiscountController {
           created_at: "desc",
         },
       });
+
       const totalDiscounts = await prisma.discount.count({
         where: whereCondition,
       });

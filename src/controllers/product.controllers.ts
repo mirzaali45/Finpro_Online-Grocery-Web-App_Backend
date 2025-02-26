@@ -149,6 +149,7 @@ export class ProductController {
           category: true,
           Inventory: true,
           ProductImage: true,
+          Discount: true,
         },
         orderBy: featured ? { price: "desc" } : { created_at: "desc" },
       });
@@ -167,6 +168,69 @@ export class ProductController {
     } catch (error) {
       console.error("Error fetching products:", error);
       return res.status(500).json({ error: "Failed to fetch products" });
+    }
+  }
+
+  async getDiscountedProducts(req: Request, res: Response) {
+    try {
+      const page = parseInt(req.query.page as string) || 1;
+      const limit = parseInt(req.query.limit as string) || 8;
+      const categoryId = req.query.categoryId
+        ? parseInt(req.query.categoryId as string)
+        : undefined;
+      const minPrice = req.query.minPrice
+        ? parseFloat(req.query.minPrice as string)
+        : undefined;
+      const maxPrice = req.query.maxPrice
+        ? parseFloat(req.query.maxPrice as string)
+        : undefined;
+
+      // Prepare where condition
+      const whereCondition: Prisma.ProductWhereInput = {
+        Discount: {
+          some: {}, // Only products with discounts
+        },
+      };
+
+      // Add other filters
+      if (categoryId) {
+        whereCondition.category_id = categoryId;
+      }
+
+      if (minPrice !== undefined || maxPrice !== undefined) {
+        whereCondition.price = {};
+        if (minPrice !== undefined) whereCondition.price.gte = minPrice;
+        if (maxPrice !== undefined) whereCondition.price.lte = maxPrice;
+      }
+
+      const products = await prisma.product.findMany({
+        where: whereCondition,
+        skip: (page - 1) * limit,
+        take: limit,
+        include: {
+          store: true,
+          category: true,
+          Inventory: true,
+          ProductImage: true,
+          Discount: true,
+        },
+        orderBy: { created_at: "desc" },
+      });
+
+      const totalProducts = await prisma.product.count({
+        where: whereCondition,
+      });
+
+      return res.status(200).json({
+        products,
+        totalPages: Math.ceil(totalProducts / limit),
+        currentPage: page,
+      });
+    } catch (error) {
+      console.error("Error fetching discounted products:", error);
+      return res
+        .status(500)
+        .json({ error: "Failed to fetch discounted products" });
     }
   }
 
