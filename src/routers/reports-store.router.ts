@@ -16,15 +16,12 @@ export class ReportsRouter {
   }
 
   private initializeRoutes() {
-    // Monthly Sales Report
     this.router.get(
       "/sales/monthly",
       this.authMiddleware.verifyToken,
       this.authMiddleware.checkStrAdmin,
       this.reportsController.getMonthlySalesReport as unknown as RequestHandler
     );
-
-    // Monthly Sales by Category Report
     this.router.get(
       "/sales/by-category",
       this.authMiddleware.verifyToken,
@@ -32,8 +29,6 @@ export class ReportsRouter {
       this.reportsController
         .getMonthlySalesByCategory as unknown as RequestHandler
     );
-
-    // Monthly Sales by Product Report
     this.router.get(
       "/sales/by-product",
       this.authMiddleware.verifyToken,
@@ -42,7 +37,6 @@ export class ReportsRouter {
         .getMonthlySalesByProduct as unknown as RequestHandler
     );
 
-    // Monthly Stock Summary Report
     this.router.get(
       "/stock/summary",
       this.authMiddleware.verifyToken,
@@ -51,7 +45,6 @@ export class ReportsRouter {
         .getMonthlyStockSummaryReport as unknown as RequestHandler
     );
 
-    // Detailed Product Stock Report
     this.router.get(
       "/stock/product-detail",
       this.authMiddleware.verifyToken,
@@ -60,7 +53,6 @@ export class ReportsRouter {
         .getDetailedProductStockReport as unknown as RequestHandler
     );
   }
-
   getRouter(): Router {
     return this.router;
   }
