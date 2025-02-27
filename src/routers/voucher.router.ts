@@ -29,6 +29,13 @@ export class VoucherRouter {
       this.authMiddleware.verifyToken as unknown as RequestHandler,
       this.voucherController.getUserVouchers as unknown as RequestHandler
     );
+
+    // Delete a voucher
+    this.router.delete(
+      "/:voucher_id",
+      this.authMiddleware.verifyToken as unknown as RequestHandler,
+      this.voucherController.deleteVoucher as unknown as RequestHandler
+    );
   }
 
   getRouter(): Router {

@@ -4,8 +4,6 @@ import { z } from "zod";
 import { uploadDiscountThumbnail } from "../services/cloudinary";
 
 const prisma = new PrismaClient();
-
-// Validation schemas
 const createDiscountSchema = z.object({
   store_id: z.number().optional(),
   product_id: z.coerce.number(),
@@ -21,13 +19,9 @@ const createDiscountSchema = z.object({
 const updateDiscountSchema = createDiscountSchema.partial();
 
 export class DiscountController {
-  // Create a new discount
   async createDiscount(req: Request, res: Response): Promise<void> {
     try {
-      // Assuming you have middleware that adds user info to the request
       const user = req.user;
-
-      // Check if the user is a store admin
       if (user?.role !== "store_admin") {
         res.status(403).json({
           success: false,
@@ -35,8 +29,6 @@ export class DiscountController {
         });
         return;
       }
-
-      // Find the store associated with the store admin
       const store = await prisma.store.findUnique({
         where: { user_id: user.id },
       });
@@ -61,8 +53,6 @@ export class DiscountController {
       }
 
       const data = validation.data;
-
-      // Validate discount value based on type
       if (data.discount_type === "percentage" && data.discount_value > 100) {
         res.status(400).json({
           success: false,
@@ -83,8 +73,6 @@ export class DiscountController {
         });
         return;
       }
-
-      // If product_id is provided (not 0), verify it belongs to the store
       if (data.product_id && data.product_id !== 0) {
         const product = await prisma.product.findUnique({
           where: {
@@ -101,15 +89,11 @@ export class DiscountController {
           return;
         }
       }
-
-      // Handle thumbnail upload if file is present
       let thumbnailUrl = data.thumbnail;
       if (req.file) {
         const uploadResult = await uploadDiscountThumbnail(req.file.path);
         thumbnailUrl = uploadResult.secure_url;
       }
-
-      // Create the discount for the store
       const discount = await prisma.discount.create({
         data: {
           store_id: store.store_id,

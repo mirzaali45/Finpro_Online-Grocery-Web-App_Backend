@@ -51,23 +51,23 @@ enum ChangeType {
 }
 
 model User {
-  user_id    Int       @id @default(autoincrement())
-  email      String    @unique
-  username   String?
-  password   String?
-  phone      String?   @unique
-  first_name String?
-  last_name  String?
-  date_ob    DateTime?
-  avatar     String?
-  is_google  Boolean  @default(false)
-  role       Role
-  verified   Boolean   @default(false)
-  created_at DateTime  @default(now())
-  updated_at DateTime  @default(now())
-  verify_token String? 
-  password_reset_token String? 
-  referral_code     String
+  user_id              Int       @id @default(autoincrement())
+  email                String    @unique
+  username             String?
+  password             String?
+  phone                String?   @unique
+  first_name           String?
+  last_name            String?
+  date_ob              DateTime?
+  avatar               String?
+  is_google            Boolean   @default(false)
+  role                 Role
+  verified             Boolean   @default(false)
+  created_at           DateTime  @default(now())
+  updated_at           DateTime  @default(now())
+  verify_token         String?
+  password_reset_token String?
+  referral_code        String?
 
   referralsReceived Referral[] @relation("ReferredRelation")
   Store             Store?
@@ -99,7 +99,7 @@ model Address {
 
 model Referral {
   ref_id        Int    @id @default(autoincrement())
-  referrer_id   Int    
+  referrer_id   Int
   referred_id   Int?
   referral_code String @unique
   reward_id     Int?
@@ -258,13 +258,13 @@ model CartItem {
 }
 
 model Province {
-  id          Int @id
-  name        String
-  City        City[]
+  id   Int    @id
+  name String
+  City City[]
 }
 
 model City {
-  id          Int @id
+  id          Int      @id
   name        String
   province_id Int
   province    Province @relation(fields: [province_id], references: [id])

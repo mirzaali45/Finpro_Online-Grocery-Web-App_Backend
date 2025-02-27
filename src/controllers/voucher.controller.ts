@@ -109,6 +109,7 @@ export class VoucherController {
       });
     }
   }
+
   async getUserVouchers(req: AuthenticatedRequest, res: Response) {
     try {
       // Ensure user is authenticated
@@ -156,6 +157,74 @@ export class VoucherController {
       res.status(500).json({
         success: false,
         message: "Failed to retrieve vouchers",
+        error: error instanceof Error ? error.message : "Unknown error",
+      });
+    }
+  }
+
+  async deleteVoucher(req: AuthenticatedRequest, res: Response) {
+    try {
+      // Ensure user is authenticated
+      if (!req.user) {
+        return res.status(401).json({
+          success: false,
+          message: "Authentication required",
+        });
+      }
+
+      const { voucher_id } = req.params;
+
+      // Validate input
+      if (!voucher_id) {
+        return res.status(400).json({
+          success: false,
+          message: "Voucher ID is required",
+        });
+      }
+
+      // Find the voucher to verify ownership
+      const voucher = await prisma.voucher.findUnique({
+        where: { voucher_id: Number(voucher_id) },
+      });
+
+      // Check if voucher exists
+      if (!voucher) {
+        return res.status(404).json({
+          success: false,
+          message: "Voucher not found",
+        });
+      }
+
+      // Verify the voucher belongs to the user
+      if (voucher.user_id !== req.user.id) {
+        return res.status(403).json({
+          success: false,
+          message: "You do not have permission to delete this voucher",
+        });
+      }
+
+      // Check if voucher has been used
+      if (voucher.is_redeemed) {
+        return res.status(400).json({
+          success: false,
+          message: "Cannot delete a redeemed voucher",
+        });
+      }
+
+      // Delete the voucher
+      await prisma.voucher.delete({
+        where: { voucher_id: Number(voucher_id) },
+      });
+
+      res.status(200).json({
+        success: true,
+        message: "Voucher deleted successfully",
+      });
+    } catch (error) {
+      console.error("Error deleting voucher:", error);
+      res.status(500).json({
+        success: false,
+        message: "Failed to delete voucher",
         error: error instanceof Error ? error.message : "Unknown error",
       });
     }

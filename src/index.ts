@@ -20,6 +20,7 @@ import { OrdersRouter } from "./routers/order.router";
 import { PaymentsRouter } from "./routers/payments.router";
 import { DiscountRouter } from "./routers/discount-router";
 import { VoucherRouter } from "./routers/voucher.router";
+import { ReportsRouter } from "./routers/reports-store.router";
 
 const PORT: number = 8000;
 const base_url_fe = process.env.BASE_URL_FE;
@@ -54,6 +55,7 @@ const ordersRouter = new OrdersRouter();
 const paymentsRouter = new PaymentsRouter();
 const discountRouter = new DiscountRouter()
 const voucherRouter = new VoucherRouter()
+const reportRouter = new ReportsRouter()
 
 app.use("/api/auth", authRouter.getRouter()); // sasa
 app.use("/api/customer", customerRouter.getRouter()) // sasa
@@ -72,6 +74,7 @@ app.use("/api/payments", paymentsRouter.getRouter());//mirza
 app.use("/api/cek-ongkir",cekOngkir.getRouter()) // api baru dan yang ini dipake, memakai api binderbyte https://docs.binderbyte.com/api/cek-tarif
 app.use("/api/discount", discountRouter.getRouter())
 app.use("/api/voucher", voucherRouter.getRouter())
+app.use("/api/report/", reportRouter.getRouter())
 
 
 app.get("/api", (req, res) => {

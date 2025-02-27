@@ -267,7 +267,8 @@ export class ProductController {
           store: true,
           category: true,
           Inventory: true,
-          ProductImage: true, // Include ProductImage relation
+          ProductImage: true,
+          Discount: true, 
         },
       });
       const product = products.find((p) => generateSlug(p.name) === slug);
