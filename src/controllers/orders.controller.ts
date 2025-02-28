@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { PrismaClient, OrderStatus } from "@prisma/client";
+import { PrismaClient, OrderStatus } from "../../prisma/generated/client";
 import { checkProductAvailability, calculateDistance } from "../utils/models";
 
 const prisma = new PrismaClient();

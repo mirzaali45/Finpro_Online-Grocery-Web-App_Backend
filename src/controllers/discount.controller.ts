@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { PrismaClient, Type } from "@prisma/client";
+import { PrismaClient, Type } from "../../prisma/generated/client";
 import { z } from "zod";
 import { uploadDiscountThumbnail } from "../services/cloudinary";
 

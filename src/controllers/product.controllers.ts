@@ -1,4 +1,4 @@
-import { PrismaClient,Prisma } from "@prisma/client";
+import { PrismaClient, Prisma } from "../../prisma/generated/client";
 import { Request, Response } from "express";
 import { generateSlug } from "../helpers/generateSlug";
 
