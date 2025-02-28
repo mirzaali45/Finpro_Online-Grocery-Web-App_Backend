@@ -18,23 +18,18 @@ class CategoryController {
         return __awaiter(this, void 0, void 0, function* () {
             try {
                 const { category_name, description } = req.body;
-                // Check if required fields are provided
                 if (!category_name || !description) {
                     return res.status(400).json({
                         error: "Category name and description are required",
                     });
                 }
-                // Initialize data object for category creation
                 const categoryData = {
                     category_name,
                     description,
                 };
-                // Handle file upload if exists
                 if (req.file) {
                     try {
-                        // Upload to Cloudinary
                         const result = yield (0, cloudinary_1.uploadCategoryThumbnail)(req.file.path);
-                        // Add image URL to category data
                         categoryData.category_thumbnail = result.secure_url;
                     }
                     catch (uploadError) {
@@ -44,7 +39,6 @@ class CategoryController {
                         });
                     }
                 }
-                // Create category with or without thumbnail
                 const category = yield prisma.category.create({
                     data: categoryData,
                 });
@@ -66,12 +60,26 @@ class CategoryController {
     getCategories(req, res) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
+                const page = parseInt(req.query.page) || 1;
+                const limit = parseInt(req.query.limit) || 8;
+                const skip = (page - 1) * limit;
+                const totalCount = yield prisma.category.count();
                 const categories = yield prisma.category.findMany({
                     include: {
                         Product: true,
                     },
+                    skip,
+                    take: limit,
                 });
-                return res.status(200).json(categories);
+                return res.status(200).json({
+                    data: categories,
+                    pagination: {
+                        currentPage: page,
+                        totalPages: Math.ceil(totalCount / limit),
+                        totalItems: totalCount,
+                        itemsPerPage: limit,
+                    },
+                });
             }
             catch (error) {
                 const message = error instanceof Error ? error.message : "Unknown error occurred";

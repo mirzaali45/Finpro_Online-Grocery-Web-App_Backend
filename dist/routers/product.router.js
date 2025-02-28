@@ -14,6 +14,7 @@ class ProductRouter {
     initializeRoutes() {
         this.router.post("/", this.authMiddleware.verifyToken, this.authMiddleware.checkSuperAdmin, this.productController.createProduct);
         this.router.get("/store", this.authMiddleware.verifyToken, this.productController.getProductsByStore);
+        this.router.get("/discounted", this.productController.getDiscountedProducts);
         this.router.patch("/:product_id", this.authMiddleware.verifyToken, this.authMiddleware.checkSuperAdmin, this.productController.updateProduct);
         this.router.delete("/:product_id", this.authMiddleware.verifyToken, this.authMiddleware.checkSuperAdmin, this.productController.deleteProduct);
         this.router.get("/", this.productController.getProducts);

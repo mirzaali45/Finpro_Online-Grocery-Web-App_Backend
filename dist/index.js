@@ -24,6 +24,8 @@ const cekongkir_router_1 = require("./routers/cekongkir.router");
 const order_router_1 = require("./routers/order.router");
 const payments_router_1 = require("./routers/payments.router");
 const discount_router_1 = require("./routers/discount-router");
+const voucher_router_1 = require("./routers/voucher.router");
+const reports_store_router_1 = require("./routers/reports-store.router");
 const PORT = 8000;
 const base_url_fe = process.env.BASE_URL_FE;
 const app = (0, express_1.default)();
@@ -51,6 +53,8 @@ const cekOngkir = new cekongkir_router_1.CekOngkirRouter();
 const ordersRouter = new order_router_1.OrdersRouter();
 const paymentsRouter = new payments_router_1.PaymentsRouter();
 const discountRouter = new discount_router_1.DiscountRouter();
+const voucherRouter = new voucher_router_1.VoucherRouter();
+const reportRouter = new reports_store_router_1.ReportsRouter();
 app.use("/api/auth", authRouter.getRouter()); // sasa
 app.use("/api/customer", customerRouter.getRouter()); // sasa
 app.use("/api/super-admin", superAdminRouter.getRouter()); // zaki
@@ -67,9 +71,12 @@ app.use("/api/payments", paymentsRouter.getRouter()); //mirza
 // app.use("/api/rajaongkir", rajaOngkirRouter.getRouter()); //raja ongkir gabisa dipake soalnya gatau udah ga aktif atau gabisa akses
 app.use("/api/cek-ongkir", cekOngkir.getRouter()); // api baru dan yang ini dipake, memakai api binderbyte https://docs.binderbyte.com/api/cek-tarif
 app.use("/api/discount", discountRouter.getRouter());
+app.use("/api/voucher", voucherRouter.getRouter());
+app.use("/api/report/", reportRouter.getRouter());
 app.get("/api", (req, res) => {
     res.send("Welcome to the API!");
 });
 app.listen(PORT, () => {
     console.log(`Server is running on -> http://localhost:${PORT}/api`);
 });
+exports.default = app;

@@ -10,7 +10,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ProductController = void 0;
-const client_1 = require("@prisma/client");
+const client_1 = require("../../prisma/generated/client");
 const generateSlug_1 = require("../helpers/generateSlug");
 const prisma = new client_1.PrismaClient();
 class ProductController {
@@ -141,6 +141,7 @@ class ProductController {
                         category: true,
                         Inventory: true,
                         ProductImage: true,
+                        Discount: true,
                     },
                     orderBy: featured ? { price: "desc" } : { created_at: "desc" },
                 });
@@ -157,6 +158,67 @@ class ProductController {
             catch (error) {
                 console.error("Error fetching products:", error);
                 return res.status(500).json({ error: "Failed to fetch products" });
+            }
+        });
+    }
+    getDiscountedProducts(req, res) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                const page = parseInt(req.query.page) || 1;
+                const limit = parseInt(req.query.limit) || 8;
+                const categoryId = req.query.categoryId
+                    ? parseInt(req.query.categoryId)
+                    : undefined;
+                const minPrice = req.query.minPrice
+                    ? parseFloat(req.query.minPrice)
+                    : undefined;
+                const maxPrice = req.query.maxPrice
+                    ? parseFloat(req.query.maxPrice)
+                    : undefined;
+                // Prepare where condition
+                const whereCondition = {
+                    Discount: {
+                        some: {}, // Only products with discounts
+                    },
+                };
+                // Add other filters
+                if (categoryId) {
+                    whereCondition.category_id = categoryId;
+                }
+                if (minPrice !== undefined || maxPrice !== undefined) {
+                    whereCondition.price = {};
+                    if (minPrice !== undefined)
+                        whereCondition.price.gte = minPrice;
+                    if (maxPrice !== undefined)
+                        whereCondition.price.lte = maxPrice;
+                }
+                const products = yield prisma.product.findMany({
+                    where: whereCondition,
+                    skip: (page - 1) * limit,
+                    take: limit,
+                    include: {
+                        store: true,
+                        category: true,
+                        Inventory: true,
+                        ProductImage: true,
+                        Discount: true,
+                    },
+                    orderBy: { created_at: "desc" },
+                });
+                const totalProducts = yield prisma.product.count({
+                    where: whereCondition,
+                });
+                return res.status(200).json({
+                    products,
+                    totalPages: Math.ceil(totalProducts / limit),
+                    currentPage: page,
+                });
+            }
+            catch (error) {
+                console.error("Error fetching discounted products:", error);
+                return res
+                    .status(500)
+                    .json({ error: "Failed to fetch discounted products" });
             }
         });
     }
@@ -192,7 +254,8 @@ class ProductController {
                         store: true,
                         category: true,
                         Inventory: true,
-                        ProductImage: true, // Include ProductImage relation
+                        ProductImage: true,
+                        Discount: true,
                     },
                 });
                 const product = products.find((p) => (0, generateSlug_1.generateSlug)(p.name) === slug);

@@ -10,7 +10,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.StoreController = void 0;
-const client_1 = require("@prisma/client");
+const client_1 = require("../../prisma/generated/client");
 const prisma = new client_1.PrismaClient();
 class StoreController {
     createStore(req, res) {

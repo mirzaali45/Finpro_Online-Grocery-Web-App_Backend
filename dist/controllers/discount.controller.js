@@ -10,11 +10,10 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.DiscountController = void 0;
-const client_1 = require("@prisma/client");
+const client_1 = require("../../prisma/generated/client");
 const zod_1 = require("zod");
 const cloudinary_1 = require("../services/cloudinary");
 const prisma = new client_1.PrismaClient();
-// Validation schemas
 const createDiscountSchema = zod_1.z.object({
     store_id: zod_1.z.number().optional(),
     product_id: zod_1.z.coerce.number(),
@@ -28,13 +27,10 @@ const createDiscountSchema = zod_1.z.object({
 });
 const updateDiscountSchema = createDiscountSchema.partial();
 class DiscountController {
-    // Create a new discount
     createDiscount(req, res) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
-                // Assuming you have middleware that adds user info to the request
                 const user = req.user;
-                // Check if the user is a store admin
                 if ((user === null || user === void 0 ? void 0 : user.role) !== "store_admin") {
                     res.status(403).json({
                         success: false,
@@ -42,7 +38,6 @@ class DiscountController {
                     });
                     return;
                 }
-                // Find the store associated with the store admin
                 const store = yield prisma.store.findUnique({
                     where: { user_id: user.id },
                 });
@@ -63,7 +58,6 @@ class DiscountController {
                     return;
                 }
                 const data = validation.data;
-                // Validate discount value based on type
                 if (data.discount_type === "percentage" && data.discount_value > 100) {
                     res.status(400).json({
                         success: false,
@@ -82,7 +76,6 @@ class DiscountController {
                     });
                     return;
                 }
-                // If product_id is provided (not 0), verify it belongs to the store
                 if (data.product_id && data.product_id !== 0) {
                     const product = yield prisma.product.findUnique({
                         where: {
@@ -98,13 +91,11 @@ class DiscountController {
                         return;
                     }
                 }
-                // Handle thumbnail upload if file is present
                 let thumbnailUrl = data.thumbnail;
                 if (req.file) {
                     const uploadResult = yield (0, cloudinary_1.uploadDiscountThumbnail)(req.file.path);
                     thumbnailUrl = uploadResult.secure_url;
                 }
-                // Create the discount for the store
                 const discount = yield prisma.discount.create({
                     data: {
                         store_id: store.store_id,
@@ -136,7 +127,7 @@ class DiscountController {
     getAllDiscounts(req, res) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
-                const { page = 1, limit = 8, storeId, productId, discountType, } = req.query;
+                const { page = 1, limit = 8, storeId, productId, discountType, unassigned, } = req.query;
                 const pageNum = Number(page);
                 const limitNum = Number(limit);
                 const offset = (pageNum - 1) * limitNum;
@@ -144,7 +135,11 @@ class DiscountController {
                 if (storeId) {
                     whereCondition.store_id = Number(storeId);
                 }
-                if (productId) {
+                // If unassigned is true, we filter out any discounts that have a product assigned.
+                if (unassigned === "true") {
+                    whereCondition.product_id = null;
+                }
+                else if (productId) {
                     whereCondition.product_id = Number(productId);
                 }
                 if (discountType) {

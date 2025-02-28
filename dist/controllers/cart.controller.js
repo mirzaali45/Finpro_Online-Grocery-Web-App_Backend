@@ -10,7 +10,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.CartController = void 0;
-const client_1 = require("@prisma/client");
+const client_1 = require("../../prisma/generated/client");
 const prisma = new client_1.PrismaClient();
 class CartController {
     getCart(req, res) {
@@ -55,12 +55,31 @@ class CartController {
                         product: {
                             include: {
                                 ProductImage: true,
+                                Discount: true, // Include discount information
                             },
                         },
                     },
                 });
-                const totalQuantity = cartItems.reduce((sum, item) => sum + item.quantity, 0);
-                const totalPrice = cartItems.reduce((sum, item) => sum + item.quantity * item.product.price, 0);
+                // Calculate totals considering discounts
+                let totalQuantity = 0;
+                let totalPrice = 0;
+                cartItems.forEach((item) => {
+                    totalQuantity += item.quantity;
+                    // Calculate price with discount if available
+                    let itemPrice = item.product.price;
+                    if (item.product.Discount && item.product.Discount.length > 0) {
+                        const discount = item.product.Discount[0];
+                        if (discount.discount_type === "percentage") {
+                            itemPrice =
+                                item.product.price -
+                                    Math.floor((item.product.price * discount.discount_value) / 100);
+                        }
+                        else {
+                            itemPrice = item.product.price - discount.discount_value;
+                        }
+                    }
+                    totalPrice += itemPrice * item.quantity;
+                });
                 res.status(200).json({
                     data: {
                         items: cartItems,
