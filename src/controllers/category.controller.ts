@@ -13,10 +13,27 @@ export class CategoryController {
           error: "Category name and description are required",
         });
       }
+      const existingCategory = await prisma.category.findFirst({
+        where: {
+          category_name: {
+            equals: category_name,
+            mode: "insensitive", 
+          },
+        },
+      });
+
+      if (existingCategory) {
+        return res.status(400).json({
+          success: false,
+          error: "A category with this name already exists",
+        });
+      }
+
       const categoryData: any = {
         category_name,
         description,
       };
+
       if (req.file) {
         try {
           const result = await uploadCategoryThumbnail(req.file.path);
@@ -28,6 +45,7 @@ export class CategoryController {
           });
         }
       }
+
       const category = await prisma.category.create({
         data: categoryData,
       });
