@@ -2,8 +2,6 @@ import { PrismaClient } from "@prisma/client";
 import { Request, Response } from "express";
 
 const prisma = new PrismaClient();
-
-// Define interfaces for our dictionary objects
 interface CategorySales {
   [key: number]: {
     category_id: number;
