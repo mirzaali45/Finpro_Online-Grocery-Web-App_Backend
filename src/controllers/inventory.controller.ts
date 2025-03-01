@@ -27,8 +27,23 @@ export class InventoryController {
 
   async getInventory(req: Request, res: Response) {
     try {
-      const { store_id } = req.query;
-
+      const { store_id, page = "1" } = req.query;
+      
+      // Convert page to number and handle pagination
+      const pageNumber = parseInt(page as string) || 1;
+      const pageSize = 10;
+      const skip = (pageNumber - 1) * pageSize;
+  
+      // Get total count for pagination metadata
+      const totalCount = await prisma.inventory.count({
+        where: store_id
+          ? {
+              store_id: parseInt(store_id as string),
+            }
+          : undefined,
+      });
+  
+      // Get paginated inventory data
       const inventory = await prisma.inventory.findMany({
         where: store_id
           ? {
@@ -48,9 +63,24 @@ export class InventoryController {
             },
           },
         },
+        skip,
+        take: pageSize,
       });
-
-      return res.status(200).json(inventory);
+  
+      // Calculate pagination metadata
+      const totalPages = Math.ceil(totalCount / pageSize);
+  
+      return res.status(200).json({
+        data: inventory,
+        pagination: {
+          total: totalCount,
+          page: pageNumber,
+          pageSize,
+          totalPages,
+          hasNextPage: pageNumber < totalPages,
+          hasPrevPage: pageNumber > 1,
+        },
+      });
     } catch (error: unknown) {
       const message =
         error instanceof Error ? error.message : "Unknown error occurred";
