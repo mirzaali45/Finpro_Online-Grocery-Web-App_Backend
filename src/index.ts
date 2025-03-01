@@ -20,7 +20,7 @@ import { PaymentsRouter } from "./routers/payments.router";
 import { DiscountRouter } from "./routers/discount-router";
 import { VoucherRouter } from "./routers/voucher.router";
 import { ReportsRouter } from "./routers/reports-store.router";
-import { RevenueStoreRouter } from "./routers/revenueorder.router";
+import { RevenueStoreRouter } from "./routers/revenue-store.router";
 
 const PORT: number = 8000;
 const base_url_fe = process.env.BASE_URL_FE;
