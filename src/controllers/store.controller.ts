@@ -1,4 +1,4 @@
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient } from "../../prisma/generated/client";
 import { Request, Response } from "express";
 
 const prisma = new PrismaClient();
@@ -217,7 +217,6 @@ export class StoreController {
         return res.status(500).json({ error: message });
     }
 }
-
 
 async deleteStore(req: Request, res: Response) {
   try {

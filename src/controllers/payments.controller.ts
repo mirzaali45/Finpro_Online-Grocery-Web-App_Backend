@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { PrismaClient, OrderStatus } from "@prisma/client";
+import { PrismaClient, OrderStatus } from "../../prisma/generated/client";
 import { snap } from "../utils/midtrans"; // Impor snap dari config
 import { responseError } from "../helpers/responseError"; // Use your custom responseError
 

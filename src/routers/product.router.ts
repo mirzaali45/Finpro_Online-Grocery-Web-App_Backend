@@ -22,7 +22,15 @@ export class ProductRouter {
       this.authMiddleware.checkSuperAdmin as unknown as RequestHandler,
       this.productController.createProduct as unknown as RequestHandler
     );
-
+    this.router.get(
+      "/store",
+      this.authMiddleware.verifyToken as unknown as RequestHandler,
+      this.productController.getProductsByStore as unknown as RequestHandler
+    );
+    this.router.get(
+      "/discounted",
+      this.productController.getDiscountedProducts as unknown as RequestHandler
+    );
     this.router.patch(
       "/:product_id",
       this.authMiddleware.verifyToken as unknown as RequestHandler,
