@@ -218,7 +218,6 @@ export class StoreController {
     }
 }
 
-
 async deleteStore(req: Request, res: Response) {
   try {
       const { store_id } = req.params;

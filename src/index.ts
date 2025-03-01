@@ -13,7 +13,6 @@ import { StoreRouter } from "./routers/store.router";
 import { CategoryRouter } from "./routers/category.router";
 import { ProductImageRouter } from "./routers/product-image.router";
 import { CartRouter } from "./routers/cart.router";
-// import { RajaOngkirRouter } from "./routers/rajaongkir.router";
 import { RajaOngkirRouter } from "./routers/rajaongkir.router";
 import { CekOngkirRouter } from "./routers/cekongkir.router";
 import { OrdersRouter } from "./routers/order.router";
@@ -71,8 +70,7 @@ app.use("/api/product-image",productImageRouter.getRouter()) // zaki
 app.use("/api/cart", cartRouter.getRouter());//mirza
 app.use("/api/orders", ordersRouter.getRouter());//mirza
 app.use("/api/payments", paymentsRouter.getRouter());//mirza
-// app.use("/api/rajaongkir", rajaOngkirRouter.getRouter()); //all
-// app.use("/api/rajaongkir", rajaOngkirRouter.getRouter()); 
+app.use("/api/rajaongkir", rajaOngkirRouter.getRouter()); //all
 app.use("/api/cek-ongkir",cekOngkir.getRouter()) 
 app.use("/api/discount", discountRouter.getRouter())
 app.use("/api/voucher", voucherRouter.getRouter())
