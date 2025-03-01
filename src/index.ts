@@ -40,14 +40,14 @@ app.use(
 );
 
 const authRouter = new AuthRouter();
-const customerRouter = new CustomerRouter()
-const superAdminRouter = new SuperAdminRouter()
-const storeAdminRouter = new StoreAdminRouter()
-const productRouter = new ProductRouter()
-const inventoryRouter = new InventoryRouter()
-const storeRouter = new StoreRouter()
-const categoryRouter = new CategoryRouter()
-const productImageRouter = new ProductImageRouter()
+const customerRouter = new CustomerRouter();
+const superAdminRouter = new SuperAdminRouter();
+const storeAdminRouter = new StoreAdminRouter();
+const productRouter = new ProductRouter();
+const inventoryRouter = new InventoryRouter();
+const storeRouter = new StoreRouter();
+const categoryRouter = new CategoryRouter();
+const productImageRouter = new ProductImageRouter();
 const cartRouter = new CartRouter();
 // const rajaOngkirRouter = new RajaOngkirRouter();
 const rajaOngkirRouter = new RajaOngkirRouter();
@@ -81,7 +81,7 @@ app.use("/api/revenueorder/", revenueStoreRouter.getRouter())
 
 
 app.get("/api", (req, res) => {
-  res.send("Welcome to the API!"); 
+  res.send("Welcome to the API!");
 });
 
 app.listen(PORT, () => {

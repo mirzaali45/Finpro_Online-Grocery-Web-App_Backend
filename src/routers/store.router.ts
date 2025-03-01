@@ -39,10 +39,10 @@ export class StoreRouter {
     );
 
     // Update store - Super Admin only
-    this.router.put(
+    this.router.patch(
       "/:store_id",
       this.authMiddleware.verifyToken as unknown as RequestHandler,
-      this.authMiddleware.checkSuperAdmin as unknown as RequestHandler,
+      this.authMiddleware.checkSuperAdminOrOwner as unknown as RequestHandler,
       this.storeController.updateStore as unknown as RequestHandler
     );
 

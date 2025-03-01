@@ -1,18 +1,15 @@
 import { Request, Response } from "express";
 import { PrismaClient, OrderStatus } from "../../prisma/generated/client";
 import { snap } from "../utils/midtrans"; // Impor snap dari config
+import { responseError } from "../helpers/responseError"; // Use your custom responseError
 
 const prisma = new PrismaClient();
 
 export class PaymentsController {
-  /**
-   * Membuat Snap Token untuk pembayaran Midtrans
-   */
   async createSnapToken(req: Request, res: Response): Promise<void> {
     try {
       const { order_id } = req.body;
 
-      // Cari order berdasarkan order_id
       const order = await prisma.order.findUnique({
         where: { order_id: Number(order_id) },
         include: {
@@ -26,14 +23,13 @@ export class PaymentsController {
       });
 
       if (!order) {
-        res.status(404).json({ error: "Order tidak ditemukan" });
+        responseError(res, "Order tidak ditemukan");
         return;
       }
 
-      // Menyusun parameter untuk Midtrans
       const transactionDetails = {
-        order_id: `order-${order.order_id}`, // Tambahkan prefix "order-" agar unik
-        gross_amount: order.total_price, // Total harga yang harus dibayar
+        order_id: `order-${order.order_id}`,
+        gross_amount: order.total_price,
       };
 
       const customerDetails = {
@@ -46,7 +42,7 @@ export class PaymentsController {
         id: `product-${item.product_id}`,
         price: item.price,
         quantity: item.qty,
-        name: item.product.name, // Mengakses nama produk dari relasi OrderItem -> Product
+        name: item.product.name,
       }));
 
       const parameters = {
@@ -55,31 +51,25 @@ export class PaymentsController {
         customer_details: customerDetails,
       };
 
-      // Buat transaksi Snap Midtrans
       const transaction = await snap.createTransaction(parameters);
 
-      // Kembalikan Snap Token dan redirect URL ke client
       res.status(200).json({
         token: transaction.token,
-        redirect_url: transaction.redirect_url, // Link untuk melakukan pembayaran
+        redirect_url: transaction.redirect_url,
       });
-      return;
     } catch (error: any) {
       console.error("createSnapToken error:", error);
-      res.status(500).json({ error: error.message });
+      responseError(res, error.message); // Using the responseError with only two arguments
       return;
     }
   }
 
-  /**
-   * Menangani notifikasi pembayaran dari Midtrans
-   */
   async midtransNotification(req: Request, res: Response): Promise<void> {
     try {
       const notification = req.body;
 
       if (!notification.order_id) {
-        res.status(400).json({ error: "No order_id in payload." });
+        responseError(res, "No order_id in payload.");
         return;
       }
 
@@ -88,22 +78,20 @@ export class PaymentsController {
         ? Number(orderIdFromMidtrans.split("-")[1])
         : Number(orderIdFromMidtrans);
 
-      // Cari order yang terkait
       const order = await prisma.order.findUnique({
         where: { order_id: orderId },
       });
 
       if (!order) {
-        res.status(404).json({ error: "Order not found." });
+        responseError(res, "Order not found.");
         return;
       }
 
-      const transactionStatus = notification.transaction_status; // capture, settlement, cancel, etc.
-      const fraudStatus = notification.fraud_status; // accept, deny, challenge
+      const transactionStatus = notification.transaction_status;
+      const fraudStatus = notification.fraud_status;
 
       let newStatus: OrderStatus | undefined;
 
-      // Proses sesuai status transaksi dari Midtrans
       if (transactionStatus === "capture") {
         if (fraudStatus === "challenge") {
           newStatus = OrderStatus.awaiting_payment;
@@ -130,10 +118,9 @@ export class PaymentsController {
       }
 
       res.status(200).json({ message: "Notification received successfully" });
-      return;
     } catch (error: any) {
       console.error("midtransNotification error:", error);
-      res.status(500).json({ error: error.message });
+      responseError(res, error.message); // Using the responseError with only two arguments
       return;
     }
   }
