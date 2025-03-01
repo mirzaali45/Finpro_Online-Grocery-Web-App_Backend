@@ -30,6 +30,12 @@ export class RajaOngkirRouter {
       this.rajaOngkirController.getCities as unknown as RequestHandler
     );
 
+    this.router.get(
+      "/location",
+      // this.authMiddleware.verifyToken as unknown as RequestHandler,
+      this.rajaOngkirController.getLocationId as unknown as RequestHandler
+    );
+
     // Hitung ongkir
     this.router.post(
       "/cost",

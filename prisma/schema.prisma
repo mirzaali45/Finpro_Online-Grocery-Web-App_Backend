@@ -55,7 +55,7 @@ model User {
   email      String    @unique
   username   String?
   password   String?
-  phone      String?   @unique
+  phone      String?   
   first_name String?
   last_name  String?
   date_ob    DateTime?
@@ -67,7 +67,7 @@ model User {
   updated_at DateTime  @default(now())
   verify_token String? 
   password_reset_token String? 
-  referral_code     String
+  referral_code     String?
 
   referralsReceived Referral[] @relation("ReferredRelation")
   Store             Store?
