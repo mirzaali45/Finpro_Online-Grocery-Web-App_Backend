@@ -129,7 +129,7 @@ export class AuthController {
           email,
           role: "store_admin",
           verified: false,
-          referral_code: generateReferralCode(8),
+          referral_code: null,
         },
       });
 

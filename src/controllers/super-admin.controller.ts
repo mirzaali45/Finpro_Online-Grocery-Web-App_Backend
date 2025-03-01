@@ -31,7 +31,7 @@ export class SuperAdminController {
           last_name: lastName,
           phone,
           verified: true,
-          referral_code: generateReferralCode(8)
+          referral_code: role === "customer" ? generateReferralCode(8) : null,
         },
       });
 
