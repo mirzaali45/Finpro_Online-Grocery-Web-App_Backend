@@ -12,47 +12,177 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.OrdersController = void 0;
 const client_1 = require("../../prisma/generated/client");
 const models_1 = require("../utils/models");
+const responseError_1 = require("../helpers/responseError"); // Use your custom responseError
 const prisma = new client_1.PrismaClient();
+// export class OrdersController {
+//   async createOrder(req: Request, res: Response): Promise<void> {
+//     try {
+//       const { user_id, products, address_id } = req.body;
+//       const user = await prisma.user.findUnique({
+//         where: { user_id: Number(user_id) },
+//       });
+//       if (!user) {
+//         responseError(res, "User tidak ditemukan / tidak terautentikasi.");
+//         return;
+//       }
+//       const address = await prisma.address.findUnique({
+//         where: { address_id: Number(address_id) },
+//       });
+//       if (!address) {
+//         responseError(res, "Alamat tidak ditemukan.");
+//         return;
+//       }
+//       let total_price = 0;
+//       for (const item of products) {
+//         await checkProductAvailability(item.product_id, item.quantity);
+//         const productData = await prisma.product.findUnique({
+//           where: { product_id: item.product_id },
+//         });
+//         if (!productData) {
+//           throw new Error(`Produk ID ${item.product_id} tidak ditemukan.`);
+//         }
+//         total_price += productData.price * item.quantity;
+//       }
+//       const stores = await prisma.store.findMany();
+//       let closestStore = null;
+//       let minDistance = Number.MAX_VALUE;
+//       for (const store of stores) {
+//         const distance = calculateDistance(
+//           address.latitude,
+//           address.longitude,
+//           store.latitude,
+//           store.longitude
+//         );
+//         if (distance < minDistance) {
+//           minDistance = distance;
+//           closestStore = store;
+//         }
+//       }
+//       if (!closestStore) {
+//         responseError(res, "Tidak ada store terdekat ditemukan.");
+//         return;
+//       }
+//       const newOrder = await prisma.order.create({
+//         data: {
+//           user_id: Number(user_id),
+//           store_id: closestStore.store_id,
+//           total_price,
+//           order_status: OrderStatus.awaiting_payment,
+//           created_at: new Date(),
+//           updated_at: new Date(),
+//         },
+//       });
+//       for (const item of products) {
+//         const productData = await prisma.product.findUnique({
+//           where: { product_id: item.product_id },
+//         });
+//         await prisma.orderItem.create({
+//           data: {
+//             order_id: newOrder.order_id,
+//             product_id: item.product_id,
+//             qty: item.quantity,
+//             price: productData!.price,
+//             total_price: productData!.price * item.quantity,
+//           },
+//         });
+//       }
+//       res.status(201).json({
+//         message: "Order berhasil dibuat.",
+//         data: newOrder,
+//       });
+//     } catch (error: any) {
+//       console.error("createOrder error:", error);
+//       responseError(res, error.message); // Using the responseError with only two arguments
+//       return;
+//     }
+//   }
+//   async getOrders(req: Request, res: Response): Promise<void> {
+//     try {
+//       const { status, user_id, store_id, date } = req.query as {
+//         status?: string;
+//         user_id?: string;
+//         store_id?: string;
+//         date?: string;
+//       };
+//       const where: any = {};
+//       if (
+//         status &&
+//         Object.values(OrderStatus).includes(status as OrderStatus)
+//       ) {
+//         where.order_status = status as OrderStatus;
+//       }
+//       if (user_id) {
+//         where.user_id = Number(user_id);
+//       }
+//       if (store_id) {
+//         where.store_id = Number(store_id);
+//       }
+//       if (date) {
+//         const startDate = new Date(date);
+//         if (!isNaN(startDate.getTime())) {
+//           const endDate = new Date(startDate);
+//           endDate.setDate(endDate.getDate() + 1);
+//           where.created_at = {
+//             gte: startDate,
+//             lt: endDate,
+//           };
+//         }
+//       }
+//       const orders = await prisma.order.findMany({
+//         where,
+//         include: {
+//           user: true,
+//           store: true,
+//           OrderItem: true,
+//           Shipping: true,
+//         },
+//         orderBy: { created_at: "desc" },
+//       });
+//       res.status(200).json({
+//         data: orders,
+//       });
+//     } catch (error: any) {
+//       console.error("getOrders error:", error);
+//       responseError(res, error.message); // Using the responseError with only two arguments
+//       return;
+//     }
+//   }
+// }
 class OrdersController {
-    /**
-     * POST /orders
-     * Membuat pesanan baru setelah cek stok global dan memilih store terdekat
-     */
     createOrder(req, res) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
                 const { user_id, products, address_id } = req.body;
-                // Pastikan user sudah login dan terdaftar
+                console.log("Received order data:", req.body); // Log the request body to see the data
+                // Check if user exists
                 const user = yield prisma.user.findUnique({
                     where: { user_id: Number(user_id) },
                 });
                 if (!user) {
-                    res
-                        .status(401)
-                        .json({ error: "User tidak ditemukan / tidak terautentikasi." });
+                    (0, responseError_1.responseError)(res, "User tidak ditemukan / tidak terautentikasi.");
                     return;
                 }
-                // Pastikan alamat ada di DB
+                // Check if address exists
                 const address = yield prisma.address.findUnique({
                     where: { address_id: Number(address_id) },
                 });
                 if (!address) {
-                    res.status(404).json({ error: "Alamat tidak ditemukan." });
+                    (0, responseError_1.responseError)(res, "Alamat tidak ditemukan.");
                     return;
                 }
                 let total_price = 0;
-                // 1. Cek stok global untuk setiap produk
+                // Loop through the products to check availability and calculate the total price
                 for (const item of products) {
-                    yield (0, models_1.checkProductAvailability)(item.product_id, item.quantity);
                     const productData = yield prisma.product.findUnique({
                         where: { product_id: item.product_id },
                     });
                     if (!productData) {
-                        throw new Error(`Produk ID ${item.product_id} tidak ditemukan.`);
+                        (0, responseError_1.responseError)(res, `Produk ID ${item.product_id} tidak ditemukan.`);
+                        return;
                     }
                     total_price += productData.price * item.quantity;
                 }
-                // 2. Cari store terdekat berdasarkan alamat
+                // Find the closest store
                 const stores = yield prisma.store.findMany();
                 let closestStore = null;
                 let minDistance = Number.MAX_VALUE;
@@ -64,10 +194,10 @@ class OrdersController {
                     }
                 }
                 if (!closestStore) {
-                    res.status(400).json({ error: "Tidak ada store terdekat ditemukan." });
+                    (0, responseError_1.responseError)(res, "Tidak ada store terdekat ditemukan.");
                     return;
                 }
-                // 3. Buat order baru dengan status awaiting_payment
+                // Create the new order
                 const newOrder = yield prisma.order.create({
                     data: {
                         user_id: Number(user_id),
@@ -78,7 +208,7 @@ class OrdersController {
                         updated_at: new Date(),
                     },
                 });
-                // 4. Buat OrderItem untuk setiap produk
+                // Add OrderItems for each product
                 for (const item of products) {
                     const productData = yield prisma.product.findUnique({
                         where: { product_id: item.product_id },
@@ -101,7 +231,7 @@ class OrdersController {
             }
             catch (error) {
                 console.error("createOrder error:", error);
-                res.status(400).json({ error: error.message });
+                (0, responseError_1.responseError)(res, error.message);
                 return;
             }
         });

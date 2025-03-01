@@ -66,5 +66,30 @@ class AuthMiddleware {
             }
         };
     }
+    checkSuperAdminOrOwner(req, res, next) {
+        try {
+            if (!req.user)
+                throw new Error("Unauthorized");
+            const { store_id } = req.params;
+            const userId = req.user.id;
+            const userRole = req.user.role;
+            if (userRole === "super_admin") {
+                return next(); // Super Admin bisa edit semua store
+            }
+            const storeIdNum = Number(store_id);
+            if (isNaN(storeIdNum)) {
+                throw new Error("Invalid store ID");
+            }
+            // Ambil store_id dari request (misalnya, dikirim dalam body atau di path)
+            const storeUserId = req.body.user_id ? Number(req.body.user_id) : null;
+            if (storeUserId && storeUserId !== userId) {
+                throw new Error("You do not have permission to edit this store");
+            }
+            next();
+        }
+        catch (error) {
+            (0, responseError_1.responseError)(res, error);
+        }
+    }
 }
 exports.AuthMiddleware = AuthMiddleware;

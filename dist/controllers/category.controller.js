@@ -23,6 +23,20 @@ class CategoryController {
                         error: "Category name and description are required",
                     });
                 }
+                const existingCategory = yield prisma.category.findFirst({
+                    where: {
+                        category_name: {
+                            equals: category_name,
+                            mode: "insensitive",
+                        },
+                    },
+                });
+                if (existingCategory) {
+                    return res.status(400).json({
+                        success: false,
+                        error: "A category with this name already exists",
+                    });
+                }
                 const categoryData = {
                     category_name,
                     description,

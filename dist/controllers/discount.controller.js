@@ -90,6 +90,19 @@ class DiscountController {
                         });
                         return;
                     }
+                    const existingProductDiscount = yield prisma.discount.findFirst({
+                        where: {
+                            store_id: store.store_id,
+                            product_id: data.product_id,
+                        },
+                    });
+                    if (existingProductDiscount) {
+                        res.status(400).json({
+                            success: false,
+                            message: "A discount for this product already exists",
+                        });
+                        return;
+                    }
                 }
                 let thumbnailUrl = data.thumbnail;
                 if (req.file) {

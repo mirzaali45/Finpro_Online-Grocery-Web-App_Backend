@@ -29,35 +29,31 @@ class AuthController {
                 const { email, name, picture } = req.body;
                 if (!email)
                     return res.status(400).json({ error: "Email tidak ditemukan" });
-                let user = yield prisma.user.findUnique({
+                let users = yield prisma.user.upsert({
                     where: { email },
+                    update: {}, // Jika user sudah ada, biarkan tetap sama
+                    create: {
+                        email: email,
+                        role: "customer",
+                        username: name,
+                        avatar: picture,
+                        verified: true,
+                        referral_code: (0, reffcode_1.generateReferralCode)(8),
+                        first_name: name.split(" ")[0],
+                        last_name: name.split(" ")[1] || "",
+                        is_google: true,
+                    },
                 });
-                if (!user) {
-                    // Buat user baru jika belum ada
-                    user = yield prisma.user.create({
-                        data: {
-                            email,
-                            role: "customer",
-                            username: name,
-                            avatar: picture,
-                            verified: true,
-                            referral_code: (0, reffcode_1.generateReferralCode)(8),
-                            first_name: name.split(" ")[0],
-                            last_name: name.split(" ")[1],
-                            is_google: true,
-                        },
-                    });
-                }
                 const token = createToken_1.tokenService.createLoginToken({
-                    id: user.user_id,
-                    role: user.role,
+                    id: users.user_id,
+                    role: users.role,
                 });
                 // await sendVerificationEmail(email, token);
                 return res.status(201).json({
                     status: "success",
                     token: token,
                     message: "Login google successfully.",
-                    user: user,
+                    user: users,
                 });
             }
             catch (error) {
@@ -85,7 +81,7 @@ class AuthController {
                         email,
                         role: "customer",
                         verified: false,
-                        referral_code: (0, reffcode_1.generateReferralCode)(8),
+                        referral_code: null,
                     },
                 });
                 const token = createToken_1.tokenService.createEmailRegisterToken({
@@ -131,7 +127,7 @@ class AuthController {
                         email,
                         role: "store_admin",
                         verified: false,
-                        referral_code: (0, reffcode_1.generateReferralCode)(8),
+                        referral_code: null,
                     },
                 });
                 const token = createToken_1.tokenService.createEmailToken({
@@ -189,6 +185,7 @@ class AuthController {
                         password: hashedPassword,
                         verified: true,
                         verify_token: null,
+                        referral_code: (0, reffcode_1.generateReferralCode)(8),
                     },
                 });
                 return res.status(200).json({
@@ -269,15 +266,10 @@ class AuthController {
                 if (!req.user) {
                     return res.status(401).json({ message: "Unauthorized" });
                 }
-                const { oldPassword, password, confirmPassword } = req.body;
+                const { password, confirmPassword } = req.body;
                 // Validasi kesesuaian password baru
                 if (password !== confirmPassword) {
                     return res.status(400).json({ message: "Passwords do not match" });
-                }
-                if (!oldPassword || !password) {
-                    return res
-                        .status(400)
-                        .json({ message: "Both old and new passwords are required" });
                 }
                 const userId = req.user.id;
                 // Cari pengguna berdasarkan ID
@@ -289,12 +281,6 @@ class AuthController {
                         .status(400)
                         .json({ message: "Invalid Reset password request" });
                 }
-                // Bandingkan password yang belum di-hash dengan password yang sudah di-hash
-                const isPasswordMatch = yield bcrypt_1.default.compare(oldPassword, user.password);
-                if (!isPasswordMatch) {
-                    return res.status(400).json({ message: "Old password is incorrect" });
-                }
-                console.log(user);
                 // Hash dan simpan password baru
                 const hashedPassword = yield (0, hashpassword_1.hashPass)(password);
                 yield prisma.user.update({

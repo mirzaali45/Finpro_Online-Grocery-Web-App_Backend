@@ -19,7 +19,7 @@ class StoreRouter {
         // Get store by ID - Super Admin only
         this.router.get("/:store_id", this.authMiddleware.verifyToken, this.authMiddleware.checkSuperAdmin, this.storeController.getStoreById);
         // Update store - Super Admin only
-        this.router.put("/:store_id", this.authMiddleware.verifyToken, this.authMiddleware.checkSuperAdmin, this.storeController.updateStore);
+        this.router.patch("/:store_id", this.authMiddleware.verifyToken, this.authMiddleware.checkSuperAdminOrOwner, this.storeController.updateStore);
         // Delete store - Super Admin only
         this.router.delete("/:store_id", this.authMiddleware.verifyToken, this.authMiddleware.checkSuperAdmin, this.storeController.deleteStore);
     }

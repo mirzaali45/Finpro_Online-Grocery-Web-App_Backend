@@ -12,17 +12,14 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.PaymentsController = void 0;
 const client_1 = require("../../prisma/generated/client");
 const midtrans_1 = require("../utils/midtrans"); // Impor snap dari config
+const responseError_1 = require("../helpers/responseError"); // Use your custom responseError
 const prisma = new client_1.PrismaClient();
 class PaymentsController {
-    /**
-     * Membuat Snap Token untuk pembayaran Midtrans
-     */
     createSnapToken(req, res) {
         return __awaiter(this, void 0, void 0, function* () {
             var _a, _b, _c;
             try {
                 const { order_id } = req.body;
-                // Cari order berdasarkan order_id
                 const order = yield prisma.order.findUnique({
                     where: { order_id: Number(order_id) },
                     include: {
@@ -35,13 +32,12 @@ class PaymentsController {
                     },
                 });
                 if (!order) {
-                    res.status(404).json({ error: "Order tidak ditemukan" });
+                    (0, responseError_1.responseError)(res, "Order tidak ditemukan");
                     return;
                 }
-                // Menyusun parameter untuk Midtrans
                 const transactionDetails = {
-                    order_id: `order-${order.order_id}`, // Tambahkan prefix "order-" agar unik
-                    gross_amount: order.total_price, // Total harga yang harus dibayar
+                    order_id: `order-${order.order_id}`,
+                    gross_amount: order.total_price,
                 };
                 const customerDetails = {
                     first_name: ((_a = order.user) === null || _a === void 0 ? void 0 : _a.first_name) || "NoName",
@@ -52,56 +48,48 @@ class PaymentsController {
                     id: `product-${item.product_id}`,
                     price: item.price,
                     quantity: item.qty,
-                    name: item.product.name, // Mengakses nama produk dari relasi OrderItem -> Product
+                    name: item.product.name,
                 }));
                 const parameters = {
                     transaction_details: transactionDetails,
                     item_details: itemDetails,
                     customer_details: customerDetails,
                 };
-                // Buat transaksi Snap Midtrans
                 const transaction = yield midtrans_1.snap.createTransaction(parameters);
-                // Kembalikan Snap Token dan redirect URL ke client
                 res.status(200).json({
                     token: transaction.token,
-                    redirect_url: transaction.redirect_url, // Link untuk melakukan pembayaran
+                    redirect_url: transaction.redirect_url,
                 });
-                return;
             }
             catch (error) {
                 console.error("createSnapToken error:", error);
-                res.status(500).json({ error: error.message });
+                (0, responseError_1.responseError)(res, error.message); // Using the responseError with only two arguments
                 return;
             }
         });
     }
-    /**
-     * Menangani notifikasi pembayaran dari Midtrans
-     */
     midtransNotification(req, res) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
                 const notification = req.body;
                 if (!notification.order_id) {
-                    res.status(400).json({ error: "No order_id in payload." });
+                    (0, responseError_1.responseError)(res, "No order_id in payload.");
                     return;
                 }
                 const orderIdFromMidtrans = notification.order_id;
                 const orderId = orderIdFromMidtrans.includes("-")
                     ? Number(orderIdFromMidtrans.split("-")[1])
                     : Number(orderIdFromMidtrans);
-                // Cari order yang terkait
                 const order = yield prisma.order.findUnique({
                     where: { order_id: orderId },
                 });
                 if (!order) {
-                    res.status(404).json({ error: "Order not found." });
+                    (0, responseError_1.responseError)(res, "Order not found.");
                     return;
                 }
-                const transactionStatus = notification.transaction_status; // capture, settlement, cancel, etc.
-                const fraudStatus = notification.fraud_status; // accept, deny, challenge
+                const transactionStatus = notification.transaction_status;
+                const fraudStatus = notification.fraud_status;
                 let newStatus;
-                // Proses sesuai status transaksi dari Midtrans
                 if (transactionStatus === "capture") {
                     if (fraudStatus === "challenge") {
                         newStatus = client_1.OrderStatus.awaiting_payment;
@@ -128,11 +116,10 @@ class PaymentsController {
                     });
                 }
                 res.status(200).json({ message: "Notification received successfully" });
-                return;
             }
             catch (error) {
                 console.error("midtransNotification error:", error);
-                res.status(500).json({ error: error.message });
+                (0, responseError_1.responseError)(res, error.message); // Using the responseError with only two arguments
                 return;
             }
         });

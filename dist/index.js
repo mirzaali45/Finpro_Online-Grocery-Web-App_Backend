@@ -18,7 +18,6 @@ const store_router_1 = require("./routers/store.router");
 const category_router_1 = require("./routers/category.router");
 const product_image_router_1 = require("./routers/product-image.router");
 const cart_router_1 = require("./routers/cart.router");
-// import { RajaOngkirRouter } from "./routers/rajaongkir.router";
 const rajaongkir_router_1 = require("./routers/rajaongkir.router");
 const cekongkir_router_1 = require("./routers/cekongkir.router");
 const order_router_1 = require("./routers/order.router");
@@ -26,6 +25,7 @@ const payments_router_1 = require("./routers/payments.router");
 const discount_router_1 = require("./routers/discount-router");
 const voucher_router_1 = require("./routers/voucher.router");
 const reports_store_router_1 = require("./routers/reports-store.router");
+const revenueorder_router_1 = require("./routers/revenueorder.router");
 const PORT = 8000;
 const base_url_fe = process.env.BASE_URL_FE;
 const app = (0, express_1.default)();
@@ -55,6 +55,7 @@ const paymentsRouter = new payments_router_1.PaymentsRouter();
 const discountRouter = new discount_router_1.DiscountRouter();
 const voucherRouter = new voucher_router_1.VoucherRouter();
 const reportRouter = new reports_store_router_1.ReportsRouter();
+const revenueStoreRouter = new revenueorder_router_1.RevenueStoreRouter();
 app.use("/api/auth", authRouter.getRouter()); // sasa
 app.use("/api/customer", customerRouter.getRouter()); // sasa
 app.use("/api/super-admin", superAdminRouter.getRouter()); // zaki
@@ -67,12 +68,12 @@ app.use("/api/product-image", productImageRouter.getRouter()); // zaki
 app.use("/api/cart", cartRouter.getRouter()); //mirza
 app.use("/api/orders", ordersRouter.getRouter()); //mirza
 app.use("/api/payments", paymentsRouter.getRouter()); //mirza
-// app.use("/api/rajaongkir", rajaOngkirRouter.getRouter()); //all
-// app.use("/api/rajaongkir", rajaOngkirRouter.getRouter()); //raja ongkir gabisa dipake soalnya gatau udah ga aktif atau gabisa akses
-app.use("/api/cek-ongkir", cekOngkir.getRouter()); // api baru dan yang ini dipake, memakai api binderbyte https://docs.binderbyte.com/api/cek-tarif
+app.use("/api/rajaongkir", rajaOngkirRouter.getRouter()); //all
+app.use("/api/cek-ongkir", cekOngkir.getRouter());
 app.use("/api/discount", discountRouter.getRouter());
 app.use("/api/voucher", voucherRouter.getRouter());
 app.use("/api/report/", reportRouter.getRouter());
+app.use("/api/revenueorder/", revenueStoreRouter.getRouter());
 app.get("/api", (req, res) => {
     res.send("Welcome to the API!");
 });

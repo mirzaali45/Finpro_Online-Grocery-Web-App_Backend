@@ -25,7 +25,7 @@ class RajaOngkirController {
             try {
                 const response = yield axios_1.default.get(`${BASE_URL}/province`, {
                     headers: {
-                        key: API_KEY,
+                        "x-api-key": API_KEY,
                         "Content-Type": "application/x-www-form-urlencoded",
                     },
                 });
@@ -54,12 +54,29 @@ class RajaOngkirController {
             }
         });
     }
+    getLocationId(req, res) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                const response = yield axios_1.default.get(`${BASE_URL}/tariff/api/v1/destination/search?keyword=${req.query.keyword}`, {
+                    headers: { "x-api-key": API_KEY, 'Accept': 'application/json' },
+                });
+                console.log(response);
+                res.json(response.data);
+            }
+            catch (error) {
+                console.error(error);
+                res.status(500).json({ error: error });
+            }
+        });
+    }
     // Hitung ongkir
     calculateShippingCost(req, res) {
         return __awaiter(this, void 0, void 0, function* () {
-            const { origin, destination, weight, courier } = req.body;
+            const { origin, destination, weight, price } = req.body;
             try {
-                const response = yield axios_1.default.post(`${BASE_URL}/cost`, { origin, destination, weight, courier }, { headers: { key: API_KEY, "Content-Type": "application/x-www-form-urlencoded" } });
+                const response = yield axios_1.default.get(`${BASE_URL}/tariff/api/v1/calculate?shipper_destination_id=${origin}&receiver_destination_id=${destination}&weight=${weight}&item_value=${price}&cod=no`, {
+                    headers: { "x-api-key": API_KEY, 'Accept': 'application/json' },
+                });
                 res.json(response.data);
             }
             catch (error) {

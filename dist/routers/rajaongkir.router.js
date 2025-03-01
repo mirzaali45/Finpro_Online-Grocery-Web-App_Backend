@@ -20,6 +20,9 @@ class RajaOngkirRouter {
         this.router.get("/cities/:provinceId", 
         // this.authMiddleware.verifyToken as unknown as RequestHandler,
         this.rajaOngkirController.getCities);
+        this.router.get("/location", 
+        // this.authMiddleware.verifyToken as unknown as RequestHandler,
+        this.rajaOngkirController.getLocationId);
         // Hitung ongkir
         this.router.post("/cost", this.authMiddleware.verifyToken, this.rajaOngkirController.calculateShippingCost);
     }

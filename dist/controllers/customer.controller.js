@@ -12,6 +12,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.CustomerController = void 0;
 const client_1 = require("@prisma/client");
 const hashpassword_1 = require("../helpers/hashpassword");
+const createToken_1 = require("../helpers/createToken");
+const mailer_1 = require("../services/mailer");
 const prisma = new client_1.PrismaClient();
 class CustomerController {
     getCustomerData(req, res) {
@@ -35,7 +37,10 @@ class CustomerController {
                         last_name: true,
                         phone: true,
                         role: true,
+                        is_google: true,
+                        referral_code: true,
                         verified: true,
+                        password_reset_token: true,
                         created_at: true,
                         updated_at: true,
                     },
@@ -93,17 +98,46 @@ class CustomerController {
                     return res.status(401).json({ error: "Unauthorized" });
                 }
                 const { firstName, lastName, email, phone, } = req.body;
-                const updateCust = yield prisma.user.update({
-                    where: { user_id: req.user.id },
-                    data: {
-                        first_name: firstName,
-                        last_name: lastName,
-                        email,
-                        phone
+                const customer = yield prisma.user.findFirst({
+                    where: {
+                        user_id: req.user.id,
+                        role: "customer",
+                        email: email
                     }
                 });
-                if (!updateCust) {
-                    return res.status(404).json({ error: "Customer not found" });
+                let updateCust = null;
+                if (!customer) {
+                    yield prisma.user.update({
+                        where: { user_id: req.user.id },
+                        data: {
+                            verified: false,
+                            verify_token: null
+                        }
+                    });
+                    const token = createToken_1.tokenService.createEmailRegisterToken({
+                        id: req.user.id,
+                        role: "customer",
+                        email,
+                    });
+                    yield prisma.user.update({
+                        where: { user_id: req.user.id },
+                        data: { verify_token: token }
+                    });
+                    yield (0, mailer_1.sendVerificationEmail)(email, token);
+                }
+                else {
+                    updateCust = yield prisma.user.update({
+                        where: { user_id: req.user.id },
+                        data: {
+                            first_name: firstName,
+                            last_name: lastName,
+                            email,
+                            phone
+                        }
+                    });
+                    if (!updateCust) {
+                        return res.status(404).json({ error: "Customer not found" });
+                    }
                 }
                 return res.status(200).json({
                     status: "success",

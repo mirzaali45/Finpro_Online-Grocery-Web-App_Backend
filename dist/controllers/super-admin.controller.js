@@ -39,7 +39,7 @@ class SuperAdminController {
                         last_name: lastName,
                         phone,
                         verified: true,
-                        referral_code: (0, reffcode_1.generateReferralCode)(8),
+                        referral_code: role === "customer" ? (0, reffcode_1.generateReferralCode)(8) : null,
                     },
                 });
                 return res.status(201).json({

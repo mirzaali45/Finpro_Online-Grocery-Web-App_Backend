@@ -60,26 +60,12 @@ class CartController {
                         },
                     },
                 });
-                // Calculate totals considering discounts
-                let totalQuantity = 0;
-                let totalPrice = 0;
-                cartItems.forEach((item) => {
-                    totalQuantity += item.quantity;
-                    // Calculate price with discount if available
-                    let itemPrice = item.product.price;
-                    if (item.product.Discount && item.product.Discount.length > 0) {
-                        const discount = item.product.Discount[0];
-                        if (discount.discount_type === "percentage") {
-                            itemPrice =
-                                item.product.price -
-                                    Math.floor((item.product.price * discount.discount_value) / 100);
-                        }
-                        else {
-                            itemPrice = item.product.price - discount.discount_value;
-                        }
-                    }
-                    totalPrice += itemPrice * item.quantity;
-                });
+                if (!cartItems) {
+                    res.status(400).json({ message: "Cart is empty!" });
+                    return;
+                }
+                const totalQuantity = cartItems.reduce((sum, item) => sum + item.quantity, 0);
+                const totalPrice = cartItems.reduce((sum, item) => sum + item.quantity * item.product.price, 0);
                 res.status(200).json({
                     data: {
                         items: cartItems,
