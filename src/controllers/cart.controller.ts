@@ -57,6 +57,11 @@ export class CartController {
         },
       });
 
+      if(!cartItems){
+        res.status(400).json({ message: "Cart is empty!" });
+        return;
+      }
+
       const totalQuantity = cartItems.reduce(
         (sum, item) => sum + item.quantity,
         0
