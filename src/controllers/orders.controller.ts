@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 import { Request, Response } from "express";
 import { PrismaClient, OrderStatus } from "@prisma/client";
 import { checkProductAvailability, calculateDistance } from "../utils/models";

@@ -55,11 +55,7 @@ model User {
   email      String    @unique
   username   String?
   password   String?
-<<<<<<< HEAD
-  phone      String?   @unique
-=======
   phone      String?   
->>>>>>> 415c818b69bf3fdd6af3a04d207de0b99541eaf7
   first_name String?
   last_name  String?
   date_ob    DateTime?
@@ -71,11 +67,7 @@ model User {
   updated_at DateTime  @default(now())
   verify_token String? 
   password_reset_token String? 
-<<<<<<< HEAD
-  referral_code     String
-=======
   referral_code     String?
->>>>>>> 415c818b69bf3fdd6af3a04d207de0b99541eaf7
 
   referralsReceived Referral[] @relation("ReferredRelation")
   Store             Store?
@@ -276,8 +268,4 @@ model City {
   name        String
   province_id Int
   province    Province @relation(fields: [province_id], references: [id])
-<<<<<<< HEAD
 }
-=======
-}
->>>>>>> 415c818b69bf3fdd6af3a04d207de0b99541eaf7
