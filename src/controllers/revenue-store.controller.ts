@@ -40,9 +40,12 @@ export class RevenueStoreController {
       };
 
       if (startDate && endDate) {
-        whereConditions.created_at = {
+        const endDateTime = new Date(endDate as string);
+        endDateTime.setHours(23, 59, 59, 999); // Set to end of day
+
+        whereConditions.updated_at = {
           gte: new Date(startDate as string),
-          lte: new Date(endDate as string),
+          lte: endDateTime, // Use adjusted date to include the entire end date
         };
       }
 
@@ -67,7 +70,7 @@ export class RevenueStoreController {
           },
         },
         orderBy: {
-          created_at: "desc",
+          updated_at: "desc",
         },
       });
 
@@ -128,7 +131,7 @@ export class RevenueStoreController {
 
       // Add year condition for monthly period
       if (period === "monthly") {
-        whereConditions.created_at = {
+        whereConditions.updated_at = {
           gte: new Date(`${currentYear}-01-01`),
           lt: new Date(`${currentYear + 1}-01-01`),
         };
@@ -136,10 +139,16 @@ export class RevenueStoreController {
 
       // Add date range if specified
       if (startDate || endDate) {
-        whereConditions.created_at = {
-          ...(whereConditions.created_at || {}),
+        let endDateTime;
+        if (endDate) {
+          endDateTime = new Date(endDate as string);
+          endDateTime.setHours(23, 59, 59, 999); // Set to end of day
+        }
+
+        whereConditions.updated_at = {
+          ...(whereConditions.updated_at || {}),
           ...(startDate ? { gte: new Date(startDate as string) } : {}),
-          ...(endDate ? { lte: new Date(endDate as string) } : {}),
+          ...(endDate ? { lte: endDateTime } : {}),
         };
       }
 
@@ -148,7 +157,7 @@ export class RevenueStoreController {
       if (period === "monthly") {
         // Monthly revenue aggregation
         const results = await prisma.order.groupBy({
-          by: ["created_at"],
+          by: ["updated_at"],
           where: whereConditions,
           _sum: {
             total_price: true,
@@ -162,7 +171,7 @@ export class RevenueStoreController {
         }));
 
         results.forEach((result) => {
-          const month = new Date(result.created_at).getMonth();
+          const month = new Date(result.updated_at).getMonth();
           if (result._sum.total_price) {
             monthlyData[month].total_revenue += Number(result._sum.total_price);
           }
@@ -172,7 +181,7 @@ export class RevenueStoreController {
       } else if (period === "yearly") {
         // Yearly revenue aggregation
         const results = await prisma.order.groupBy({
-          by: ["created_at"],
+          by: ["updated_at"],
           where: whereConditions,
           _sum: {
             total_price: true,
@@ -183,7 +192,7 @@ export class RevenueStoreController {
         const yearlyMap = new Map();
 
         results.forEach((result) => {
-          const year = new Date(result.created_at).getFullYear();
+          const year = new Date(result.updated_at).getFullYear();
           if (!yearlyMap.has(year)) {
             yearlyMap.set(year, 0);
           }
