@@ -47,6 +47,10 @@ export class SuperAdminController {
 
   async getAllUsers(req: Request, res: Response) {
     try {
+      const page = Number(req.query.page) || 1;
+      const limit = Number(req.query.limit) || 10;
+      const skip = (page - 1) * limit;
+      const totalUsers = await prisma.user.count();
       const users = await prisma.user.findMany({
         select: {
           user_id: true,
@@ -60,9 +64,29 @@ export class SuperAdminController {
           created_at: true,
           updated_at: true,
         },
+        skip,
+        take: limit,
       });
-      return res.status(200).json({ status: "success", data: users });
+  
+      // Calculate pagination metadata
+      const totalPages = Math.ceil(totalUsers / limit);
+      const hasNextPage = page < totalPages;
+      const hasPrevPage = page > 1;
+  
+      return res.status(200).json({
+        status: "success",
+        data: users,
+        pagination: {
+          total: totalUsers,
+          page,
+          limit,
+          totalPages,
+          hasNextPage,
+          hasPrevPage,
+        },
+      });
     } catch (error) {
+      console.error("Error fetching users:", error);
       return res.status(500).json({ error: "Could not fetch users" });
     }
   }

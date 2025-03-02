@@ -102,7 +102,7 @@ model Referral {
   ref_id        Int    @id @default(autoincrement())
   referrer_id   Int
   referred_id   Int?
-  referral_code String @unique
+  referral_code String? @unique
   reward_id     Int?
 
   referred User?    @relation("ReferredRelation", fields: [referred_id], references: [user_id])

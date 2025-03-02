@@ -152,12 +152,11 @@ export class DiscountController {
       const limitNum = Number(limit);
       const offset = (pageNum - 1) * limitNum;
       const whereCondition: any = {};
+      whereCondition.store_id = { not: null };
 
       if (storeId) {
         whereCondition.store_id = Number(storeId);
       }
-
-      // If unassigned is true, we filter out any discounts that have a product assigned.
       if (unassigned === "true") {
         whereCondition.product_id = null;
       } else if (productId) {
@@ -219,7 +218,6 @@ export class DiscountController {
     }
   }
 
-  // Get discount by ID
   async getDiscountById(req: Request, res: Response): Promise<void> {
     try {
       const { id } = req.params;

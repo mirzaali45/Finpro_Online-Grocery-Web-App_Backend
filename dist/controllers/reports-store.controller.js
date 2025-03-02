@@ -9,435 +9,96 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.ReportsController = void 0;
+exports.ReportStore = void 0;
 const client_1 = require("../../prisma/generated/client");
 const prisma = new client_1.PrismaClient();
-class ReportsController {
-    /**
-     * Get monthly sales report for store admin's store
-     */
-    getMonthlySalesReport(req, res) {
+class ReportStore {
+    getReportInventory(req, res) {
         return __awaiter(this, void 0, void 0, function* () {
+            var _a;
             try {
-                const { month = new Date().getMonth() + 1, year = new Date().getFullYear(), } = req.query;
-                const user = req.user;
-                if (!user) {
-                    return res.status(401).json({ message: "Unauthorized" });
+                // Get the user_id of the store admin from the request
+                // This could come from authentication middleware or request body/params
+                // Fix: Use correct property name from your Prisma schema - user_id
+                const userId = ((_a = req.user) === null || _a === void 0 ? void 0 : _a.id) || parseInt(req.params.userId);
+                if (!userId) {
+                    return res.status(400).json({
+                        status: "error",
+                        message: "User ID is required"
+                    });
                 }
-                // Get store associated with the user
-                const userStore = yield prisma.store.findUnique({
-                    where: { user_id: user.id }, // Use id instead of user_id
-                });
-                if (!userStore) {
-                    return res
-                        .status(404)
-                        .json({ message: "No store found for this user" });
-                }
-                // Define date range
-                const startDate = new Date(Number(year), Number(month) - 1, 1);
-                const endDate = new Date(Number(year), Number(month), 0); // Last day of month
-                // Get monthly sales
-                const monthlySales = yield prisma.order.findMany({
+                // Get the store associated with this user (store admin)
+                const store = yield prisma.store.findFirst({
                     where: {
-                        store_id: userStore.store_id,
-                        created_at: {
-                            gte: startDate,
-                            lte: endDate,
-                        },
-                        order_status: {
-                            in: ["completed", "shipped"],
-                        },
-                    },
-                    include: {
-                        OrderItem: true,
-                    },
-                });
-                // Calculate totals and format response
-                const totalSales = monthlySales.reduce((sum, order) => sum + order.total_price, 0);
-                return res.status(200).json({
-                    month: Number(month),
-                    year: Number(year),
-                    store_id: userStore.store_id,
-                    store_name: userStore.store_name,
-                    total_sales: totalSales,
-                    order_count: monthlySales.length,
-                });
-            }
-            catch (error) {
-                console.error("Error getting sales report:", error);
-                return res.status(500).json({ message: "Failed to get sales report" });
-            }
-        });
-    }
-    /**
-     * Get monthly sales report by category for store admin's store
-     */
-    getMonthlySalesByCategory(req, res) {
-        return __awaiter(this, void 0, void 0, function* () {
-            try {
-                const { month = new Date().getMonth() + 1, year = new Date().getFullYear(), } = req.query;
-                const user = req.user;
-                if (!user) {
-                    return res.status(401).json({ message: "Unauthorized" });
-                }
-                // Get store associated with the user
-                const userStore = yield prisma.store.findUnique({
-                    where: { user_id: user.id }, // Use id instead of user_id
-                });
-                if (!userStore) {
-                    return res
-                        .status(404)
-                        .json({ message: "No store found for this user" });
-                }
-                // Define date range
-                const startDate = new Date(Number(year), Number(month) - 1, 1);
-                const endDate = new Date(Number(year), Number(month), 0);
-                // Get sales data with category details
-                const salesData = yield prisma.orderItem.findMany({
-                    where: {
-                        order: {
-                            store_id: userStore.store_id,
-                            created_at: {
-                                gte: startDate,
-                                lte: endDate,
-                            },
-                            order_status: {
-                                in: ["completed", "shipped"],
-                            },
-                        },
-                    },
-                    include: {
-                        product: {
-                            include: {
-                                category: true,
-                            },
-                        },
-                    },
-                });
-                // Group by category
-                const salesByCategory = {};
-                salesData.forEach((item) => {
-                    const categoryId = item.product.category_id;
-                    const categoryName = item.product.category.category_name;
-                    if (!salesByCategory[categoryId]) {
-                        salesByCategory[categoryId] = {
-                            category_id: categoryId,
-                            category_name: categoryName,
-                            total_sales: 0,
-                            item_count: 0,
-                        };
-                    }
-                    salesByCategory[categoryId].total_sales += item.total_price;
-                    salesByCategory[categoryId].item_count += item.qty;
-                });
-                return res.status(200).json({
-                    month: Number(month),
-                    year: Number(year),
-                    store_id: userStore.store_id,
-                    store_name: userStore.store_name,
-                    categories: Object.values(salesByCategory),
-                });
-            }
-            catch (error) {
-                console.error("Error getting sales by category:", error);
-                return res
-                    .status(500)
-                    .json({ message: "Failed to get sales by category" });
-            }
-        });
-    }
-    /**
-     * Get monthly sales report by product for store admin's store
-     */
-    getMonthlySalesByProduct(req, res) {
-        return __awaiter(this, void 0, void 0, function* () {
-            try {
-                const { month = new Date().getMonth() + 1, year = new Date().getFullYear(), categoryId, } = req.query;
-                const user = req.user;
-                if (!user) {
-                    return res.status(401).json({ message: "Unauthorized" });
-                }
-                // Get store associated with the user
-                const userStore = yield prisma.store.findUnique({
-                    where: { user_id: user.id }, // Use id instead of user_id
-                });
-                if (!userStore) {
-                    return res
-                        .status(404)
-                        .json({ message: "No store found for this user" });
-                }
-                // Define date range
-                const startDate = new Date(Number(year), Number(month) - 1, 1);
-                const endDate = new Date(Number(year), Number(month), 0);
-                // Build where clause
-                const whereClause = {
-                    order: {
-                        store_id: userStore.store_id,
-                        created_at: {
-                            gte: startDate,
-                            lte: endDate,
-                        },
-                        order_status: {
-                            in: ["completed", "shipped"],
-                        },
-                    },
-                };
-                // Add category filter if provided
-                if (categoryId) {
-                    whereClause.product = {
-                        category_id: Number(categoryId),
-                    };
-                }
-                // Get sales data with product details
-                const salesData = yield prisma.orderItem.findMany({
-                    where: whereClause,
-                    include: {
-                        product: {
-                            include: {
-                                category: true,
-                                ProductImage: {
-                                    take: 1,
-                                },
-                            },
-                        },
-                    },
-                });
-                // Group by product
-                const salesByProduct = {};
-                salesData.forEach((item) => {
-                    const productId = item.product_id;
-                    const productName = item.product.name;
-                    const categoryName = item.product.category.category_name;
-                    const imageUrl = item.product.ProductImage.length > 0
-                        ? item.product.ProductImage[0].url
-                        : null;
-                    if (!salesByProduct[productId]) {
-                        salesByProduct[productId] = {
-                            product_id: productId,
-                            product_name: productName,
-                            category_name: categoryName,
-                            image_url: imageUrl,
-                            total_sales: 0,
-                            item_count: 0,
-                        };
-                    }
-                    salesByProduct[productId].total_sales += item.total_price;
-                    salesByProduct[productId].item_count += item.qty;
-                });
-                return res.status(200).json({
-                    month: Number(month),
-                    year: Number(year),
-                    store_id: userStore.store_id,
-                    store_name: userStore.store_name,
-                    category_id: categoryId ? Number(categoryId) : null,
-                    products: Object.values(salesByProduct),
-                });
-            }
-            catch (error) {
-                console.error("Error getting sales by product:", error);
-                return res
-                    .status(500)
-                    .json({ message: "Failed to get sales by product" });
-            }
-        });
-    }
-    /**
-     * Get monthly stock summary report for store admin's store
-     */
-    getMonthlyStockSummaryReport(req, res) {
-        return __awaiter(this, void 0, void 0, function* () {
-            try {
-                const { month = new Date().getMonth() + 1, year = new Date().getFullYear(), } = req.query;
-                const user = req.user;
-                if (!user) {
-                    return res.status(401).json({ message: "Unauthorized" });
-                }
-                // Get store associated with the user
-                const userStore = yield prisma.store.findUnique({
-                    where: { user_id: user.id }, // Use id instead of user_id
-                });
-                if (!userStore) {
-                    return res
-                        .status(404)
-                        .json({ message: "No store found for this user" });
-                }
-                // Define date range
-                const startDate = new Date(Number(year), Number(month) - 1, 1);
-                const endDate = new Date(Number(year), Number(month), 0);
-                // Get current inventory
-                const currentInventory = yield prisma.inventory.findMany({
-                    where: {
-                        store_id: userStore.store_id,
-                    },
-                    include: {
-                        product: {
-                            include: {
-                                category: true,
-                                ProductImage: {
-                                    take: 1,
-                                },
-                            },
-                        },
-                    },
-                });
-                // Get orders for the month to calculate outgoing stock
-                const monthlyOrders = yield prisma.orderItem.findMany({
-                    where: {
-                        order: {
-                            store_id: userStore.store_id,
-                            created_at: {
-                                gte: startDate,
-                                lte: endDate,
-                            },
-                            order_status: {
-                                in: ["completed", "shipped"],
-                            },
-                        },
-                    },
-                    include: {
-                        product: true,
-                    },
-                });
-                // Calculate stock changes
-                const stockSummary = {};
-                // Initialize with current inventory
-                currentInventory.forEach((inv) => {
-                    const productId = inv.product_id;
-                    const productName = inv.product.name;
-                    const categoryName = inv.product.category.category_name;
-                    const imageUrl = inv.product.ProductImage.length > 0
-                        ? inv.product.ProductImage[0].url
-                        : null;
-                    stockSummary[productId] = {
-                        product_id: productId,
-                        product_name: productName,
-                        category_name: categoryName,
-                        image_url: imageUrl,
-                        reductions: 0,
-                        current_stock: inv.qty,
-                    };
-                });
-                // Calculate reductions from orders
-                monthlyOrders.forEach((item) => {
-                    const productId = item.product_id;
-                    if (stockSummary[productId]) {
-                        stockSummary[productId].reductions += item.qty;
+                        user_id: userId
                     }
                 });
-                return res.status(200).json({
-                    month: Number(month),
-                    year: Number(year),
-                    store_id: userStore.store_id,
-                    store_name: userStore.store_name,
-                    products: Object.values(stockSummary),
-                });
-            }
-            catch (error) {
-                console.error("Error getting stock summary:", error);
-                return res.status(500).json({ message: "Failed to get stock summary" });
-            }
-        });
-    }
-    /**
-     * Get detailed stock report for a specific product
-     */
-    getDetailedProductStockReport(req, res) {
-        return __awaiter(this, void 0, void 0, function* () {
-            try {
-                const { month = new Date().getMonth() + 1, year = new Date().getFullYear(), productId, } = req.query;
-                if (!productId) {
-                    return res.status(400).json({ message: "Product ID is required" });
+                if (!store) {
+                    return res.status(404).json({
+                        status: "error",
+                        message: "Store not found for this user"
+                    });
                 }
-                const user = req.user;
-                if (!user) {
-                    return res.status(401).json({ message: "Unauthorized" });
-                }
-                // Get store associated with the user
-                const userStore = yield prisma.store.findUnique({
-                    where: { user_id: user.id }, // Use id instead of user_id
-                });
-                if (!userStore) {
-                    return res
-                        .status(404)
-                        .json({ message: "No store found for this user" });
-                }
-                // Define date range
-                const startDate = new Date(Number(year), Number(month) - 1, 1);
-                const endDate = new Date(Number(year), Number(month), 0);
-                // Get product inventory
-                const inventory = yield prisma.inventory.findFirst({
+                // Get inventory data with product details for this store
+                const inventoryReport = yield prisma.inventory.findMany({
                     where: {
-                        store_id: userStore.store_id,
-                        product_id: Number(productId),
+                        store_id: store.store_id
                     },
                     include: {
                         product: {
-                            include: {
-                                category: true,
-                                ProductImage: {
-                                    take: 1,
-                                },
-                            },
-                        },
-                    },
+                            select: {
+                                product_id: true,
+                                name: true,
+                                price: true,
+                                category: {
+                                    select: {
+                                        category_name: true
+                                    }
+                                }
+                            }
+                        }
+                    }
                 });
-                if (!inventory) {
-                    return res
-                        .status(404)
-                        .json({ message: "Product not found in store inventory" });
-                }
-                // Get orders for this product in the month
-                const orders = yield prisma.orderItem.findMany({
-                    where: {
-                        product_id: Number(productId),
-                        order: {
-                            store_id: userStore.store_id,
-                            created_at: {
-                                gte: startDate,
-                                lte: endDate,
-                            },
-                        },
-                    },
-                    include: {
-                        order: true,
-                    },
-                    orderBy: {
-                        order: {
-                            created_at: "asc",
-                        },
-                    },
-                });
-                // Create product stock details
-                const productDetails = {
-                    product_id: inventory.product_id,
-                    product_name: inventory.product.name,
-                    category_name: inventory.product.category.category_name,
-                    image_url: inventory.product.ProductImage.length > 0
-                        ? inventory.product.ProductImage[0].url
-                        : null,
-                    current_stock: inventory.qty,
-                    orders: orders.map((order) => ({
-                        order_id: order.order.order_id,
-                        date: order.order.created_at,
-                        quantity: order.qty,
-                        status: order.order.order_status,
-                    })),
-                };
+                // Format the report data
+                const formattedReport = inventoryReport.map(item => ({
+                    product_id: item.product_id,
+                    product_name: item.product.name,
+                    category: item.product.category.category_name,
+                    current_quantity: item.qty,
+                    total_quantity: item.total_qty,
+                    price: item.product.price,
+                    estimated_value: item.qty * item.product.price,
+                    last_updated: item.updated_at
+                }));
+                // Calculate summary statistics
+                const totalItems = formattedReport.reduce((sum, item) => sum + item.current_quantity, 0);
+                const totalValue = formattedReport.reduce((sum, item) => sum + item.estimated_value, 0);
                 return res.status(200).json({
-                    month: Number(month),
-                    year: Number(year),
-                    store_id: userStore.store_id,
-                    store_name: userStore.store_name,
-                    product: productDetails,
+                    status: "success",
+                    data: {
+                        store_name: store.store_name,
+                        store_id: store.store_id,
+                        report_date: new Date(),
+                        summary: {
+                            total_items: totalItems,
+                            total_value: totalValue,
+                            product_count: formattedReport.length
+                        },
+                        inventory: formattedReport
+                    }
                 });
             }
             catch (error) {
-                console.error("Error getting detailed product stock:", error);
-                return res
-                    .status(500)
-                    .json({ message: "Failed to get detailed product stock" });
+                console.error("Error generating inventory report:", error);
+                // Fix: Handle the 'unknown' type error properly
+                const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+                return res.status(500).json({
+                    status: "error",
+                    message: "Failed to generate inventory report",
+                    error: errorMessage
+                });
             }
         });
     }
 }
-exports.ReportsController = ReportsController;
+exports.ReportStore = ReportStore;

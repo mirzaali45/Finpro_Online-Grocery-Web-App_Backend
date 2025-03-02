@@ -5509,7 +5509,7 @@ export namespace Prisma {
     ref_id: number
     referrer_id: number
     referred_id: number | null
-    referral_code: string
+    referral_code: string | null
     reward_id: number | null
     _count: ReferralCountAggregateOutputType | null
     _avg: ReferralAvgAggregateOutputType | null
@@ -5594,7 +5594,7 @@ export namespace Prisma {
       ref_id: number
       referrer_id: number
       referred_id: number | null
-      referral_code: string
+      referral_code: string | null
       reward_id: number | null
     }, ExtArgs["result"]["referral"]>
     composites: {}
@@ -22288,7 +22288,7 @@ export namespace Prisma {
     ref_id?: IntFilter<"Referral"> | number
     referrer_id?: IntFilter<"Referral"> | number
     referred_id?: IntNullableFilter<"Referral"> | number | null
-    referral_code?: StringFilter<"Referral"> | string
+    referral_code?: StringNullableFilter<"Referral"> | string | null
     reward_id?: IntNullableFilter<"Referral"> | number | null
     referred?: XOR<UserNullableScalarRelationFilter, UserWhereInput> | null
     reward?: XOR<VoucherNullableScalarRelationFilter, VoucherWhereInput> | null
@@ -22298,7 +22298,7 @@ export namespace Prisma {
     ref_id?: SortOrder
     referrer_id?: SortOrder
     referred_id?: SortOrderInput | SortOrder
-    referral_code?: SortOrder
+    referral_code?: SortOrderInput | SortOrder
     reward_id?: SortOrderInput | SortOrder
     referred?: UserOrderByWithRelationInput
     reward?: VoucherOrderByWithRelationInput
@@ -22321,7 +22321,7 @@ export namespace Prisma {
     ref_id?: SortOrder
     referrer_id?: SortOrder
     referred_id?: SortOrderInput | SortOrder
-    referral_code?: SortOrder
+    referral_code?: SortOrderInput | SortOrder
     reward_id?: SortOrderInput | SortOrder
     _count?: ReferralCountOrderByAggregateInput
     _avg?: ReferralAvgOrderByAggregateInput
@@ -22337,7 +22337,7 @@ export namespace Prisma {
     ref_id?: IntWithAggregatesFilter<"Referral"> | number
     referrer_id?: IntWithAggregatesFilter<"Referral"> | number
     referred_id?: IntNullableWithAggregatesFilter<"Referral"> | number | null
-    referral_code?: StringWithAggregatesFilter<"Referral"> | string
+    referral_code?: StringNullableWithAggregatesFilter<"Referral"> | string | null
     reward_id?: IntNullableWithAggregatesFilter<"Referral"> | number | null
   }
 
@@ -23554,7 +23554,7 @@ export namespace Prisma {
 
   export type ReferralCreateInput = {
     referrer_id: number
-    referral_code: string
+    referral_code?: string | null
     referred?: UserCreateNestedOneWithoutReferralsReceivedInput
     reward?: VoucherCreateNestedOneWithoutReferralInput
   }
@@ -23563,13 +23563,13 @@ export namespace Prisma {
     ref_id?: number
     referrer_id: number
     referred_id?: number | null
-    referral_code: string
+    referral_code?: string | null
     reward_id?: number | null
   }
 
   export type ReferralUpdateInput = {
     referrer_id?: IntFieldUpdateOperationsInput | number
-    referral_code?: StringFieldUpdateOperationsInput | string
+    referral_code?: NullableStringFieldUpdateOperationsInput | string | null
     referred?: UserUpdateOneWithoutReferralsReceivedNestedInput
     reward?: VoucherUpdateOneWithoutReferralNestedInput
   }
@@ -23578,7 +23578,7 @@ export namespace Prisma {
     ref_id?: IntFieldUpdateOperationsInput | number
     referrer_id?: IntFieldUpdateOperationsInput | number
     referred_id?: NullableIntFieldUpdateOperationsInput | number | null
-    referral_code?: StringFieldUpdateOperationsInput | string
+    referral_code?: NullableStringFieldUpdateOperationsInput | string | null
     reward_id?: NullableIntFieldUpdateOperationsInput | number | null
   }
 
@@ -23586,20 +23586,20 @@ export namespace Prisma {
     ref_id?: number
     referrer_id: number
     referred_id?: number | null
-    referral_code: string
+    referral_code?: string | null
     reward_id?: number | null
   }
 
   export type ReferralUpdateManyMutationInput = {
     referrer_id?: IntFieldUpdateOperationsInput | number
-    referral_code?: StringFieldUpdateOperationsInput | string
+    referral_code?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type ReferralUncheckedUpdateManyInput = {
     ref_id?: IntFieldUpdateOperationsInput | number
     referrer_id?: IntFieldUpdateOperationsInput | number
     referred_id?: NullableIntFieldUpdateOperationsInput | number | null
-    referral_code?: StringFieldUpdateOperationsInput | string
+    referral_code?: NullableStringFieldUpdateOperationsInput | string | null
     reward_id?: NullableIntFieldUpdateOperationsInput | number | null
   }
 
@@ -27272,14 +27272,14 @@ export namespace Prisma {
 
   export type ReferralCreateWithoutReferredInput = {
     referrer_id: number
-    referral_code: string
+    referral_code?: string | null
     reward?: VoucherCreateNestedOneWithoutReferralInput
   }
 
   export type ReferralUncheckedCreateWithoutReferredInput = {
     ref_id?: number
     referrer_id: number
-    referral_code: string
+    referral_code?: string | null
     reward_id?: number | null
   }
 
@@ -27525,7 +27525,7 @@ export namespace Prisma {
     ref_id?: IntFilter<"Referral"> | number
     referrer_id?: IntFilter<"Referral"> | number
     referred_id?: IntNullableFilter<"Referral"> | number | null
-    referral_code?: StringFilter<"Referral"> | string
+    referral_code?: StringNullableFilter<"Referral"> | string | null
     reward_id?: IntNullableFilter<"Referral"> | number | null
   }
 
@@ -28029,7 +28029,7 @@ export namespace Prisma {
 
   export type ReferralCreateWithoutRewardInput = {
     referrer_id: number
-    referral_code: string
+    referral_code?: string | null
     referred?: UserCreateNestedOneWithoutReferralsReceivedInput
   }
 
@@ -28037,7 +28037,7 @@ export namespace Prisma {
     ref_id?: number
     referrer_id: number
     referred_id?: number | null
-    referral_code: string
+    referral_code?: string | null
   }
 
   export type ReferralCreateOrConnectWithoutRewardInput = {
@@ -30362,7 +30362,7 @@ export namespace Prisma {
   export type ReferralCreateManyReferredInput = {
     ref_id?: number
     referrer_id: number
-    referral_code: string
+    referral_code?: string | null
     reward_id?: number | null
   }
 
@@ -30426,21 +30426,21 @@ export namespace Prisma {
 
   export type ReferralUpdateWithoutReferredInput = {
     referrer_id?: IntFieldUpdateOperationsInput | number
-    referral_code?: StringFieldUpdateOperationsInput | string
+    referral_code?: NullableStringFieldUpdateOperationsInput | string | null
     reward?: VoucherUpdateOneWithoutReferralNestedInput
   }
 
   export type ReferralUncheckedUpdateWithoutReferredInput = {
     ref_id?: IntFieldUpdateOperationsInput | number
     referrer_id?: IntFieldUpdateOperationsInput | number
-    referral_code?: StringFieldUpdateOperationsInput | string
+    referral_code?: NullableStringFieldUpdateOperationsInput | string | null
     reward_id?: NullableIntFieldUpdateOperationsInput | number | null
   }
 
   export type ReferralUncheckedUpdateManyWithoutReferredInput = {
     ref_id?: IntFieldUpdateOperationsInput | number
     referrer_id?: IntFieldUpdateOperationsInput | number
-    referral_code?: StringFieldUpdateOperationsInput | string
+    referral_code?: NullableStringFieldUpdateOperationsInput | string | null
     reward_id?: NullableIntFieldUpdateOperationsInput | number | null
   }
 
@@ -30625,12 +30625,12 @@ export namespace Prisma {
     ref_id?: number
     referrer_id: number
     referred_id?: number | null
-    referral_code: string
+    referral_code?: string | null
   }
 
   export type ReferralUpdateWithoutRewardInput = {
     referrer_id?: IntFieldUpdateOperationsInput | number
-    referral_code?: StringFieldUpdateOperationsInput | string
+    referral_code?: NullableStringFieldUpdateOperationsInput | string | null
     referred?: UserUpdateOneWithoutReferralsReceivedNestedInput
   }
 
@@ -30638,14 +30638,14 @@ export namespace Prisma {
     ref_id?: IntFieldUpdateOperationsInput | number
     referrer_id?: IntFieldUpdateOperationsInput | number
     referred_id?: NullableIntFieldUpdateOperationsInput | number | null
-    referral_code?: StringFieldUpdateOperationsInput | string
+    referral_code?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type ReferralUncheckedUpdateManyWithoutRewardInput = {
     ref_id?: IntFieldUpdateOperationsInput | number
     referrer_id?: IntFieldUpdateOperationsInput | number
     referred_id?: NullableIntFieldUpdateOperationsInput | number | null
-    referral_code?: StringFieldUpdateOperationsInput | string
+    referral_code?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type VoucherCreateManyDiscountInput = {
