@@ -10,7 +10,11 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.CategoryController = void 0;
+<<<<<<< HEAD
 const client_1 = require("@prisma/client");
+=======
+const client_1 = require("../../prisma/generated/client");
+>>>>>>> fa63f5db7644f6572074397fd727c5d076f201ec
 const cloudinary_1 = require("../services/cloudinary");
 const prisma = new client_1.PrismaClient();
 class CategoryController {

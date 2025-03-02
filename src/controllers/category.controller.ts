@@ -1,4 +1,4 @@
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient } from "../../prisma/generated/client";
 import { Request, Response } from "express";
 import { uploadCategoryThumbnail } from "../services/cloudinary";
 

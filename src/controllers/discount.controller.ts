@@ -218,7 +218,6 @@ export class DiscountController {
     }
   }
 
-
   async getDiscountById(req: Request, res: Response): Promise<void> {
     try {
       const { id } = req.params;
