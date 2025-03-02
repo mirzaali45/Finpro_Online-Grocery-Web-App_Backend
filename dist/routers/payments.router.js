@@ -12,8 +12,8 @@ class PaymentsRouter {
         this.initializeRoutes();
     }
     initializeRoutes() {
-        this.router.post("/snap-token", this.paymentsController.createSnapToken);
-        this.router.post("/notification", this.paymentsController.midtransNotification);
+        this.router.post("/create", this.paymentsController.createPaymentOrder);
+        this.router.post("/callback", this.paymentsController.paymentCallback);
     }
     getRouter() {
         return this.router;

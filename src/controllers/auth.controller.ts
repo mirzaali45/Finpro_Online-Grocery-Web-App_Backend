@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient } from "../../prisma/generated/client";
 import { tokenService } from "../helpers/createToken";
 import { sendResetPassEmail, sendVerificationEmail } from "../services/mailer";
 import { hashPass } from "../helpers/hashpassword";
