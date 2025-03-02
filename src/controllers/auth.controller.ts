@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient, Type } from "../../prisma/generated/client";
 import { tokenService } from "../helpers/createToken";
 import { sendResetPassEmail, sendVerificationEmail } from "../services/mailer";
 import { hashPass } from "../helpers/hashpassword";
@@ -161,60 +161,116 @@ export class AuthController {
 
   async verifyAccount(req: Request, res: Response) {
     try {
-      if (!req.user) {
-        return res.status(401).json({ error: "Unauthorized" });
-      }
-      const {
-        username,
-        firstName,
-        lastName,
-        phone,
-        password,
-        confirmPassword,
-      } = req.body;
+        if (!req.user) {
+            return res.status(401).json({ error: "Unauthorized" });
+        }
 
-      if (password !== confirmPassword) {
-        return res.status(400).json({ message: "Passwords do not match" });
-      }
+        const { username, firstName, lastName, phone, password, confirmPassword, referralCode } = req.body;
 
-      const userId = req.user.id;
+        if (password !== confirmPassword) {
+            return res.status(400).json({ message: "Passwords do not match" });
+        }
 
-      const user = await prisma.user.findUnique({
-        where: { user_id: userId },
-      });
+        const userId = req.user.id;
 
-      if (!user || user.verified) {
-        return res
-          .status(400)
-          .json({ message: "Invalid verification request" });
-      }
+        const user = await prisma.user.findUnique({
+            where: { user_id: userId },
+        });
 
-      const hashedPassword = await hashPass(password);
+        if (!user || user.verified) {
+            return res.status(400).json({ message: "Invalid verification request" });
+        }
 
-      await prisma.user.update({
-        where: { user_id: userId },
-        data: {
-          username,
-          first_name: firstName ? firstName : null,
-          last_name: lastName ? lastName : null,
-          phone,
-          password: hashedPassword,
-          verified: true,
-          verify_token: null,
-          referral_code: generateReferralCode(8),
-        },
-      });
+        const hashedPassword = await hashPass(password);
+        const generatedReferralCode = user.referral_code || generateReferralCode(8);
 
-      return res.status(200).json({
-        status: "success",
-        message: "Email verified successfully",
-        role: user.role,
-      });
+        await prisma.user.update({
+            where: { user_id: userId },
+            data: {
+                username,
+                first_name: firstName || null,
+                last_name: lastName || null,
+                phone,
+                password: hashedPassword,
+                verified: true,
+                verify_token: null,
+                referral_code: generatedReferralCode,
+            },
+        });
+
+        let referrer = null;
+
+        if (referralCode) {
+            referrer = await prisma.user.findFirst({
+                where: { referral_code: referralCode },
+            });
+
+            if (referrer && referrer.user_id !== userId) {
+                const existingReferral = await prisma.referral.findFirst({
+                    where: { referrer_id: referrer.user_id, referred_id: userId },
+                });
+
+                if (!existingReferral) {
+                    // **Langkah 1: Buat diskon baru**
+                    const discount = await prisma.discount.create({
+                        data: {
+                            discount_code: `REF-${generateReferralCode(6)}`,
+                            discount_type: "percentage",
+                            discount_value: 10,
+                            expires_at: new Date(new Date().setMonth(new Date().getMonth() + 1)),
+                        },
+                    });
+
+                    // **Langkah 2: Buat voucher unik untuk customer baru**
+                    const userVoucherCode = `VOUCHER-${generateReferralCode(8)}`;
+                    const userVoucher = await prisma.voucher.create({
+                        data: {
+                            user_id: userId,
+                            discount_id: discount.discount_id,
+                            voucher_code: userVoucherCode, 
+                            expires_at: new Date(new Date().setMonth(new Date().getMonth() + 1)),
+                        },
+                    });
+
+                    // **Langkah 3: Buat voucher unik untuk referrer**
+                    const referrerVoucherCode = `VOUCHER-${generateReferralCode(8)}`;
+                    const referrerVoucher = await prisma.voucher.create({
+                        data: {
+                            user_id: referrer.user_id,
+                            discount_id: discount.discount_id,
+                            voucher_code: referrerVoucherCode, 
+                            expires_at: new Date(new Date().setMonth(new Date().getMonth() + 1)),
+                        },
+                    });
+
+                    // **Langkah 4: Simpan referral ke database**
+                    await prisma.referral.create({
+                        data: {
+                            referrer_id: referrer.user_id,
+                            referred_id: userId,
+                            referral_code: referralCode,
+                            reward_id: referrerVoucher.voucher_id, // Simpan voucher ID untuk referrer
+                        },
+                    });
+                }
+            }
+        }
+
+        return res.status(200).json({
+            status: "success",
+            message: "Email verified successfully",
+            role: user.role,
+            referralUsed: referrer ? referrer.username : null,
+        });
+
     } catch (error) {
-      console.error(error);
-      return res.status(500).json({ error: "Could Reach The Server Database" });
+        console.error(error);
+        return res.status(500).json({ error: "Could not reach the server database" });
     }
-  }
+}
+
+  
+  
 
   async resetPassword(req: Request, res: Response) {
     try {
