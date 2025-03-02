@@ -42,9 +42,11 @@ class RevenueStoreController {
                     store_id: user.Store.store_id,
                 };
                 if (startDate && endDate) {
-                    whereConditions.created_at = {
+                    const endDateTime = new Date(endDate);
+                    endDateTime.setHours(23, 59, 59, 999); // Set to end of day
+                    whereConditions.updated_at = {
                         gte: new Date(startDate),
-                        lte: new Date(endDate),
+                        lte: endDateTime, // Use adjusted date to include the entire end date
                     };
                 }
                 if (status) {
@@ -67,7 +69,7 @@ class RevenueStoreController {
                         },
                     },
                     orderBy: {
-                        created_at: "desc",
+                        updated_at: "desc",
                     },
                 });
                 const totalRevenue = orders
@@ -86,7 +88,6 @@ class RevenueStoreController {
             }
         });
     }
-    //Rentan Waktu
     getRevenueByPeriod(req, res) {
         return __awaiter(this, void 0, void 0, function* () {
             var _a;
@@ -109,55 +110,90 @@ class RevenueStoreController {
                         revenue: [],
                     });
                 }
-                const { period = "monthly", year } = req.query;
+                const { period = "monthly", year, startDate, endDate } = req.query;
                 const currentYear = year
                     ? parseInt(year)
                     : new Date().getFullYear();
+                // Build query conditions
+                const whereConditions = {
+                    store_id: user.Store.store_id,
+                    order_status: { in: ["shipped", "completed"] },
+                };
+                // Add year condition for monthly period
+                if (period === "monthly") {
+                    whereConditions.updated_at = {
+                        gte: new Date(`${currentYear}-01-01`),
+                        lt: new Date(`${currentYear + 1}-01-01`),
+                    };
+                }
+                // Add date range if specified
+                if (startDate || endDate) {
+                    let endDateTime;
+                    if (endDate) {
+                        endDateTime = new Date(endDate);
+                        endDateTime.setHours(23, 59, 59, 999); // Set to end of day
+                    }
+                    whereConditions.updated_at = Object.assign(Object.assign(Object.assign({}, (whereConditions.updated_at || {})), (startDate ? { gte: new Date(startDate) } : {})), (endDate ? { lte: endDateTime } : {}));
+                }
                 let revenueData;
                 if (period === "monthly") {
-                    revenueData = yield prisma.$queryRaw `
-        SELECT 
-          EXTRACT(MONTH FROM created_at) AS month,
-          SUM(total_price) AS total_revenue
-        FROM 
-          "Order"
-        WHERE 
-          store_id = ${user.Store.store_id}
-          AND EXTRACT(YEAR FROM created_at) = ${currentYear}
-          AND (order_status = 'shipped' OR order_status = 'completed')
-        GROUP BY 
-          EXTRACT(MONTH FROM created_at)
-        ORDER BY 
-          month
-      `;
+                    // Monthly revenue aggregation
+                    const results = yield prisma.order.groupBy({
+                        by: ["updated_at"],
+                        where: whereConditions,
+                        _sum: {
+                            total_price: true,
+                        },
+                    });
+                    // Process results to get monthly data
+                    const monthlyData = new Array(12).fill(0).map((_, i) => ({
+                        month: i + 1,
+                        total_revenue: 0,
+                    }));
+                    results.forEach((result) => {
+                        const month = new Date(result.updated_at).getMonth();
+                        if (result._sum.total_price) {
+                            monthlyData[month].total_revenue += Number(result._sum.total_price);
+                        }
+                    });
+                    revenueData = monthlyData.filter((item) => item.total_revenue > 0);
                 }
                 else if (period === "yearly") {
-                    // Calculate yearly revenue
-                    revenueData = yield prisma.$queryRaw `
-        SELECT 
-          EXTRACT(YEAR FROM created_at) AS year,
-          SUM(total_price) AS total_revenue
-        FROM 
-          "Order"
-        WHERE 
-          store_id = ${user.Store.store_id}
-          AND (order_status = 'shipped' OR order_status = 'completed')
-        GROUP BY 
-          EXTRACT(YEAR FROM created_at)
-        ORDER BY 
-          year
-      `;
+                    // Yearly revenue aggregation
+                    const results = yield prisma.order.groupBy({
+                        by: ["updated_at"],
+                        where: whereConditions,
+                        _sum: {
+                            total_price: true,
+                        },
+                    });
+                    // Process results to get yearly data
+                    const yearlyMap = new Map();
+                    results.forEach((result) => {
+                        const year = new Date(result.updated_at).getFullYear();
+                        if (!yearlyMap.has(year)) {
+                            yearlyMap.set(year, 0);
+                        }
+                        if (result._sum.total_price) {
+                            yearlyMap.set(year, yearlyMap.get(year) + Number(result._sum.total_price));
+                        }
+                    });
+                    revenueData = Array.from(yearlyMap.entries())
+                        .map(([year, total_revenue]) => ({
+                        year,
+                        total_revenue,
+                    }))
+                        .sort((a, b) => a.year - b.year);
                 }
                 else {
                     return res.status(400).json({
                         message: "Invalid period. Use 'monthly' or 'yearly'.",
                     });
                 }
-                const formattedRevenueData = revenueData.map((item) => (Object.assign(Object.assign({}, item), { total_revenue: Number(item.total_revenue) })));
                 return res.status(200).json({
                     period,
                     year: currentYear,
-                    revenue: formattedRevenueData,
+                    revenue: revenueData,
                 });
             }
             catch (error) {
