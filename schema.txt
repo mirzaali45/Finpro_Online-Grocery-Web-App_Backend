@@ -1,0 +1,283 @@
+old schema
+
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum Role {
+  customer
+  store_admin
+  super_admin
+}
+
+enum OrderStatus {
+  pending
+  awaiting_payment
+  processing
+  shipped
+  completed
+  cancelled
+}
+
+enum ShippingStatus {
+  pending
+  shipped
+  delivered
+}
+
+enum Type {
+  point
+  percentage
+}
+
+enum ChangeType {
+  email
+  password
+  username
+  date_ob
+  avatar
+  phone
+  name
+}
+
+enum ProviderType {
+  GOOGLE
+  FACEBOOK
+}
+
+model User {
+  user_id    Int       @id @default(autoincrement())
+  email      String    @unique
+  username   String?
+  password   String?
+  phone      String?   @unique
+  first_name String?
+  last_name  String?
+  date_ob    DateTime?
+  avatar     String?
+  role       Role
+  verified   Boolean   @default(false)
+  created_at DateTime  @default(now())
+  updated_at DateTime  @default(now())
+
+  referralsSent     Referral[] @relation("ReferrerRelation")
+  referralsReceived Referral[] @relation("ReferredRelation")
+  Store             Store?
+  discounts         Discount[]
+  orders            Order[]
+  Address           Address[]
+  Voucher           Voucher[]
+  cartItems         CartItem[]
+  Provider          Provider[]
+}
+
+model Provider {
+  provider_id   Int          @id @default(autoincrement())
+  user_id       Int
+  provider_name ProviderType
+  created_at    DateTime     @default(now())
+  updated_at    DateTime     @default(now())
+
+  user User @relation(fields: [user_id], references: [user_id])
+}
+
+model Address {
+  address_id  Int      @id @default(autoincrement())
+  user_id     Int
+  address     String   @db.Text
+  subdistrict String?
+  city        String
+  city_id     String
+  province    String
+  province_id String
+  postcode    String?
+  latitude    Float
+  longitude   Float
+  is_primary  Boolean  @default(false)
+  created_at  DateTime @default(now())
+  updated_at  DateTime @default(now())
+  user        User     @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+}
+
+model RajaOngkir {
+  ongkir_id   Int    @id @default(autoincrement())
+  city_id     String @unique
+  city_name   String
+  province_id String
+  province    String
+  type        String
+  postal_code String
+}
+
+model Referral {
+  ref_id        Int    @id @default(autoincrement())
+  referrer_id   Int    @unique
+  referred_id   Int?
+  referral_code String @unique
+  reward_id     Int?
+
+  referrer User     @relation("ReferrerRelation", fields: [referrer_id], references: [user_id])
+  referred User?    @relation("ReferredRelation", fields: [referred_id], references: [user_id])
+  reward   Voucher? @relation(fields: [reward_id], references: [voucher_id])
+}
+
+model Voucher {
+  voucher_id   Int        @id @default(autoincrement())
+  voucher_code String?    @unique
+  user_id      Int
+  discount_id  Int
+  is_redeemed  Boolean    @default(false)
+  redeemed_at  DateTime?
+  created_at   DateTime   @default(now())
+  expires_at   DateTime
+  Referral     Referral[]
+  user         User       @relation(fields: [user_id], references: [user_id])
+  discount     Discount   @relation(fields: [discount_id], references: [discount_id])
+}
+
+model Discount {
+  discount_id    Int       @id @default(autoincrement())
+  store_id       Int?
+  product_id     Int?
+  discount_code  String    @unique
+  discount_type  Type
+  discount_value Int
+  minimum_order  Int?
+  expires_at     DateTime
+  created_at     DateTime  @default(now())
+  updated_at     DateTime  @default(now())
+  store          Store?    @relation(fields: [store_id], references: [store_id])
+  product        Product?  @relation(fields: [product_id], references: [product_id])
+  Voucher        Voucher[]
+  User           User?     @relation(fields: [userUser_id], references: [user_id])
+  userUser_id    Int?
+}
+
+model Store {
+  store_id    Int         @id @default(autoincrement())
+  store_name  String      @unique
+  address     String
+  subdistrict String?
+  city        String
+  city_id     String
+  province    String
+  province_id String
+  postcode    String
+  latitude    Float
+  longitude   Float
+  created_at  DateTime    @default(now())
+  updated_at  DateTime    @default(now())
+  user_id     Int?        @unique
+  Discount    Discount[]
+  Product     Product[]
+  Inventory   Inventory[]
+  Order       Order[]
+  User        User?       @relation(fields: [user_id], references: [user_id])
+}
+
+model Category {
+  category_id   Int       @id @default(autoincrement())
+  category_name String
+  description   String    @db.Text
+  created_at    DateTime  @default(now())
+  updated_at    DateTime  @default(now())
+  Product       Product[]
+}
+
+model Product {
+  product_id   Int            @id @default(autoincrement())
+  store_id     Int
+  name         String
+  description  String         @db.Text
+  price        Int
+  category_id  Int
+  created_at   DateTime       @default(now())
+  updated_at   DateTime       @default(now())
+  store        Store          @relation(fields: [store_id], references: [store_id])
+  category     Category       @relation(fields: [category_id], references: [category_id])
+  Discount     Discount[]
+  Inventory    Inventory[]
+  OrderItem    OrderItem[]
+  CartItem     CartItem[]
+  ProductImage ProductImage[]
+}
+
+model ProductImage {
+  image_id   Int      @id @default(autoincrement())
+  product_id Int
+  url        String
+  created_at DateTime @default(now())
+  updated_at DateTime @default(now())
+  product    Product  @relation(fields: [product_id], references: [product_id])
+}
+
+model Inventory {
+  inv_id     Int      @id @default(autoincrement())
+  store_id   Int
+  product_id Int
+  qty        Int
+  total_qty  Int
+  created_at DateTime @default(now())
+  updated_at DateTime @default(now())
+  store      Store    @relation(fields: [store_id], references: [store_id])
+  product    Product  @relation(fields: [product_id], references: [product_id])
+}
+
+model Order {
+  order_id     Int         @id @default(autoincrement())
+  user_id      Int
+  store_id     Int
+  order_status OrderStatus
+  total_price  Float
+  created_at   DateTime    @default(now())
+  updated_at   DateTime    @default(now())
+  user         User        @relation(fields: [user_id], references: [user_id])
+  store        Store       @relation(fields: [store_id], references: [store_id])
+  OrderItem    OrderItem[]
+  Shipping     Shipping[]
+}
+
+model OrderItem {
+  orderitem_id Int     @id @default(autoincrement())
+  order_id     Int
+  product_id   Int
+  qty          Int
+  price        Int
+  total_price  Int
+  order        Order   @relation(fields: [order_id], references: [order_id])
+  product      Product @relation(fields: [product_id], references: [product_id])
+}
+
+model Shipping {
+  shipping_id      Int            @id @default(autoincrement())
+  order_id         Int
+  shipping_cost    Float
+  shipping_address String         @db.Text
+  shipping_status  ShippingStatus
+  created_at       DateTime       @default(now())
+  updated_at       DateTime       @default(now())
+  order            Order          @relation(fields: [order_id], references: [order_id])
+}
+
+model CartItem {
+  cartitem_id Int      @id @default(autoincrement())
+  user_id     Int
+  product_id  Int
+  quantity    Int
+  created_at  DateTime @default(now())
+  updated_at  DateTime @default(now())
+  user        User     @relation(fields: [user_id], references: [user_id])
+  product     Product  @relation(fields: [product_id], references: [product_id])
+}
