@@ -20,6 +20,7 @@ import { PaymentsRouter } from "./routers/payments.router";
 import { DiscountRouter } from "./routers/discount-router";
 import { VoucherRouter } from "./routers/voucher.router";
 import { ReportsRouter } from "./routers/reports-store.router";
+import { ReportSuperAdminRouter } from "./routers/reports-superadmin.router";
 import { RevenueStoreRouter } from "./routers/revenue-store.router";
 
 const PORT: number = 8000;
@@ -48,7 +49,6 @@ const storeRouter = new StoreRouter();
 const categoryRouter = new CategoryRouter();
 const productImageRouter = new ProductImageRouter();
 const cartRouter = new CartRouter();
-// const rajaOngkirRouter = new RajaOngkirRouter();
 const rajaOngkirRouter = new RajaOngkirRouter();
 const cekOngkir = new CekOngkirRouter();
 const ordersRouter = new OrdersRouter();
@@ -56,6 +56,8 @@ const paymentsRouter = new PaymentsRouter();
 const discountRouter = new DiscountRouter()
 const voucherRouter = new VoucherRouter()
 const reportRouter = new ReportsRouter()
+const reportSuperAdminRouter = new ReportSuperAdminRouter();
+
 const revenueStoreRouter = new RevenueStoreRouter()
 
 app.use("/api/auth", authRouter.getRouter()); // sasa
@@ -74,7 +76,8 @@ app.use("/api/rajaongkir", rajaOngkirRouter.getRouter()); //all
 app.use("/api/cek-ongkir",cekOngkir.getRouter()) 
 app.use("/api/discount", discountRouter.getRouter())
 app.use("/api/voucher", voucherRouter.getRouter())
-app.use("/api/report/", reportRouter.getRouter())
+app.use("/api/reports/", reportRouter.getRouter())
+app.use("/api/reports-superadmin", reportSuperAdminRouter.getRouter());
 app.use("/api/revenueorder/", revenueStoreRouter.getRouter())
 
 
