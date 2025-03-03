@@ -36,7 +36,9 @@ class StoreController {
                         where: { user_id: userId },
                     });
                     if (assignedUser) {
-                        return res.status(400).json({ error: "User already owns another store" });
+                        return res
+                            .status(400)
+                            .json({ error: "User already owns another store" });
                     }
                 }
                 // Buat store baru
@@ -65,6 +67,13 @@ class StoreController {
     getStores(req, res) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
+                // Extract pagination parameters from query
+                const page = Number(req.query.page) || 1;
+                const limit = Number(req.query.limit) || 10;
+                const skip = (page - 1) * limit;
+                // Get total count of stores
+                const totalStores = yield prisma.store.count();
+                // Get paginated stores
                 const stores = yield prisma.store.findMany({
                     include: {
                         User: {
@@ -77,8 +86,26 @@ class StoreController {
                         Product: true,
                         Inventory: true,
                     },
+                    skip,
+                    take: limit,
                 });
-                return res.status(200).json(stores);
+                // Calculate pagination metadata
+                const totalPages = Math.ceil(totalStores / limit);
+                const hasNextPage = page < totalPages;
+                const hasPrevPage = page > 1;
+                // Return paginated response
+                return res.status(200).json({
+                    status: "success",
+                    data: stores,
+                    pagination: {
+                        total: totalStores,
+                        page,
+                        limit,
+                        totalPages,
+                        hasNextPage,
+                        hasPrevPage,
+                    },
+                });
             }
             catch (error) {
                 const message = error instanceof Error ? error.message : "Unknown error occurred";
@@ -124,7 +151,11 @@ class StoreController {
                 }
                 const { store_name, address, subdistrict, city, province, postcode, latitude, longitude, user_id, } = req.body;
                 const storeIdNum = Number(store_id);
-                const userIdNum = user_id !== undefined ? (user_id === null ? null : Number(user_id)) : undefined;
+                const userIdNum = user_id !== undefined
+                    ? user_id === null
+                        ? null
+                        : Number(user_id)
+                    : undefined;
                 const currentUser = req.user;
                 if (!currentUser) {
                     return res.status(403).json({ error: "Unauthorized" });
@@ -146,18 +177,22 @@ class StoreController {
                 if (userIdNum !== undefined && userIdNum !== existingStore.user_id) {
                     // Super Admin boleh update user_id
                     if (!isSuperAdmin) {
-                        return res.status(403).json({ error: "You are not authorized to change store owner" });
+                        return res
+                            .status(403)
+                            .json({ error: "You are not authorized to change store owner" });
                     }
                     // Cek apakah user sudah memiliki store lain (kecuali store yang sedang diupdate)
                     if (userIdNum !== null) {
                         const existingUserStore = yield prisma.store.findFirst({
                             where: {
                                 user_id: userIdNum,
-                                NOT: { store_id: storeIdNum }, // 
+                                NOT: { store_id: storeIdNum }, //
                             },
                         });
                         if (existingUserStore) {
-                            return res.status(400).json({ error: "User already assigned to another store" });
+                            return res
+                                .status(400)
+                                .json({ error: "User already assigned to another store" });
                         }
                     }
                     // Tambahkan perubahan user_id ke data update
