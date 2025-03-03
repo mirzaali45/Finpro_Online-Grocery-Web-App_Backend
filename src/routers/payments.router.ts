@@ -15,12 +15,12 @@ export class PaymentsRouter {
   }
   private initializeRoutes() {
     this.router.post(
-      "/snap-token",
-      this.paymentsController.createSnapToken
+      "/create",
+      this.paymentsController.createPaymentOrder
     );
     this.router.post(
-      "/notification",
-      this.paymentsController.midtransNotification
+      "/callback",
+      this.paymentsController.paymentCallback
     );
   }
   getRouter(): Router {

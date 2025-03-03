@@ -25,7 +25,8 @@ const payments_router_1 = require("./routers/payments.router");
 const discount_router_1 = require("./routers/discount-router");
 const voucher_router_1 = require("./routers/voucher.router");
 const reports_store_router_1 = require("./routers/reports-store.router");
-const revenueorder_router_1 = require("./routers/revenueorder.router");
+const reports_superadmin_router_1 = require("./routers/reports-superadmin.router");
+const revenue_store_router_1 = require("./routers/revenue-store.router");
 const PORT = 8000;
 const base_url_fe = process.env.BASE_URL_FE;
 const app = (0, express_1.default)();
@@ -47,7 +48,6 @@ const storeRouter = new store_router_1.StoreRouter();
 const categoryRouter = new category_router_1.CategoryRouter();
 const productImageRouter = new product_image_router_1.ProductImageRouter();
 const cartRouter = new cart_router_1.CartRouter();
-// const rajaOngkirRouter = new RajaOngkirRouter();
 const rajaOngkirRouter = new rajaongkir_router_1.RajaOngkirRouter();
 const cekOngkir = new cekongkir_router_1.CekOngkirRouter();
 const ordersRouter = new order_router_1.OrdersRouter();
@@ -55,7 +55,8 @@ const paymentsRouter = new payments_router_1.PaymentsRouter();
 const discountRouter = new discount_router_1.DiscountRouter();
 const voucherRouter = new voucher_router_1.VoucherRouter();
 const reportRouter = new reports_store_router_1.ReportsRouter();
-const revenueStoreRouter = new revenueorder_router_1.RevenueStoreRouter();
+const reportSuperAdminRouter = new reports_superadmin_router_1.ReportSuperAdminRouter();
+const revenueStoreRouter = new revenue_store_router_1.RevenueStoreRouter();
 app.use("/api/auth", authRouter.getRouter()); // sasa
 app.use("/api/customer", customerRouter.getRouter()); // sasa
 app.use("/api/super-admin", superAdminRouter.getRouter()); // zaki
@@ -72,7 +73,8 @@ app.use("/api/rajaongkir", rajaOngkirRouter.getRouter()); //all
 app.use("/api/cek-ongkir", cekOngkir.getRouter());
 app.use("/api/discount", discountRouter.getRouter());
 app.use("/api/voucher", voucherRouter.getRouter());
-app.use("/api/report/", reportRouter.getRouter());
+app.use("/api/reports/", reportRouter.getRouter());
+app.use("/api/reports-superadmin", reportSuperAdminRouter.getRouter());
 app.use("/api/revenueorder/", revenueStoreRouter.getRouter());
 app.get("/api", (req, res) => {
     res.send("Welcome to the API!");
