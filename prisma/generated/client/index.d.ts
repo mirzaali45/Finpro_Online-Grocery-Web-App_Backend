@@ -494,7 +494,7 @@ export namespace Prisma {
   export type DecimalJsLike = runtime.DecimalJsLike
 
   /**
-   * Metrics
+   * Metrics 
    */
   export type Metrics = runtime.Metrics
   export type Metric<T> = runtime.Metric<T>
@@ -512,14 +512,14 @@ export namespace Prisma {
   export import Exact = $Public.Exact
 
   /**
-   * Prisma Client JS version: 6.3.1
-   * Query Engine version: acc0b9dd43eb689cbd20c9470515d719db10d0b0
+   * Prisma Client JS version: 6.2.1
+   * Query Engine version: 4123509d24aa4dede1e864b46351bf2790323b69
    */
   export type PrismaVersion = {
     client: string
   }
 
-  export const prismaVersion: PrismaVersion
+  export const prismaVersion: PrismaVersion 
 
   /**
    * Utility Types
@@ -535,15 +535,15 @@ export namespace Prisma {
 
   /**
    * Types of the values used to represent different kinds of `null` values when working with JSON fields.
-   *
+   * 
    * @see https://www.prisma.io/docs/concepts/components/prisma-client/working-with-fields/working-with-json-fields#filtering-on-a-json-field
    */
   namespace NullTypes {
     /**
     * Type of `Prisma.DbNull`.
-    *
+    * 
     * You cannot use other instances of this class. Please use the `Prisma.DbNull` value.
-    *
+    * 
     * @see https://www.prisma.io/docs/concepts/components/prisma-client/working-with-fields/working-with-json-fields#filtering-on-a-json-field
     */
     class DbNull {
@@ -553,9 +553,9 @@ export namespace Prisma {
 
     /**
     * Type of `Prisma.JsonNull`.
-    *
+    * 
     * You cannot use other instances of this class. Please use the `Prisma.JsonNull` value.
-    *
+    * 
     * @see https://www.prisma.io/docs/concepts/components/prisma-client/working-with-fields/working-with-json-fields#filtering-on-a-json-field
     */
     class JsonNull {
@@ -565,9 +565,9 @@ export namespace Prisma {
 
     /**
     * Type of `Prisma.AnyNull`.
-    *
+    * 
     * You cannot use other instances of this class. Please use the `Prisma.AnyNull` value.
-    *
+    * 
     * @see https://www.prisma.io/docs/concepts/components/prisma-client/working-with-fields/working-with-json-fields#filtering-on-a-json-field
     */
     class AnyNull {
@@ -578,21 +578,21 @@ export namespace Prisma {
 
   /**
    * Helper for filtering JSON entries that have `null` on the database (empty on the db)
-   *
+   * 
    * @see https://www.prisma.io/docs/concepts/components/prisma-client/working-with-fields/working-with-json-fields#filtering-on-a-json-field
    */
   export const DbNull: NullTypes.DbNull
 
   /**
    * Helper for filtering JSON entries that have JSON `null` values (not empty on the db)
-   *
+   * 
    * @see https://www.prisma.io/docs/concepts/components/prisma-client/working-with-fields/working-with-json-fields#filtering-on-a-json-field
    */
   export const JsonNull: NullTypes.JsonNull
 
   /**
    * Helper for filtering JSON entries that are `Prisma.DbNull` or `Prisma.JsonNull`
-   *
+   * 
    * @see https://www.prisma.io/docs/concepts/components/prisma-client/working-with-fields/working-with-json-fields#filtering-on-a-json-field
    */
   export const AnyNull: NullTypes.AnyNull
@@ -3814,10 +3814,6 @@ export namespace Prisma {
      * Filter which Users to update
      */
     where?: UserWhereInput
-    /**
-     * Limit how many Users to update.
-     */
-    limit?: number
   }
 
   /**
@@ -3840,10 +3836,6 @@ export namespace Prisma {
      * Filter which Users to update
      */
     where?: UserWhereInput
-    /**
-     * Limit how many Users to update.
-     */
-    limit?: number
   }
 
   /**
@@ -3906,10 +3898,6 @@ export namespace Prisma {
      * Filter which Users to delete
      */
     where?: UserWhereInput
-    /**
-     * Limit how many Users to delete.
-     */
-    limit?: number
   }
 
   /**
@@ -5207,10 +5195,6 @@ export namespace Prisma {
      * Filter which Addresses to update
      */
     where?: AddressWhereInput
-    /**
-     * Limit how many Addresses to update.
-     */
-    limit?: number
   }
 
   /**
@@ -5233,10 +5217,6 @@ export namespace Prisma {
      * Filter which Addresses to update
      */
     where?: AddressWhereInput
-    /**
-     * Limit how many Addresses to update.
-     */
-    limit?: number
     /**
      * Choose, which related nodes to fetch as well
      */
@@ -5303,10 +5283,6 @@ export namespace Prisma {
      * Filter which Addresses to delete
      */
     where?: AddressWhereInput
-    /**
-     * Limit how many Addresses to delete.
-     */
-    limit?: number
   }
 
   /**
@@ -6319,10 +6295,6 @@ export namespace Prisma {
      * Filter which Referrals to update
      */
     where?: ReferralWhereInput
-    /**
-     * Limit how many Referrals to update.
-     */
-    limit?: number
   }
 
   /**
@@ -6345,10 +6317,6 @@ export namespace Prisma {
      * Filter which Referrals to update
      */
     where?: ReferralWhereInput
-    /**
-     * Limit how many Referrals to update.
-     */
-    limit?: number
     /**
      * Choose, which related nodes to fetch as well
      */
@@ -6415,10 +6383,6 @@ export namespace Prisma {
      * Filter which Referrals to delete
      */
     where?: ReferralWhereInput
-    /**
-     * Limit how many Referrals to delete.
-     */
-    limit?: number
   }
 
   /**
@@ -7510,10 +7474,6 @@ export namespace Prisma {
      * Filter which Vouchers to update
      */
     where?: VoucherWhereInput
-    /**
-     * Limit how many Vouchers to update.
-     */
-    limit?: number
   }
 
   /**
@@ -7536,10 +7496,6 @@ export namespace Prisma {
      * Filter which Vouchers to update
      */
     where?: VoucherWhereInput
-    /**
-     * Limit how many Vouchers to update.
-     */
-    limit?: number
     /**
      * Choose, which related nodes to fetch as well
      */
@@ -7606,10 +7562,6 @@ export namespace Prisma {
      * Filter which Vouchers to delete
      */
     where?: VoucherWhereInput
-    /**
-     * Limit how many Vouchers to delete.
-     */
-    limit?: number
   }
 
   /**
@@ -8759,10 +8711,6 @@ export namespace Prisma {
      * Filter which Discounts to update
      */
     where?: DiscountWhereInput
-    /**
-     * Limit how many Discounts to update.
-     */
-    limit?: number
   }
 
   /**
@@ -8785,10 +8733,6 @@ export namespace Prisma {
      * Filter which Discounts to update
      */
     where?: DiscountWhereInput
-    /**
-     * Limit how many Discounts to update.
-     */
-    limit?: number
     /**
      * Choose, which related nodes to fetch as well
      */
@@ -8855,10 +8799,6 @@ export namespace Prisma {
      * Filter which Discounts to delete
      */
     where?: DiscountWhereInput
-    /**
-     * Limit how many Discounts to delete.
-     */
-    limit?: number
   }
 
   /**
@@ -10053,10 +9993,6 @@ export namespace Prisma {
      * Filter which Stores to update
      */
     where?: StoreWhereInput
-    /**
-     * Limit how many Stores to update.
-     */
-    limit?: number
   }
 
   /**
@@ -10079,10 +10015,6 @@ export namespace Prisma {
      * Filter which Stores to update
      */
     where?: StoreWhereInput
-    /**
-     * Limit how many Stores to update.
-     */
-    limit?: number
     /**
      * Choose, which related nodes to fetch as well
      */
@@ -10149,10 +10081,6 @@ export namespace Prisma {
      * Filter which Stores to delete
      */
     where?: StoreWhereInput
-    /**
-     * Limit how many Stores to delete.
-     */
-    limit?: number
   }
 
   /**
@@ -11265,10 +11193,6 @@ export namespace Prisma {
      * Filter which Categories to update
      */
     where?: CategoryWhereInput
-    /**
-     * Limit how many Categories to update.
-     */
-    limit?: number
   }
 
   /**
@@ -11291,10 +11215,6 @@ export namespace Prisma {
      * Filter which Categories to update
      */
     where?: CategoryWhereInput
-    /**
-     * Limit how many Categories to update.
-     */
-    limit?: number
   }
 
   /**
@@ -11357,10 +11277,6 @@ export namespace Prisma {
      * Filter which Categories to delete
      */
     where?: CategoryWhereInput
-    /**
-     * Limit how many Categories to delete.
-     */
-    limit?: number
   }
 
   /**
@@ -12458,10 +12374,6 @@ export namespace Prisma {
      * Filter which Products to update
      */
     where?: ProductWhereInput
-    /**
-     * Limit how many Products to update.
-     */
-    limit?: number
   }
 
   /**
@@ -12484,10 +12396,6 @@ export namespace Prisma {
      * Filter which Products to update
      */
     where?: ProductWhereInput
-    /**
-     * Limit how many Products to update.
-     */
-    limit?: number
     /**
      * Choose, which related nodes to fetch as well
      */
@@ -12554,10 +12462,6 @@ export namespace Prisma {
      * Filter which Products to delete
      */
     where?: ProductWhereInput
-    /**
-     * Limit how many Products to delete.
-     */
-    limit?: number
   }
 
   /**
@@ -13674,10 +13578,6 @@ export namespace Prisma {
      * Filter which ProductImages to update
      */
     where?: ProductImageWhereInput
-    /**
-     * Limit how many ProductImages to update.
-     */
-    limit?: number
   }
 
   /**
@@ -13700,10 +13600,6 @@ export namespace Prisma {
      * Filter which ProductImages to update
      */
     where?: ProductImageWhereInput
-    /**
-     * Limit how many ProductImages to update.
-     */
-    limit?: number
     /**
      * Choose, which related nodes to fetch as well
      */
@@ -13770,10 +13666,6 @@ export namespace Prisma {
      * Filter which ProductImages to delete
      */
     where?: ProductImageWhereInput
-    /**
-     * Limit how many ProductImages to delete.
-     */
-    limit?: number
   }
 
   /**
@@ -14816,10 +14708,6 @@ export namespace Prisma {
      * Filter which Inventories to update
      */
     where?: InventoryWhereInput
-    /**
-     * Limit how many Inventories to update.
-     */
-    limit?: number
   }
 
   /**
@@ -14842,10 +14730,6 @@ export namespace Prisma {
      * Filter which Inventories to update
      */
     where?: InventoryWhereInput
-    /**
-     * Limit how many Inventories to update.
-     */
-    limit?: number
     /**
      * Choose, which related nodes to fetch as well
      */
@@ -14912,10 +14796,6 @@ export namespace Prisma {
      * Filter which Inventories to delete
      */
     where?: InventoryWhereInput
-    /**
-     * Limit how many Inventories to delete.
-     */
-    limit?: number
   }
 
   /**
@@ -15964,10 +15844,6 @@ export namespace Prisma {
      * Filter which Orders to update
      */
     where?: OrderWhereInput
-    /**
-     * Limit how many Orders to update.
-     */
-    limit?: number
   }
 
   /**
@@ -15990,10 +15866,6 @@ export namespace Prisma {
      * Filter which Orders to update
      */
     where?: OrderWhereInput
-    /**
-     * Limit how many Orders to update.
-     */
-    limit?: number
     /**
      * Choose, which related nodes to fetch as well
      */
@@ -16060,10 +15932,6 @@ export namespace Prisma {
      * Filter which Orders to delete
      */
     where?: OrderWhereInput
-    /**
-     * Limit how many Orders to delete.
-     */
-    limit?: number
   }
 
   /**
@@ -17145,10 +17013,6 @@ export namespace Prisma {
      * Filter which OrderItems to update
      */
     where?: OrderItemWhereInput
-    /**
-     * Limit how many OrderItems to update.
-     */
-    limit?: number
   }
 
   /**
@@ -17171,10 +17035,6 @@ export namespace Prisma {
      * Filter which OrderItems to update
      */
     where?: OrderItemWhereInput
-    /**
-     * Limit how many OrderItems to update.
-     */
-    limit?: number
     /**
      * Choose, which related nodes to fetch as well
      */
@@ -17241,10 +17101,6 @@ export namespace Prisma {
      * Filter which OrderItems to delete
      */
     where?: OrderItemWhereInput
-    /**
-     * Limit how many OrderItems to delete.
-     */
-    limit?: number
   }
 
   /**
@@ -18271,10 +18127,6 @@ export namespace Prisma {
      * Filter which Shippings to update
      */
     where?: ShippingWhereInput
-    /**
-     * Limit how many Shippings to update.
-     */
-    limit?: number
   }
 
   /**
@@ -18297,10 +18149,6 @@ export namespace Prisma {
      * Filter which Shippings to update
      */
     where?: ShippingWhereInput
-    /**
-     * Limit how many Shippings to update.
-     */
-    limit?: number
     /**
      * Choose, which related nodes to fetch as well
      */
@@ -18367,10 +18215,6 @@ export namespace Prisma {
      * Filter which Shippings to delete
      */
     where?: ShippingWhereInput
-    /**
-     * Limit how many Shippings to delete.
-     */
-    limit?: number
   }
 
   /**
@@ -19396,10 +19240,6 @@ export namespace Prisma {
      * Filter which CartItems to update
      */
     where?: CartItemWhereInput
-    /**
-     * Limit how many CartItems to update.
-     */
-    limit?: number
   }
 
   /**
@@ -19422,10 +19262,6 @@ export namespace Prisma {
      * Filter which CartItems to update
      */
     where?: CartItemWhereInput
-    /**
-     * Limit how many CartItems to update.
-     */
-    limit?: number
     /**
      * Choose, which related nodes to fetch as well
      */
@@ -19492,10 +19328,6 @@ export namespace Prisma {
      * Filter which CartItems to delete
      */
     where?: CartItemWhereInput
-    /**
-     * Limit how many CartItems to delete.
-     */
-    limit?: number
   }
 
   /**
@@ -20441,10 +20273,6 @@ export namespace Prisma {
      * Filter which Provinces to update
      */
     where?: ProvinceWhereInput
-    /**
-     * Limit how many Provinces to update.
-     */
-    limit?: number
   }
 
   /**
@@ -20467,10 +20295,6 @@ export namespace Prisma {
      * Filter which Provinces to update
      */
     where?: ProvinceWhereInput
-    /**
-     * Limit how many Provinces to update.
-     */
-    limit?: number
   }
 
   /**
@@ -20533,10 +20357,6 @@ export namespace Prisma {
      * Filter which Provinces to delete
      */
     where?: ProvinceWhereInput
-    /**
-     * Limit how many Provinces to delete.
-     */
-    limit?: number
   }
 
   /**
@@ -21531,10 +21351,6 @@ export namespace Prisma {
      * Filter which Cities to update
      */
     where?: CityWhereInput
-    /**
-     * Limit how many Cities to update.
-     */
-    limit?: number
   }
 
   /**
@@ -21557,10 +21373,6 @@ export namespace Prisma {
      * Filter which Cities to update
      */
     where?: CityWhereInput
-    /**
-     * Limit how many Cities to update.
-     */
-    limit?: number
     /**
      * Choose, which related nodes to fetch as well
      */
@@ -21627,10 +21439,6 @@ export namespace Prisma {
      * Filter which Cities to delete
      */
     where?: CityWhereInput
-    /**
-     * Limit how many Cities to delete.
-     */
-    limit?: number
   }
 
   /**
