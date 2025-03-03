@@ -134,6 +134,7 @@ class PaymentsController {
     createPaymentOrder(req, res) {
         return __awaiter(this, void 0, void 0, function* () {
             const { orderId, totalPrice, userId, storeId } = req.body;
+<<<<<<< HEAD
             // Validasi data yang diterima
             if (!orderId || !totalPrice || !userId || !storeId) {
                 console.error("Missing required fields:", {
@@ -149,6 +150,32 @@ class PaymentsController {
                 return;
             }
             try {
+=======
+<<<<<<< HEAD
+            try {
+                // Pastikan storeId dan userId ada
+                if (!userId || !storeId) {
+                    res.status(400).json({ status: "error", message: "user_id or store_id is missing" });
+                    return;
+                }
+=======
+            // Validasi data yang diterima
+            if (!orderId || !totalPrice || !userId || !storeId) {
+                console.error("Missing required fields:", {
+                    orderId,
+                    totalPrice,
+                    userId,
+                    storeId,
+                });
+                res.status(400).json({
+                    status: "error",
+                    message: "Missing required fields: orderId, totalPrice, userId, or storeId",
+                });
+                return;
+            }
+            try {
+>>>>>>> b0ae97aa709b9db278bccab6cdcf5c196ae71e70
+>>>>>>> 420f1422fb9ee3e4e52ab1fed70e4c09de93bf9d
                 // Membuat order di database (status pending payment)
                 const order = yield prisma.order.create({
                     data: {
@@ -176,8 +203,18 @@ class PaymentsController {
                         phone: "+628123456789",
                     },
                 };
+<<<<<<< HEAD
                 const chargeResponse = yield midtrans.transaction.create(parameter); // Metode create yang benar
                 console.log("Midtrans chargeResponse:", chargeResponse);
+=======
+<<<<<<< HEAD
+                // Membuat transaksi dengan Midtrans API (gunakan coreApi.transaction.create)
+                const chargeResponse = yield midtrans.transaction.create(parameter); // Use `transaction.create` directly
+=======
+                const chargeResponse = yield midtrans.transaction.create(parameter); // Metode create yang benar
+                console.log("Midtrans chargeResponse:", chargeResponse);
+>>>>>>> b0ae97aa709b9db278bccab6cdcf5c196ae71e70
+>>>>>>> 420f1422fb9ee3e4e52ab1fed70e4c09de93bf9d
                 // Mengirim URL pembayaran ke client
                 res.status(200).json({
                     status: "success",
@@ -186,10 +223,21 @@ class PaymentsController {
                 });
             }
             catch (error) {
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+                console.error(error);
+                res.status(500).json({ status: "error", message: "Failed to create payment order" });
+=======
+>>>>>>> 420f1422fb9ee3e4e52ab1fed70e4c09de93bf9d
                 console.error("Error creating payment order:", error);
                 res
                     .status(500)
                     .json({ status: "error", message: "Failed to create payment order" });
+<<<<<<< HEAD
+=======
+>>>>>>> b0ae97aa709b9db278bccab6cdcf5c196ae71e70
+>>>>>>> 420f1422fb9ee3e4e52ab1fed70e4c09de93bf9d
             }
         });
     }
