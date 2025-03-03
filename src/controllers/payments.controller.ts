@@ -125,7 +125,7 @@
 //     }
 //   }
 // }
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient } from "../../prisma/generated/client";
 import midtransClient from "midtrans-client";
 import { Request, Response } from "express";
 

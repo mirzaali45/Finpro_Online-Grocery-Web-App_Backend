@@ -17,6 +17,23 @@ class ReportSuperAdmin {
         return __awaiter(this, void 0, void 0, function* () {
             try {
                 // Get query parameters for filtering
+<<<<<<< HEAD
+                const storeId = req.query.storeId ? parseInt(req.query.storeId) : undefined;
+                const productId = req.query.productId ? parseInt(req.query.productId) : undefined;
+                const lowStock = req.query.lowStock === 'true';
+                const threshold = req.query.threshold ? parseInt(req.query.threshold) : 5; // Default threshold
+                // Build the filter object
+                const filter = {};
+                if (storeId) {
+                    filter.store_id = storeId;
+                }
+                if (productId) {
+                    filter.product_id = productId;
+                }
+                // Get inventory data with related store and product information
+                const inventoryData = yield prisma.inventory.findMany({
+                    where: filter,
+=======
                 const storeId = req.query.storeId
                     ? parseInt(req.query.storeId)
                     : undefined;
@@ -90,12 +107,17 @@ class ReportSuperAdmin {
                 // Get inventory summary data for all matching stores (for store summary)
                 const inventorySummaryData = yield prisma.inventory.findMany({
                     where: inventoryFilter,
+>>>>>>> b0ae97aa709b9db278bccab6cdcf5c196ae71e70
                     include: {
                         store: {
                             select: {
                                 store_id: true,
                                 store_name: true,
                                 city: true,
+<<<<<<< HEAD
+                                province: true
+                            }
+=======
                                 province: true,
                             },
                         },
@@ -123,6 +145,7 @@ class ReportSuperAdmin {
                                 city: true,
                                 province: true,
                             },
+>>>>>>> b0ae97aa709b9db278bccab6cdcf5c196ae71e70
                         },
                         product: {
                             select: {
@@ -132,6 +155,43 @@ class ReportSuperAdmin {
                                 category: {
                                     select: {
                                         category_id: true,
+<<<<<<< HEAD
+                                        category_name: true
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    orderBy: {
+                        store_id: 'asc'
+                    }
+                });
+                // Filter for low stock items if requested
+                const filteredInventory = lowStock
+                    ? inventoryData.filter(item => item.qty <= threshold)
+                    : inventoryData;
+                // Calculate aggregated statistics
+                const totalItems = filteredInventory.reduce((sum, item) => sum + item.qty, 0);
+                const totalValue = filteredInventory.reduce((sum, item) => sum + (item.qty * item.product.price), 0);
+                // Group by store for summary
+                const storesSummary = filteredInventory.reduce((acc, item) => {
+                    const storeId = item.store_id;
+                    if (!acc[storeId]) {
+                        acc[storeId] = {
+                            store_id: storeId,
+                            store_name: item.store.store_name,
+                            location: `${item.store.city}, ${item.store.province}`,
+                            totalItems: 0,
+                            totalValue: 0,
+                            itemCount: 0
+                        };
+                    }
+                    acc[storeId].totalItems += item.qty;
+                    acc[storeId].totalValue += (item.qty * item.product.price);
+                    acc[storeId].itemCount += 1;
+                    return acc;
+                }, {});
+=======
                                         category_name: true,
                                     },
                                 },
@@ -182,12 +242,26 @@ class ReportSuperAdmin {
                 const inventoryTotalPages = Math.ceil(totalInventoryCount / inventoryLimit);
                 const inventoryHasNextPage = inventoryPage < inventoryTotalPages;
                 const inventoryHasPrevPage = inventoryPage > 1;
+>>>>>>> b0ae97aa709b9db278bccab6cdcf5c196ae71e70
                 // Return the response
                 return res.status(200).json({
                     status: "success",
                     message: "Inventory report retrieved successfully",
                     data: {
                         overview: {
+<<<<<<< HEAD
+                            totalStores: Object.keys(storesSummary).length,
+                            totalItems,
+                            totalValue,
+                            averageItemsPerStore: totalItems / Math.max(1, Object.keys(storesSummary).length)
+                        },
+                        storesSummary: Object.values(storesSummary),
+                        inventory: filteredInventory.map(item => ({
+                            inventory_id: item.inv_id,
+                            store: {
+                                id: item.store_id,
+                                name: item.store.store_name
+=======
                             totalStores, // Total count of ALL stores
                             displayedStores: allStores.length, // Count of stores on current page
                             storesWithInventory: Object.values(storesSummary).filter((s) => s.itemCount > 0).length,
@@ -203,16 +277,26 @@ class ReportSuperAdmin {
                             store: {
                                 id: item.store_id,
                                 name: item.store.store_name,
+>>>>>>> b0ae97aa709b9db278bccab6cdcf5c196ae71e70
                             },
                             product: {
                                 id: item.product_id,
                                 name: item.product.name,
                                 category: item.product.category.category_name,
+<<<<<<< HEAD
+                                price: item.product.price
+=======
                                 price: item.product.price,
+>>>>>>> b0ae97aa709b9db278bccab6cdcf5c196ae71e70
                             },
                             current_quantity: item.qty,
                             total_quantity: item.total_qty,
                             stockValue: item.qty * item.product.price,
+<<<<<<< HEAD
+                            lowStock: item.qty <= threshold
+                        }))
+                    }
+=======
                             lowStock: item.qty <= threshold,
                         })),
                         inventoryCount: totalInventoryCount, // Total count of inventory items
@@ -237,6 +321,7 @@ class ReportSuperAdmin {
                             hasPrevPage: inventoryHasPrevPage,
                         },
                     },
+>>>>>>> b0ae97aa709b9db278bccab6cdcf5c196ae71e70
                 });
             }
             catch (error) {
@@ -244,7 +329,11 @@ class ReportSuperAdmin {
                 return res.status(500).json({
                     status: "error",
                     message: "Failed to retrieve inventory report",
+<<<<<<< HEAD
+                    error: error instanceof Error ? error.message : "Unknown error"
+=======
                     error: error instanceof Error ? error.message : "Unknown error",
+>>>>>>> b0ae97aa709b9db278bccab6cdcf5c196ae71e70
                 });
             }
         });

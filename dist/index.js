@@ -27,7 +27,10 @@ const voucher_router_1 = require("./routers/voucher.router");
 const reports_store_router_1 = require("./routers/reports-store.router");
 const reports_superadmin_router_1 = require("./routers/reports-superadmin.router");
 const revenue_store_router_1 = require("./routers/revenue-store.router");
+<<<<<<< HEAD
+=======
 const revenue_superadmin_router_1 = require("./routers/revenue-superadmin.router");
+>>>>>>> b0ae97aa709b9db278bccab6cdcf5c196ae71e70
 const PORT = 8000;
 const base_url_fe = process.env.BASE_URL_FE;
 const app = (0, express_1.default)();
@@ -58,7 +61,10 @@ const voucherRouter = new voucher_router_1.VoucherRouter();
 const reportRouter = new reports_store_router_1.ReportsRouter();
 const reportSuperAdminRouter = new reports_superadmin_router_1.ReportSuperAdminRouter();
 const revenueStoreRouter = new revenue_store_router_1.RevenueStoreRouter();
+<<<<<<< HEAD
+=======
 const revenueSuperRouter = new revenue_superadmin_router_1.RevenueSuperAdminRouter();
+>>>>>>> b0ae97aa709b9db278bccab6cdcf5c196ae71e70
 app.use("/api/auth", authRouter.getRouter()); // sasa
 app.use("/api/customer", customerRouter.getRouter()); // sasa
 app.use("/api/super-admin", superAdminRouter.getRouter()); // zaki
