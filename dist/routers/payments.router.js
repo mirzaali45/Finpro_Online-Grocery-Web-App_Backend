@@ -12,7 +12,7 @@ class PaymentsRouter {
         this.initializeRoutes();
     }
     initializeRoutes() {
-        this.router.post("/create", this.paymentsController.createPaymentOrder);
+        this.router.post("/create", this.authMiddleware.verifyToken, this.paymentsController.createPaymentOrder);
         this.router.post("/callback", this.paymentsController.paymentCallback);
     }
     getRouter() {
