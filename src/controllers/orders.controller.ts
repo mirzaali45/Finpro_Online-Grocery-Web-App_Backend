@@ -94,6 +94,7 @@ export class OrdersController {
       const { user_id } = req.body;
       console.log("Creating order from cart for user:", user_id);
 
+
       // Find user with primary address - do this outside transaction
       const user = await prisma.user.findUnique({
         where: { user_id: Number(user_id) },
@@ -122,10 +123,19 @@ export class OrdersController {
         include: { product: { include: { store: true } } },
       });
 
-      if (cartItems.length === 0) {
-        responseError(res, "Keranjang belanja kosong.");
-        return;
-      }
+
+        // Validate user and address
+        if (!user)
+          throw new Error("User tidak ditemukan / tidak terautentikasi.");
+        if (!user.Address || user.Address.length === 0)
+          throw new Error("User tidak memiliki alamat pengiriman.");
+        const address = user.Address[0];
+
+        // Get cart items with product and store info
+        const cartItems = await tx.cartItem.findMany({
+          where: { user_id: Number(user_id) },
+          include: { product: { include: { store: true } } },
+        });
 
       // Check if all products are from the same store
       const storeIds = new Set(cartItems.map((item) => item.product.store_id));
@@ -133,11 +143,17 @@ export class OrdersController {
         responseError(
           res,
           "Tidak dapat membuat pesanan, produk berasal dari toko yang berbeda. Harap hanya pilih produk dari toko yang sama."
-        );
-        return;
-      }
 
-      const storeId = cartItems[0].product.store_id;
+        );
+
+        if (storeIds.size > 1) {
+          throw new Error(
+            "Tidak dapat membuat pesanan, produk berasal dari toko yang berbeda. Harap hanya pilih produk dari toko yang sama."
+          );
+        }
+
+        const storeId = cartItems[0].product.store_id;
+
 
       // Calculate total price
       let total_price = cartItems.reduce(
@@ -185,19 +201,24 @@ export class OrdersController {
             updated_at: new Date(),
           },
         });
-
         // Create order items
         for (const item of cartItems) {
           await tx.orderItem.create({
             data: {
               order_id: order.order_id,
+
+        // Create order items in parallel
+        const orderItemPromises = cartItems.map((item) =>
+          tx.orderItem.create({
+            data: {
+              order_id: newOrder.order_id,
               product_id: item.product_id,
               qty: item.quantity,
               price: item.product.price,
               total_price: item.product.price * item.quantity,
             },
-          });
-
+          })
+        );
           // Update inventory
           const inventory = inventoryMap.get(item.product_id);
           if (inventory) {
@@ -209,6 +230,7 @@ export class OrdersController {
               },
             });
           }
+
         }
 
         return order;
@@ -250,14 +272,25 @@ export class OrdersController {
             include: {
               product: true,
             },
+            Shipping: true,
+            store: true,
           },
-          Shipping: true,
-          store: true,
-        },
-      });
+        });
 
+        // Add null check inside transaction
+        if (!orderDetails) {
+          throw new Error("Failed to retrieve order details after creation");
+        }
       // Log success
       console.log(`Order ${newOrder.order_id} created successfully`);
+
+      // Add null check after transaction
+      if (!orderWithDetails) {
+        throw new Error("Failed to create order. No order details returned.");
+      }
+
+      // Log success
+      console.log(`Order ${orderWithDetails.order_id} created successfully`);
 
       res.status(201).json({
         message:

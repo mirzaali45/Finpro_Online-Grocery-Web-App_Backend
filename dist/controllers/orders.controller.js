@@ -89,6 +89,7 @@ class OrdersController {
             try {
                 const { user_id } = req.body;
                 console.log("Creating order from cart for user:", user_id);
+
                 // Find user with primary address - do this outside transaction
                 const user = yield prisma.user.findUnique({
                     where: { user_id: Number(user_id) },
@@ -155,10 +156,12 @@ class OrdersController {
                             store_id: storeId,
                             total_price,
                             order_status: client_1.OrderStatus.awaiting_payment,
+
                             created_at: new Date(),
                             updated_at: new Date(),
                         },
                     });
+
                     // Create order items
                     for (const item of cartItems) {
                         yield tx.orderItem.create({
