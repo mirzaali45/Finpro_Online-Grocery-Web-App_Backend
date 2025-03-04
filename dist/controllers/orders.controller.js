@@ -18,9 +18,7 @@ class OrdersController {
         return __awaiter(this, void 0, void 0, function* () {
             try {
                 const { status, user_id, store_id, date } = req.query;
-                // Buat objek "where" sesuai tipe Prisma.OrderWhereInput
                 const where = {};
-                // Filter by order_status
                 if (status &&
                     Object.values(client_1.OrderStatus).includes(status)) {
                     where.order_status = status;
