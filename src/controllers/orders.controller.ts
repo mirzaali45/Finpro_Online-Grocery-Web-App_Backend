@@ -95,6 +95,7 @@ export class OrdersController {
       console.log("Creating order from cart for user:", user_id);
 
 
+
       // Find user with primary address - do this outside transaction
       const user = await prisma.user.findUnique({
         where: { user_id: Number(user_id) },
@@ -137,12 +138,14 @@ export class OrdersController {
           include: { product: { include: { store: true } } },
         });
 
+
       // Check if all products are from the same store
       const storeIds = new Set(cartItems.map((item) => item.product.store_id));
       if (storeIds.size > 1) {
         responseError(
           res,
           "Tidak dapat membuat pesanan, produk berasal dari toko yang berbeda. Harap hanya pilih produk dari toko yang sama."
+
 
         );
 
@@ -153,6 +156,7 @@ export class OrdersController {
         }
 
         const storeId = cartItems[0].product.store_id;
+
 
 
       // Calculate total price
@@ -284,6 +288,13 @@ export class OrdersController {
       // Log success
       console.log(`Order ${newOrder.order_id} created successfully`);
 
+      // Add null check after transaction
+      if (!orderWithDetails) {
+        throw new Error("Failed to create order. No order details returned.");
+      }
+
+      // Log success
+      console.log(`Order ${orderWithDetails.order_id} created successfully`);
       // Add null check after transaction
       if (!orderWithDetails) {
         throw new Error("Failed to create order. No order details returned.");
