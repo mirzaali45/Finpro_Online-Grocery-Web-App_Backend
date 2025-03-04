@@ -12,7 +12,24 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.OrdersController = void 0;
 const client_1 = require("../../prisma/generated/client");
 const responseError_1 = require("../helpers/responseError");
-const prisma = new client_1.PrismaClient();
+let prisma = new client_1.PrismaClient;
+if (process.env.NODE_ENV === "production") {
+    prisma = new client_1.PrismaClient({
+        log: ["query", "info", "warn", "error"],
+        datasources: {
+            db: {
+                url: process.env.DATABASE_URL,
+            },
+        },
+    });
+}
+else {
+    // For development, use global instance to prevent too many connections
+    if (!global.prisma) {
+        global.prisma = new client_1.PrismaClient();
+    }
+    prisma = global.prisma;
+}
 class OrdersController {
     getOrders(req, res) {
         return __awaiter(this, void 0, void 0, function* () {
