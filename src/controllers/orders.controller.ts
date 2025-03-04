@@ -18,10 +18,8 @@ export class OrdersController {
         date?: string;
       };
 
-      // Buat objek "where" sesuai tipe Prisma.OrderWhereInput
       const where: any = {};
 
-      // Filter by order_status
       if (
         status &&
         Object.values(OrderStatus).includes(status as OrderStatus)
