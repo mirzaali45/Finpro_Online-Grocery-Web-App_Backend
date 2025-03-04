@@ -89,7 +89,13 @@ class OrdersController {
             try {
                 const { user_id } = req.body;
                 console.log("Creating order from cart for user:", user_id);
-                // Find user with primary address - do this outside transaction
+                // Step 1: Quick response to prevent Vercel timeout
+                // This is key - send a response early while processing continues
+                const responsePromise = new Promise((resolve) => {
+                    // We'll resolve this later to send the actual response
+                    setTimeout(() => resolve(), 8000); // Backup resolve after 8 seconds
+                });
+                // Do initial validation checks synchronously
                 const user = yield prisma.user.findUnique({
                     where: { user_id: Number(user_id) },
                     include: {
@@ -99,7 +105,6 @@ class OrdersController {
                         },
                     },
                 });
-                // Validate user and address
                 if (!user) {
                     (0, responseError_1.responseError)(res, "User tidak ditemukan / tidak terautentikasi.");
                     return;
@@ -109,7 +114,7 @@ class OrdersController {
                     return;
                 }
                 const address = user.Address[0];
-                // Get cart items - outside transaction
+                // Get cart items
                 const cartItems = yield prisma.cartItem.findMany({
                     where: { user_id: Number(user_id) },
                     include: { product: { include: { store: true } } },
@@ -126,8 +131,8 @@ class OrdersController {
                 }
                 const storeId = cartItems[0].product.store_id;
                 // Calculate total price
-                let total_price = cartItems.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
-                // Check inventories - outside transaction
+                const total_price = cartItems.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
+                // Check inventories
                 const productIds = cartItems.map((item) => item.product_id);
                 const inventories = yield prisma.inventory.findMany({
                     where: {
@@ -135,7 +140,6 @@ class OrdersController {
                         store_id: storeId,
                     },
                 });
-                // Create a map for quick lookup
                 const inventoryMap = new Map();
                 inventories.forEach((inv) => inventoryMap.set(inv.product_id, inv));
                 // Check inventory for each item
@@ -146,85 +150,93 @@ class OrdersController {
                         return;
                     }
                 }
-                // Start a smaller transaction only for order and order items
-                const newOrder = yield prisma.$transaction((tx) => __awaiter(this, void 0, void 0, function* () {
-                    // Create the order
-                    const order = yield tx.order.create({
-                        data: {
-                            user_id: Number(user_id),
-                            store_id: storeId,
-                            total_price,
-                            order_status: client_1.OrderStatus.awaiting_payment,
-                            created_at: new Date(),
-                            updated_at: new Date(),
-                        },
-                    });
-                    // Create order items
-                    for (const item of cartItems) {
-                        yield tx.orderItem.create({
+                // CRITICAL: Create order first - this is the core operation
+                const newOrder = yield prisma.order.create({
+                    data: {
+                        user_id: Number(user_id),
+                        store_id: storeId,
+                        total_price,
+                        order_status: client_1.OrderStatus.awaiting_payment,
+                        created_at: new Date(),
+                        updated_at: new Date(),
+                    },
+                });
+                // Send response immediately after order creation
+                res.status(201).json({
+                    message: "Order berhasil dibuat dari keranjang belanja. Pembayaran harus dilakukan dalam 1 jam.",
+                    data: {
+                        order_id: newOrder.order_id,
+                        user_id: newOrder.user_id,
+                        store_id: newOrder.store_id,
+                        total_price: newOrder.total_price,
+                        order_status: newOrder.order_status,
+                    },
+                });
+                // Continue processing in the background
+                // This will run even after response is sent
+                (() => __awaiter(this, void 0, void 0, function* () {
+                    try {
+                        // Process order items one at a time to avoid timeouts
+                        for (const item of cartItems) {
+                            // Create order item
+                            yield prisma.orderItem.create({
+                                data: {
+                                    order_id: newOrder.order_id,
+                                    product_id: item.product_id,
+                                    qty: item.quantity,
+                                    price: item.product.price,
+                                    total_price: item.product.price * item.quantity,
+                                },
+                            });
+                            // Update inventory
+                            const inventory = inventoryMap.get(item.product_id);
+                            if (inventory) {
+                                yield prisma.inventory.update({
+                                    where: { inv_id: inventory.inv_id },
+                                    data: {
+                                        total_qty: inventory.total_qty - item.quantity,
+                                        updated_at: new Date(),
+                                    },
+                                });
+                            }
+                        }
+                        // Create shipping record
+                        yield prisma.shipping.create({
                             data: {
-                                order_id: order.order_id,
-                                product_id: item.product_id,
-                                qty: item.quantity,
-                                price: item.product.price,
-                                total_price: item.product.price * item.quantity,
+                                order_id: newOrder.order_id,
+                                shipping_cost: 0,
+                                shipping_address: `${address.address}, ${address.city}, ${address.province}, ${address.postcode || ""}`,
+                                shipping_status: client_1.ShippingStatus.pending,
+                                created_at: new Date(),
+                                updated_at: new Date(),
                             },
                         });
-                        // Update inventory
-                        const inventory = inventoryMap.get(item.product_id);
-                        if (inventory) {
-                            yield tx.inventory.update({
-                                where: { inv_id: inventory.inv_id },
-                                data: {
-                                    total_qty: inventory.total_qty - item.quantity,
-                                    updated_at: new Date(),
+                        // Clear cart items in chunks to avoid timeout
+                        const cartItemChunkSize = 5;
+                        const userIdNum = Number(user_id);
+                        // Get all cart item IDs
+                        const allCartItems = yield prisma.cartItem.findMany({
+                            where: { user_id: userIdNum },
+                            select: { cartitem_id: true },
+                        });
+                        // Delete in smaller chunks
+                        for (let i = 0; i < allCartItems.length; i += cartItemChunkSize) {
+                            const chunk = allCartItems.slice(i, i + cartItemChunkSize);
+                            const ids = chunk.map((item) => item.cartitem_id);
+                            yield prisma.cartItem.deleteMany({
+                                where: {
+                                    cartitem_id: { in: ids },
                                 },
                             });
                         }
+                        console.log(`Order ${newOrder.order_id} processing completed successfully`);
                     }
-                    return order;
-                }));
-                // Now handle shipping and cart clearing separately
-                try {
-                    // Create shipping record
-                    yield prisma.shipping.create({
-                        data: {
-                            order_id: newOrder.order_id,
-                            shipping_cost: 0,
-                            shipping_address: `${address.address}, ${address.city}, ${address.province}, ${address.postcode || ""}`,
-                            shipping_status: client_1.ShippingStatus.pending,
-                            created_at: new Date(),
-                            updated_at: new Date(),
-                        },
-                    });
-                    // Clear user's cart
-                    yield prisma.cartItem.deleteMany({
-                        where: { user_id: Number(user_id) },
-                    });
-                }
-                catch (shippingError) {
-                    console.error("Error creating shipping or clearing cart:", shippingError);
-                    // Continue anyway since the order is created
-                }
-                // Get order details separately
-                const orderWithDetails = yield prisma.order.findUnique({
-                    where: { order_id: newOrder.order_id },
-                    include: {
-                        OrderItem: {
-                            include: {
-                                product: true,
-                            },
-                        },
-                        Shipping: true,
-                        store: true,
-                    },
-                });
-                // Log success
-                console.log(`Order ${newOrder.order_id} created successfully`);
-                res.status(201).json({
-                    message: "Order berhasil dibuat dari keranjang belanja. Pembayaran harus dilakukan dalam 1 jam.",
-                    data: orderWithDetails || newOrder, // Fallback to just the order if full details can't be fetched
-                });
+                    catch (backgroundError) {
+                        console.error("Background processing error:", backgroundError);
+                        // Consider sending this to an error tracking service
+                        // or storing in a separate errors table
+                    }
+                }))();
             }
             catch (error) {
                 console.error("createOrderFromCart error:", error);
