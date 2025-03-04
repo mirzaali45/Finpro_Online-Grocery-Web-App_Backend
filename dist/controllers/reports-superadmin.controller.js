@@ -19,6 +19,9 @@ class ReportSuperAdmin {
                 // Get query parameters for filtering
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 61002e687c9e70025e37606d3111acf5333b5fde
 =======
 >>>>>>> 61002e687c9e70025e37606d3111acf5333b5fde
                 const storeId = req.query.storeId ? parseInt(req.query.storeId) : undefined;
@@ -27,6 +30,7 @@ class ReportSuperAdmin {
                 const threshold = req.query.threshold ? parseInt(req.query.threshold) : 5; // Default threshold
                 // Build the filter object
                 const filter = {};
+<<<<<<< HEAD
 <<<<<<< HEAD
                 if (storeId) {
                     filter.store_id = storeId;
@@ -60,12 +64,15 @@ class ReportSuperAdmin {
                 const storeFilter = {};
 =======
 >>>>>>> 61002e687c9e70025e37606d3111acf5333b5fde
+=======
+>>>>>>> 61002e687c9e70025e37606d3111acf5333b5fde
                 if (storeId) {
                     filter.store_id = storeId;
                 }
                 if (productId) {
                     filter.product_id = productId;
                 }
+<<<<<<< HEAD
 <<<<<<< HEAD
                 // First, count total inventory items that match our filters for pagination
                 let totalInventoryCount = yield prisma.inventory.count({
@@ -115,6 +122,9 @@ class ReportSuperAdmin {
 =======
                 // Get inventory data with related store and product information
 >>>>>>> 61002e687c9e70025e37606d3111acf5333b5fde
+=======
+                // Get inventory data with related store and product information
+>>>>>>> 61002e687c9e70025e37606d3111acf5333b5fde
                 const inventoryData = yield prisma.inventory.findMany({
                     where: filter,
                     include: {
@@ -124,9 +134,14 @@ class ReportSuperAdmin {
                                 store_name: true,
                                 city: true,
 <<<<<<< HEAD
+<<<<<<< HEAD
                                 province: true,
                             },
 >>>>>>> b0ae97aa709b9db278bccab6cdcf5c196ae71e70
+=======
+                                province: true
+                            }
+>>>>>>> 61002e687c9e70025e37606d3111acf5333b5fde
 =======
                                 province: true
                             }
@@ -142,6 +157,9 @@ class ReportSuperAdmin {
                                         category_id: true,
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 61002e687c9e70025e37606d3111acf5333b5fde
 =======
 >>>>>>> 61002e687c9e70025e37606d3111acf5333b5fde
                                         category_name: true
@@ -149,6 +167,7 @@ class ReportSuperAdmin {
                                 }
                             }
                         }
+<<<<<<< HEAD
 <<<<<<< HEAD
                     },
                     orderBy: {
@@ -188,6 +207,8 @@ class ReportSuperAdmin {
                         },
 =======
 >>>>>>> 61002e687c9e70025e37606d3111acf5333b5fde
+=======
+>>>>>>> 61002e687c9e70025e37606d3111acf5333b5fde
                     },
                     orderBy: {
                         store_id: 'asc'
@@ -214,6 +235,7 @@ class ReportSuperAdmin {
                         };
                     }
 <<<<<<< HEAD
+<<<<<<< HEAD
                 });
                 // Calculate pagination metadata for stores
                 const storeTotalPages = Math.ceil(totalStores / storeLimit);
@@ -225,11 +247,16 @@ class ReportSuperAdmin {
                 const inventoryHasPrevPage = inventoryPage > 1;
 >>>>>>> b0ae97aa709b9db278bccab6cdcf5c196ae71e70
 =======
+=======
+>>>>>>> 61002e687c9e70025e37606d3111acf5333b5fde
                     acc[storeId].totalItems += item.qty;
                     acc[storeId].totalValue += (item.qty * item.product.price);
                     acc[storeId].itemCount += 1;
                     return acc;
                 }, {});
+<<<<<<< HEAD
+>>>>>>> 61002e687c9e70025e37606d3111acf5333b5fde
+=======
 >>>>>>> 61002e687c9e70025e37606d3111acf5333b5fde
                 // Return the response
                 return res.status(200).json({
@@ -239,6 +266,9 @@ class ReportSuperAdmin {
                         overview: {
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 61002e687c9e70025e37606d3111acf5333b5fde
                             totalStores: Object.keys(storesSummary).length,
                             totalItems,
                             totalValue,
@@ -250,6 +280,7 @@ class ReportSuperAdmin {
                             store: {
                                 id: item.store_id,
                                 name: item.store.store_name
+<<<<<<< HEAD
 =======
                             totalStores, // Total count of ALL stores
                             displayedStores: allStores.length, // Count of stores on current page
@@ -272,11 +303,14 @@ class ReportSuperAdmin {
 =======
                                 name: item.store.store_name
 >>>>>>> 61002e687c9e70025e37606d3111acf5333b5fde
+=======
+>>>>>>> 61002e687c9e70025e37606d3111acf5333b5fde
                             },
                             product: {
                                 id: item.product_id,
                                 name: item.product.name,
                                 category: item.product.category.category_name,
+<<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
                                 price: item.product.price
@@ -286,10 +320,14 @@ class ReportSuperAdmin {
 =======
                                 price: item.product.price
 >>>>>>> 61002e687c9e70025e37606d3111acf5333b5fde
+=======
+                                price: item.product.price
+>>>>>>> 61002e687c9e70025e37606d3111acf5333b5fde
                             },
                             current_quantity: item.qty,
                             total_quantity: item.total_qty,
                             stockValue: item.qty * item.product.price,
+<<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
                             lowStock: item.qty <= threshold
@@ -326,6 +364,11 @@ class ReportSuperAdmin {
                         }))
                     }
 >>>>>>> 61002e687c9e70025e37606d3111acf5333b5fde
+=======
+                            lowStock: item.qty <= threshold
+                        }))
+                    }
+>>>>>>> 61002e687c9e70025e37606d3111acf5333b5fde
                 });
             }
             catch (error) {
@@ -335,10 +378,14 @@ class ReportSuperAdmin {
                     message: "Failed to retrieve inventory report",
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
                     error: error instanceof Error ? error.message : "Unknown error"
 =======
                     error: error instanceof Error ? error.message : "Unknown error",
 >>>>>>> b0ae97aa709b9db278bccab6cdcf5c196ae71e70
+=======
+                    error: error instanceof Error ? error.message : "Unknown error"
+>>>>>>> 61002e687c9e70025e37606d3111acf5333b5fde
 =======
                     error: error instanceof Error ? error.message : "Unknown error"
 >>>>>>> 61002e687c9e70025e37606d3111acf5333b5fde
