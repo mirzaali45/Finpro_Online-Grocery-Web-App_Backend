@@ -95,6 +95,7 @@ export class OrdersController {
       console.log("Creating order from cart for user:", user_id);
 
 
+
       // Step 1: Quick response to prevent Vercel timeout
       // This is key - send a response early while processing continues
       const responsePromise = new Promise<void>((resolve) => {
@@ -103,7 +104,6 @@ export class OrdersController {
       });
 
       // Do initial validation checks synchronously
-
       const user = await prisma.user.findUnique({
         where: { user_id: Number(user_id) },
         include: {
@@ -113,6 +113,7 @@ export class OrdersController {
           },
         },
       });
+
       if (!user) {
         responseError(res, "User tidak ditemukan / tidak terautentikasi.");
         return;
@@ -122,8 +123,6 @@ export class OrdersController {
         return;
       }
       const address = user.Address[0];
-
-
       // Get cart items
       const cartItems = await prisma.cartItem.findMany({
         where: { user_id: Number(user_id) },
@@ -163,8 +162,10 @@ export class OrdersController {
       });
 
 
+
       const inventoryMap = new Map();
       inventories.forEach((inv) => inventoryMap.set(inv.product_id, inv));
+
 
       // Check inventory for each item
       for (const item of cartItems) {
@@ -233,6 +234,7 @@ export class OrdersController {
             }
           }
 
+
           // Create shipping record
           await prisma.shipping.create({
             data: {
@@ -244,9 +246,9 @@ export class OrdersController {
               shipping_status: ShippingStatus.pending,
               created_at: new Date(),
               updated_at: new Date(),
-
             },
           });
+
 
           // Clear cart items in chunks to avoid timeout
           const cartItemChunkSize = 5;
@@ -268,7 +270,6 @@ export class OrdersController {
               },
             });
           }
-
 <
           console.log(
             `Order ${newOrder.order_id} processing completed successfully`
@@ -279,7 +280,6 @@ export class OrdersController {
           // or storing in a separate errors table
         }
       })();
-
     } catch (error: any) {
       console.error("createOrderFromCart error:", error);
       responseError(res, error.message);

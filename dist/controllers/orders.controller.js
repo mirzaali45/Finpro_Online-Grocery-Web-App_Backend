@@ -90,6 +90,7 @@ class OrdersController {
                 const { user_id } = req.body;
                 console.log("Creating order from cart for user:", user_id);
 
+
                 // Step 1: Quick response to prevent Vercel timeout
                 // This is key - send a response early while processing continues
                 const responsePromise = new Promise((resolve) => {
@@ -133,8 +134,10 @@ class OrdersController {
                 const storeId = cartItems[0].product.store_id;
                 // Calculate total price
 
+
                 const total_price = cartItems.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
                 // Check inventories
+
 
                 const productIds = cartItems.map((item) => item.product_id);
                 const inventories = yield prisma.inventory.findMany({
@@ -153,6 +156,7 @@ class OrdersController {
                         return;
                     }
                 }
+
 
                 // CRITICAL: Create order first - this is the core operation
                 const newOrder = yield prisma.order.create({
@@ -242,7 +246,6 @@ class OrdersController {
                         // or storing in a separate errors table
                     }
                 }))();
-
             }
             catch (error) {
                 console.error("createOrderFromCart error:", error);
