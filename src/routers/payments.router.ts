@@ -16,6 +16,7 @@ export class PaymentsRouter {
   private initializeRoutes() {
     this.router.post(
       "/create",
+      this.authMiddleware.verifyToken,
       this.paymentsController.createPaymentOrder
     );
     this.router.post(
