@@ -6,7 +6,23 @@ import {
 } from "../../prisma/generated/client";
 import { responseError } from "../helpers/responseError";
 
-const prisma = new PrismaClient();
+let prisma = new PrismaClient;
+if (process.env.NODE_ENV === "production") {
+  prisma = new PrismaClient({
+    log: ["query", "info", "warn", "error"],
+    datasources: {
+      db: {
+        url: process.env.DATABASE_URL,
+      },
+    },
+  });
+} else {
+  // For development, use global instance to prevent too many connections
+  if (!(global as any).prisma) {
+    (global as any).prisma = new PrismaClient();
+  }
+  prisma = (global as any).prisma;
+}
 
 export class OrdersController {
   async getOrders(req: Request, res: Response): Promise<void> {
