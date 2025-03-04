@@ -94,6 +94,7 @@ export class OrdersController {
       const { user_id } = req.body;
       console.log("Creating order from cart for user:", user_id);
 
+
       // Step 1: Quick response to prevent Vercel timeout
       // This is key - send a response early while processing continues
       const responsePromise = new Promise<void>((resolve) => {
@@ -102,6 +103,7 @@ export class OrdersController {
       });
 
       // Do initial validation checks synchronously
+
       const user = await prisma.user.findUnique({
         where: { user_id: Number(user_id) },
         include: {
@@ -111,7 +113,6 @@ export class OrdersController {
           },
         },
       });
-
       if (!user) {
         responseError(res, "User tidak ditemukan / tidak terautentikasi.");
         return;
@@ -121,6 +122,7 @@ export class OrdersController {
         return;
       }
       const address = user.Address[0];
+
 
       // Get cart items
       const cartItems = await prisma.cartItem.findMany({
@@ -133,6 +135,7 @@ export class OrdersController {
         return;
       }
 
+
       // Check if all products are from the same store
       const storeIds = new Set(cartItems.map((item) => item.product.store_id));
       if (storeIds.size > 1) {
@@ -144,7 +147,6 @@ export class OrdersController {
       }
 
       const storeId = cartItems[0].product.store_id;
-
       // Calculate total price
       const total_price = cartItems.reduce(
         (sum, item) => sum + item.product.price * item.quantity,
@@ -159,6 +161,7 @@ export class OrdersController {
           store_id: storeId,
         },
       });
+
 
       const inventoryMap = new Map();
       inventories.forEach((inv) => inventoryMap.set(inv.product_id, inv));
@@ -176,7 +179,6 @@ export class OrdersController {
           return;
         }
       }
-
       // CRITICAL: Create order first - this is the core operation
       const newOrder = await prisma.order.create({
         data: {
@@ -218,7 +220,6 @@ export class OrdersController {
                 total_price: item.product.price * item.quantity,
               },
             });
-
             // Update inventory
             const inventory = inventoryMap.get(item.product_id);
             if (inventory) {
@@ -243,6 +244,7 @@ export class OrdersController {
               shipping_status: ShippingStatus.pending,
               created_at: new Date(),
               updated_at: new Date(),
+
             },
           });
 
@@ -260,7 +262,6 @@ export class OrdersController {
           for (let i = 0; i < allCartItems.length; i += cartItemChunkSize) {
             const chunk = allCartItems.slice(i, i + cartItemChunkSize);
             const ids = chunk.map((item) => item.cartitem_id);
-
             await prisma.cartItem.deleteMany({
               where: {
                 cartitem_id: { in: ids },
@@ -268,6 +269,7 @@ export class OrdersController {
             });
           }
 
+<
           console.log(
             `Order ${newOrder.order_id} processing completed successfully`
           );
@@ -277,6 +279,7 @@ export class OrdersController {
           // or storing in a separate errors table
         }
       })();
+
     } catch (error: any) {
       console.error("createOrderFromCart error:", error);
       responseError(res, error.message);
