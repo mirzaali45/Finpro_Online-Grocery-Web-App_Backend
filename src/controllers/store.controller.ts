@@ -1,4 +1,4 @@
-import { PrismaClient } from "../../prisma/generated/client";
+import { PrismaClient } from "@prisma/client";
 import { Request, Response } from "express";
 
 const prisma = new PrismaClient();
@@ -42,9 +42,7 @@ export class StoreController {
         });
 
         if (assignedUser) {
-          return res
-            .status(400)
-            .json({ error: "User already owns another store" });
+          return res.status(400).json({ error: "User already owns another store" });
         }
       }
 
@@ -66,23 +64,14 @@ export class StoreController {
       return res.status(201).json(store);
     } catch (error: unknown) {
       console.error(error);
-      const message =
-        error instanceof Error ? error.message : "Unknown error occurred";
+      const message = error instanceof Error ? error.message : "Unknown error occurred";
       return res.status(500).json({ error: message });
     }
-  }
+}
+
 
   async getStores(req: Request, res: Response) {
     try {
-      // Extract pagination parameters from query
-      const page = Number(req.query.page) || 1;
-      const limit = Number(req.query.limit) || 10;
-      const skip = (page - 1) * limit;
-
-      // Get total count of stores
-      const totalStores = await prisma.store.count();
-
-      // Get paginated stores
       const stores = await prisma.store.findMany({
         include: {
           User: {
@@ -95,28 +84,9 @@ export class StoreController {
           Product: true,
           Inventory: true,
         },
-        skip,
-        take: limit,
       });
 
-      // Calculate pagination metadata
-      const totalPages = Math.ceil(totalStores / limit);
-      const hasNextPage = page < totalPages;
-      const hasPrevPage = page > 1;
-
-      // Return paginated response
-      return res.status(200).json({
-        status: "success",
-        data: stores,
-        pagination: {
-          total: totalStores,
-          page,
-          limit,
-          totalPages,
-          hasNextPage,
-          hasPrevPage,
-        },
-      });
+      return res.status(200).json(stores);
     } catch (error: unknown) {
       const message =
         error instanceof Error ? error.message : "Unknown error occurred";
@@ -157,137 +127,128 @@ export class StoreController {
 
   async updateStore(req: Request, res: Response) {
     try {
-      const { store_id } = req.params;
-      if (!store_id || isNaN(Number(store_id))) {
-        return res.status(400).json({ error: "Invalid store ID" });
-      }
-
-      const {
-        store_name,
-        address,
-        subdistrict,
-        city,
-        province,
-        postcode,
-        latitude,
-        longitude,
-        user_id,
-      } = req.body;
-
-      const storeIdNum = Number(store_id);
-      const userIdNum =
-        user_id !== undefined
-          ? user_id === null
-            ? null
-            : Number(user_id)
-          : undefined;
-      const currentUser = req.user;
-
-      if (!currentUser) {
-        return res.status(403).json({ error: "Unauthorized" });
-      }
-
-      const isSuperAdmin = currentUser.role === "super_admin";
-
-      if (userIdNum !== undefined && userIdNum !== null && isNaN(userIdNum)) {
-        return res.status(400).json({ error: "Invalid user ID" });
-      }
-
-      // Cek apakah store dengan ID tersebut ada
-      const existingStore = await prisma.store.findUnique({
-        where: { store_id: storeIdNum },
-      });
-
-      if (!existingStore) {
-        return res.status(404).json({ error: "Store not found" });
-      }
-
-      // Siapkan data untuk update
-      const updateData: any = {
-        ...(store_name && { store_name }),
-        ...(address && { address }),
-        ...(subdistrict && { subdistrict }),
-        ...(city && { city }),
-        ...(province && { province }),
-        ...(postcode && { postcode }),
-        ...(latitude && { latitude: Number(latitude) }),
-        ...(longitude && { longitude: Number(longitude) }),
-      };
-
-      // Hanya lakukan pengecekan `user_id` jika diubah dalam request
-      if (userIdNum !== undefined && userIdNum !== existingStore.user_id) {
-        // Super Admin boleh update user_id
-        if (!isSuperAdmin) {
-          return res
-            .status(403)
-            .json({ error: "You are not authorized to change store owner" });
+        const { store_id } = req.params;
+        if (!store_id || isNaN(Number(store_id))) {
+            return res.status(400).json({ error: "Invalid store ID" });
         }
 
-        // Cek apakah user sudah memiliki store lain (kecuali store yang sedang diupdate)
-        if (userIdNum !== null) {
-          const existingUserStore = await prisma.store.findFirst({
-            where: {
-              user_id: userIdNum,
-              NOT: { store_id: storeIdNum }, //
-            },
-          });
+        const {
+            store_name,
+            address,
+            subdistrict,
+            city,
+            province,
+            postcode,
+            latitude,
+            longitude,
+            user_id,
+        } = req.body;
 
-          if (existingUserStore) {
-            return res
-              .status(400)
-              .json({ error: "User already assigned to another store" });
-          }
+        const storeIdNum = Number(store_id);
+        const userIdNum = user_id !== undefined ? (user_id === null ? null : Number(user_id)) : undefined;
+        const currentUser = req.user;
+
+        if (!currentUser) {
+            return res.status(403).json({ error: "Unauthorized" });
         }
 
-        // Tambahkan perubahan user_id ke data update
-        updateData.user_id = userIdNum;
-      }
+        const isSuperAdmin = currentUser.role === "super_admin";
 
-      // Update store dengan data yang sudah disiapkan
-      const updatedStore = await prisma.store.update({
-        where: { store_id: storeIdNum },
-        data: updateData,
-      });
+        if (userIdNum !== undefined && userIdNum !== null && isNaN(userIdNum)) {
+            return res.status(400).json({ error: "Invalid user ID" });
+        }
 
-      return res.status(200).json(updatedStore);
+        // Cek apakah store dengan ID tersebut ada
+        const existingStore = await prisma.store.findUnique({
+            where: { store_id: storeIdNum },
+        });
+
+        if (!existingStore) {
+            return res.status(404).json({ error: "Store not found" });
+        }
+
+        // Siapkan data untuk update
+        const updateData: any = {
+            ...(store_name && { store_name }),
+            ...(address && { address }),
+            ...(subdistrict && { subdistrict }),
+            ...(city && { city }),
+            ...(province && { province }),
+            ...(postcode && { postcode }),
+            ...(latitude && { latitude: Number(latitude) }),
+            ...(longitude && { longitude: Number(longitude) }),
+        };
+
+        // Hanya lakukan pengecekan `user_id` jika diubah dalam request
+        if (userIdNum !== undefined && userIdNum !== existingStore.user_id) {
+            // Super Admin boleh update user_id
+            if (!isSuperAdmin) {
+                return res.status(403).json({ error: "You are not authorized to change store owner" });
+            }
+
+            // Cek apakah user sudah memiliki store lain (kecuali store yang sedang diupdate)
+            if (userIdNum !== null) {
+                const existingUserStore = await prisma.store.findFirst({
+                    where: {
+                        user_id: userIdNum,
+                        NOT: { store_id: storeIdNum }, // 
+                    },
+                });
+
+                if (existingUserStore) {
+                    return res.status(400).json({ error: "User already assigned to another store" });
+                }
+            }
+
+            // Tambahkan perubahan user_id ke data update
+            updateData.user_id = userIdNum;
+        }
+
+        // Update store dengan data yang sudah disiapkan
+        const updatedStore = await prisma.store.update({
+            where: { store_id: storeIdNum },
+            data: updateData,
+        });
+
+        return res.status(200).json(updatedStore);
     } catch (error: unknown) {
-      console.error(error);
-      const message =
-        error instanceof Error ? error.message : "Unknown error occurred";
-      return res.status(500).json({ error: message });
+        console.error(error);
+        const message = error instanceof Error ? error.message : "Unknown error occurred";
+        return res.status(500).json({ error: message });
     }
-  }
+}
 
-  async deleteStore(req: Request, res: Response) {
-    try {
+
+async deleteStore(req: Request, res: Response) {
+  try {
       const { store_id } = req.params;
 
       // Validasi store_id harus berupa angka
       const storeIdNum = Number(store_id);
       if (isNaN(storeIdNum)) {
-        return res.status(400).json({ error: "Invalid store ID" });
+          return res.status(400).json({ error: "Invalid store ID" });
       }
 
       // Cek apakah store dengan ID tersebut ada
       const existingStore = await prisma.store.findUnique({
-        where: { store_id: storeIdNum },
+          where: { store_id: storeIdNum },
       });
 
       if (!existingStore) {
-        return res.status(404).json({ error: "Store not found" });
+          return res.status(404).json({ error: "Store not found" });
       }
 
       // Hapus store
       await prisma.store.delete({
-        where: { store_id: storeIdNum },
+          where: { store_id: storeIdNum },
       });
 
       return res.status(200).json({ message: "Store deleted successfully" });
-    } catch (error: unknown) {
+  } catch (error: unknown) {
       console.error("❌ Error deleting store:", error);
-      const message =
-        error instanceof Error ? error.message : "Unknown error occurred";
+      const message = error instanceof Error ? error.message : "Unknown error occurred";
       return res.status(500).json({ error: message });
-    }
   }
+}
+
 }

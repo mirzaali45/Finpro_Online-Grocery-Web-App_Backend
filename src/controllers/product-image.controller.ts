@@ -1,4 +1,4 @@
-import { PrismaClient } from "../../prisma/generated/client";
+import { PrismaClient } from "@prisma/client";
 import { Request, Response } from "express";
 import { uploadProduct, uploadToCloudinary, deleteFromCloudinary } from "../services/cloudinary";
 import { responseError } from "../helpers/responseError";

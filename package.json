@@ -3,11 +3,10 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "build": "tsc && cp -rv public dist && cp -rv src/templates dist",
-    "start": "npm run build &&& node dist/index.js",
-    "dev": "ts-node-dev src/index.ts",
     "test": "echo \"Error: no test specified\" && exit 1",
-    "postinstall": "prisma generate"
+    "build": "tsc",
+    "start": "npm run build && node dist/index.js",
+    "dev": "ts-node-dev src/index.ts"
   },
   "keywords": [],
   "author": "",

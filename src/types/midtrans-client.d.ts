@@ -8,7 +8,6 @@ declare module 'midtrans-client' {
     }
   
     export class CoreApi {
-      transaction: any;
       constructor(options?: any);
       // dsb.
     }

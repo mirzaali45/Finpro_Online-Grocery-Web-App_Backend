@@ -59,24 +59,6 @@ const uploadAvatar = multer({
   fileFilter: imageFileFilter,
 });
 
-// Configure multer upload for category images
-const uploadCategoryImage = multer({
-  storage: storage,
-  limits: {
-    fileSize: 3 * 1024 * 1024, // 3MB limit
-  },
-  fileFilter: imageFileFilter,
-});
-
-// Configure multer upload for discount images
-const uploadDiscountImage = multer({
-  storage: storage,
-  limits: {
-    fileSize: 3 * 1024 * 1024, // 3MB limit
-  },
-  fileFilter: imageFileFilter,
-});
-
 // Upload to Cloudinary function
 const uploadToCloudinary = async (filePath: string, folder: string) => {
   try {
@@ -111,23 +93,6 @@ const uploadToCloudinary = async (filePath: string, folder: string) => {
   }
 };
 
-// Helper functions for specific upload types
-const uploadProductImage = async (filePath: string) => {
-  return uploadToCloudinary(filePath, "product_images");
-};
-
-const uploadAvatarImage = async (filePath: string) => {
-  return uploadToCloudinary(filePath, "avatars");
-};
-
-const uploadCategoryThumbnail = async (filePath: string) => {
-  return uploadToCloudinary(filePath, "category_image");
-};
-
-const uploadDiscountThumbnail = async (filePath: string) => {
-  return uploadToCloudinary(filePath, "discount_image");
-};
-
 // Delete from Cloudinary function
 const deleteFromCloudinary = async (url: string, folder: string) => {
   try {
@@ -150,23 +115,6 @@ const deleteFromCloudinary = async (url: string, folder: string) => {
     console.error("Error deleting from Cloudinary:", error);
     return false;
   }
-};
-
-// Folder-specific delete helpers
-const deleteProductImage = async (url: string) => {
-  return deleteFromCloudinary(url, "product_images");
-};
-
-const deleteAvatarImage = async (url: string) => {
-  return deleteFromCloudinary(url, "avatars");
-};
-
-const deleteCategoryImage = async (url: string) => {
-  return deleteFromCloudinary(url, "category_image");
-};
-
-const deleteDiscountImage = async (url: string) => {
-  return deleteFromCloudinary(url, "discount_image");
 };
 
 // Verify Cloudinary configuration on startup
@@ -195,16 +143,6 @@ export {
   cloudinary,
   uploadProduct,
   uploadAvatar,
-  uploadCategoryImage,
-  uploadDiscountImage,
   uploadToCloudinary,
-  uploadProductImage,
-  uploadAvatarImage,
-  uploadCategoryThumbnail,
-  uploadDiscountThumbnail,
   deleteFromCloudinary,
-  deleteProductImage,
-  deleteAvatarImage,
-  deleteCategoryImage,
-  deleteDiscountImage,
 };
