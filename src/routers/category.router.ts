@@ -2,6 +2,7 @@ import { Router } from "express";
 import { CategoryController } from "../controllers/category.controller";
 import { RequestHandler } from "express-serve-static-core";
 import { AuthMiddleware } from "../middleware/auth.verify";
+import { uploadCategoryImage } from "../services/cloudinary";
 
 export class CategoryRouter {
   private router: Router;
@@ -21,6 +22,7 @@ export class CategoryRouter {
       "/",
       this.authMiddleware.verifyToken as unknown as RequestHandler,
       this.authMiddleware.checkSuperAdmin as unknown as RequestHandler,
+      uploadCategoryImage.single("image") as unknown as RequestHandler,
       this.categoryController.createCategory as unknown as RequestHandler
     );
 
