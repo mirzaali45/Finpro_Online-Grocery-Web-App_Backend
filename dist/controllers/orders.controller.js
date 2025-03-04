@@ -89,83 +89,94 @@ class OrdersController {
             try {
                 const { user_id } = req.body;
                 console.log("Creating order from cart for user:", user_id);
-                // Use Prisma transaction for all database operations
-                const orderWithDetails = yield prisma.$transaction((tx) => __awaiter(this, void 0, void 0, function* () {
-                    // Find user with primary address
-                    const user = yield tx.user.findUnique({
-                        where: { user_id: Number(user_id) },
-                        include: {
-                            Address: {
-                                where: { is_primary: true },
-                                take: 1,
-                            },
+
+                // Find user with primary address - do this outside transaction
+                const user = yield prisma.user.findUnique({
+                    where: { user_id: Number(user_id) },
+                    include: {
+                        Address: {
+                            where: { is_primary: true },
+                            take: 1,
                         },
-                    });
-                    // Validate user and address
-                    if (!user)
-                        throw new Error("User tidak ditemukan / tidak terautentikasi.");
-                    if (!user.Address || user.Address.length === 0)
-                        throw new Error("User tidak memiliki alamat pengiriman.");
-                    const address = user.Address[0];
-                    // Get cart items with product and store info
-                    const cartItems = yield tx.cartItem.findMany({
-                        where: { user_id: Number(user_id) },
-                        include: { product: { include: { store: true } } },
-                    });
-                    if (cartItems.length === 0)
-                        throw new Error("Keranjang belanja kosong.");
-                    // Check if all products are from the same store
-                    const storeIds = new Set(cartItems.map((item) => item.product.store_id));
-                    if (storeIds.size > 1) {
-                        throw new Error("Tidak dapat membuat pesanan, produk berasal dari toko yang berbeda. Harap hanya pilih produk dari toko yang sama.");
+                    },
+                });
+                // Validate user and address
+                if (!user) {
+                    (0, responseError_1.responseError)(res, "User tidak ditemukan / tidak terautentikasi.");
+                    return;
+                }
+                if (!user.Address || user.Address.length === 0) {
+                    (0, responseError_1.responseError)(res, "User tidak memiliki alamat pengiriman.");
+                    return;
+                }
+                const address = user.Address[0];
+                // Get cart items - outside transaction
+                const cartItems = yield prisma.cartItem.findMany({
+                    where: { user_id: Number(user_id) },
+                    include: { product: { include: { store: true } } },
+                });
+                if (cartItems.length === 0) {
+                    (0, responseError_1.responseError)(res, "Keranjang belanja kosong.");
+                    return;
+                }
+                // Check if all products are from the same store
+                const storeIds = new Set(cartItems.map((item) => item.product.store_id));
+                if (storeIds.size > 1) {
+                    (0, responseError_1.responseError)(res, "Tidak dapat membuat pesanan, produk berasal dari toko yang berbeda. Harap hanya pilih produk dari toko yang sama.");
+                    return;
+                }
+                const storeId = cartItems[0].product.store_id;
+                // Calculate total price
+                let total_price = cartItems.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
+                // Check inventories - outside transaction
+                const productIds = cartItems.map((item) => item.product_id);
+                const inventories = yield prisma.inventory.findMany({
+                    where: {
+                        product_id: { in: productIds },
+                        store_id: storeId,
+                    },
+                });
+                // Create a map for quick lookup
+                const inventoryMap = new Map();
+                inventories.forEach((inv) => inventoryMap.set(inv.product_id, inv));
+                // Check inventory for each item
+                for (const item of cartItems) {
+                    const inventory = inventoryMap.get(item.product_id);
+                    if (!inventory || inventory.total_qty < item.quantity) {
+                        (0, responseError_1.responseError)(res, `Stok tidak cukup untuk produk "${item.product.name}". Tersedia: ${inventory ? inventory.total_qty : 0}, Dibutuhkan: ${item.quantity}`);
+                        return;
                     }
-                    const storeId = cartItems[0].product.store_id;
-                    // Calculate total price
-                    let total_price = cartItems.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
-                    // Check all inventories at once
-                    const productIds = cartItems.map((item) => item.product_id);
-                    const inventories = yield tx.inventory.findMany({
-                        where: {
-                            product_id: { in: productIds },
-                            store_id: storeId,
-                        },
-                    });
-                    // Create a map for quick lookup
-                    const inventoryMap = new Map();
-                    inventories.forEach((inv) => inventoryMap.set(inv.product_id, inv));
-                    // Check inventory for each item
-                    for (const item of cartItems) {
-                        const inventory = inventoryMap.get(item.product_id);
-                        if (!inventory || inventory.total_qty < item.quantity) {
-                            throw new Error(`Stok tidak cukup untuk produk "${item.product.name}". Tersedia: ${inventory ? inventory.total_qty : 0}, Dibutuhkan: ${item.quantity}`);
-                        }
-                    }
+                }
+                // Start a smaller transaction only for order and order items
+                const newOrder = yield prisma.$transaction((tx) => __awaiter(this, void 0, void 0, function* () {
                     // Create the order
-                    const newOrder = yield tx.order.create({
+                    const order = yield tx.order.create({
                         data: {
                             user_id: Number(user_id),
                             store_id: storeId,
                             total_price,
                             order_status: client_1.OrderStatus.awaiting_payment,
+
                             created_at: new Date(),
                             updated_at: new Date(),
                         },
                     });
-                    // Create order items in parallel
-                    const orderItemPromises = cartItems.map((item) => tx.orderItem.create({
-                        data: {
-                            order_id: newOrder.order_id,
-                            product_id: item.product_id,
-                            qty: item.quantity,
-                            price: item.product.price,
-                            total_price: item.product.price * item.quantity,
-                        },
-                    }));
-                    // Update inventory in parallel
-                    const inventoryUpdatePromises = cartItems.map((item) => {
+
+                    // Create order items
+                    for (const item of cartItems) {
+                        yield tx.orderItem.create({
+                            data: {
+                                order_id: order.order_id,
+                                product_id: item.product_id,
+                                qty: item.quantity,
+                                price: item.product.price,
+                                total_price: item.product.price * item.quantity,
+                            },
+                        });
+                        // Update inventory
                         const inventory = inventoryMap.get(item.product_id);
                         if (inventory) {
-                            return tx.inventory.update({
+                            yield tx.inventory.update({
                                 where: { inv_id: inventory.inv_id },
                                 data: {
                                     total_qty: inventory.total_qty - item.quantity,
@@ -173,12 +184,13 @@ class OrdersController {
                                 },
                             });
                         }
-                        return Promise.resolve(); // For TypeScript happiness
-                    });
-                    // Wait for all promises to complete
-                    yield Promise.all([...orderItemPromises, ...inventoryUpdatePromises]);
+                    }
+                    return order;
+                }));
+                // Now handle shipping and cart clearing separately
+                try {
                     // Create shipping record
-                    yield tx.shipping.create({
+                    yield prisma.shipping.create({
                         data: {
                             order_id: newOrder.order_id,
                             shipping_cost: 0,
@@ -189,37 +201,32 @@ class OrdersController {
                         },
                     });
                     // Clear user's cart
-                    yield tx.cartItem.deleteMany({
+                    yield prisma.cartItem.deleteMany({
                         where: { user_id: Number(user_id) },
                     });
-                    // Get order details for response
-                    const orderDetails = yield tx.order.findUnique({
-                        where: { order_id: newOrder.order_id },
-                        include: {
-                            OrderItem: {
-                                include: {
-                                    product: true,
-                                },
-                            },
-                            Shipping: true,
-                            store: true,
-                        },
-                    });
-                    // Add null check inside transaction
-                    if (!orderDetails) {
-                        throw new Error("Failed to retrieve order details after creation");
-                    }
-                    return orderDetails;
-                }));
-                // Add null check after transaction
-                if (!orderWithDetails) {
-                    throw new Error("Failed to create order. No order details returned.");
                 }
+                catch (shippingError) {
+                    console.error("Error creating shipping or clearing cart:", shippingError);
+                    // Continue anyway since the order is created
+                }
+                // Get order details separately
+                const orderWithDetails = yield prisma.order.findUnique({
+                    where: { order_id: newOrder.order_id },
+                    include: {
+                        OrderItem: {
+                            include: {
+                                product: true,
+                            },
+                        },
+                        Shipping: true,
+                        store: true,
+                    },
+                });
                 // Log success
-                console.log(`Order ${orderWithDetails.order_id} created successfully`);
+                console.log(`Order ${newOrder.order_id} created successfully`);
                 res.status(201).json({
                     message: "Order berhasil dibuat dari keranjang belanja. Pembayaran harus dilakukan dalam 1 jam.",
-                    data: orderWithDetails,
+                    data: orderWithDetails || newOrder, // Fallback to just the order if full details can't be fetched
                 });
             }
             catch (error) {
