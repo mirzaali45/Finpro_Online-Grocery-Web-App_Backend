@@ -37,9 +37,10 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.OrdersController = void 0;
-var client_1 = require("../../prisma/generated/client");
-var responseError_1 = require("../helpers/responseError");
-var prisma = new client_1.PrismaClient;
+
+const client_1 = require("../../prisma/generated/client");
+const responseError_1 = require("../helpers/responseError");
+let prisma = new client_1.PrismaClient();
 if (process.env.NODE_ENV === "production") {
     prisma = new client_1.PrismaClient({
         log: ["query", "info", "warn", "error"],
