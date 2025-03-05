@@ -12,7 +12,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.OrdersController = void 0;
 const client_1 = require("../../prisma/generated/client");
 const responseError_1 = require("../helpers/responseError");
-let prisma = new client_1.PrismaClient;
+let prisma = new client_1.PrismaClient();
 if (process.env.NODE_ENV === "production") {
     prisma = new client_1.PrismaClient({
         log: ["query", "info", "warn", "error"],
@@ -174,7 +174,7 @@ class OrdersController {
                 });
                 // Continue processing in the background
                 // This will run even after response is sent
-                Promise.resolve().then(() => __awaiter(this, void 0, void 0, function* () {
+                (() => __awaiter(this, void 0, void 0, function* () {
                     try {
                         // Process order items one at a time to avoid timeouts
                         for (const item of cartItems) {
@@ -236,7 +236,7 @@ class OrdersController {
                         // Consider sending this to an error tracking service
                         // or storing in a separate errors table
                     }
-                }));
+                }))();
             }
             catch (error) {
                 console.error("createOrderFromCart error:", error);
