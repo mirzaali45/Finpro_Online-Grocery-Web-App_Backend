@@ -93,15 +93,13 @@ export class OrdersController {
     try {
       const { user_id } = req.body;
       console.log("Creating order from cart for user:", user_id);
-
-
-
       // Step 1: Quick response to prevent Vercel timeout
       // This is key - send a response early while processing continues
       const responsePromise = new Promise<void>((resolve) => {
         // We'll resolve this later to send the actual response
         setTimeout(() => resolve(), 8000); // Backup resolve after 8 seconds
       });
+
 
       // Do initial validation checks synchronously
       const user = await prisma.user.findUnique({
@@ -161,11 +159,8 @@ export class OrdersController {
         },
       });
 
-
-
       const inventoryMap = new Map();
       inventories.forEach((inv) => inventoryMap.set(inv.product_id, inv));
-
 
       // Check inventory for each item
       for (const item of cartItems) {
@@ -204,7 +199,6 @@ export class OrdersController {
           order_status: newOrder.order_status,
         },
       });
-
       // Continue processing in the background
       // This will run even after response is sent
       (async () => {
@@ -233,8 +227,6 @@ export class OrdersController {
               });
             }
           }
-
-
           // Create shipping record
           await prisma.shipping.create({
             data: {
@@ -248,8 +240,6 @@ export class OrdersController {
               updated_at: new Date(),
             },
           });
-
-
           // Clear cart items in chunks to avoid timeout
           const cartItemChunkSize = 5;
           const userIdNum = Number(user_id);
@@ -270,7 +260,6 @@ export class OrdersController {
               },
             });
           }
-<
           console.log(
             `Order ${newOrder.order_id} processing completed successfully`
           );
@@ -511,6 +500,7 @@ export class OrdersController {
       return;
     }
   }
+  
   async checkExpiredOrders(req: Request, res: Response): Promise<void> {
     try {
       // Find orders created more than 1 hour ago that are still in awaiting_payment status
