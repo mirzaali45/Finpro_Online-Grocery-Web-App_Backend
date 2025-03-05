@@ -8,97 +8,129 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+var __generator = (this && this.__generator) || function (thisArg, body) {
+    var _ = { label: 0, sent: function() { if (t[0] & 1) throw t[1]; return t[1]; }, trys: [], ops: [] }, f, y, t, g = Object.create((typeof Iterator === "function" ? Iterator : Object).prototype);
+    return g.next = verb(0), g["throw"] = verb(1), g["return"] = verb(2), typeof Symbol === "function" && (g[Symbol.iterator] = function() { return this; }), g;
+    function verb(n) { return function (v) { return step([n, v]); }; }
+    function step(op) {
+        if (f) throw new TypeError("Generator is already executing.");
+        while (g && (g = 0, op[0] && (_ = 0)), _) try {
+            if (f = 1, y && (t = op[0] & 2 ? y["return"] : op[0] ? y["throw"] || ((t = y["return"]) && t.call(y), 0) : y.next) && !(t = t.call(y, op[1])).done) return t;
+            if (y = 0, t) op = [op[0] & 2, t.value];
+            switch (op[0]) {
+                case 0: case 1: t = op; break;
+                case 4: _.label++; return { value: op[1], done: false };
+                case 5: _.label++; y = op[1]; op = [0]; continue;
+                case 7: op = _.ops.pop(); _.trys.pop(); continue;
+                default:
+                    if (!(t = _.trys, t = t.length > 0 && t[t.length - 1]) && (op[0] === 6 || op[0] === 2)) { _ = 0; continue; }
+                    if (op[0] === 3 && (!t || (op[1] > t[0] && op[1] < t[3]))) { _.label = op[1]; break; }
+                    if (op[0] === 6 && _.label < t[1]) { _.label = t[1]; t = op; break; }
+                    if (t && _.label < t[2]) { _.label = t[2]; _.ops.push(op); break; }
+                    if (t[2]) _.ops.pop();
+                    _.trys.pop(); continue;
+            }
+            op = body.call(thisArg, _);
+        } catch (e) { op = [6, e]; y = 0; } finally { f = t = 0; }
+        if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
+    }
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ReportStore = void 0;
-const client_1 = require("../../prisma/generated/client");
-const prisma = new client_1.PrismaClient();
-class ReportStore {
-    getReportInventory(req, res) {
-        return __awaiter(this, void 0, void 0, function* () {
+var client_1 = require("../../prisma/generated/client");
+var prisma = new client_1.PrismaClient();
+var ReportStore = /** @class */ (function () {
+    function ReportStore() {
+    }
+    ReportStore.prototype.getReportInventory = function (req, res) {
+        return __awaiter(this, void 0, void 0, function () {
+            var userId, store, inventoryReport, formattedReport, totalItems, totalValue, error_1, errorMessage;
             var _a;
-            try {
-                // Get the user_id of the store admin from the request
-                // This could come from authentication middleware or request body/params
-                // Fix: Use correct property name from your Prisma schema - user_id
-                const userId = ((_a = req.user) === null || _a === void 0 ? void 0 : _a.id) || parseInt(req.params.userId);
-                if (!userId) {
-                    return res.status(400).json({
-                        status: "error",
-                        message: "User ID is required"
-                    });
-                }
-                // Get the store associated with this user (store admin)
-                const store = yield prisma.store.findFirst({
-                    where: {
-                        user_id: userId
-                    }
-                });
-                if (!store) {
-                    return res.status(404).json({
-                        status: "error",
-                        message: "Store not found for this user"
-                    });
-                }
-                // Get inventory data with product details for this store
-                const inventoryReport = yield prisma.inventory.findMany({
-                    where: {
-                        store_id: store.store_id
-                    },
-                    include: {
-                        product: {
-                            select: {
-                                product_id: true,
-                                name: true,
-                                price: true,
-                                category: {
-                                    select: {
-                                        category_name: true
+            return __generator(this, function (_b) {
+                switch (_b.label) {
+                    case 0:
+                        _b.trys.push([0, 3, , 4]);
+                        userId = ((_a = req.user) === null || _a === void 0 ? void 0 : _a.id) || parseInt(req.params.userId);
+                        if (!userId) {
+                            return [2 /*return*/, res.status(400).json({
+                                    status: "error",
+                                    message: "User ID is required"
+                                })];
+                        }
+                        return [4 /*yield*/, prisma.store.findFirst({
+                                where: {
+                                    user_id: userId
+                                }
+                            })];
+                    case 1:
+                        store = _b.sent();
+                        if (!store) {
+                            return [2 /*return*/, res.status(404).json({
+                                    status: "error",
+                                    message: "Store not found for this user"
+                                })];
+                        }
+                        return [4 /*yield*/, prisma.inventory.findMany({
+                                where: {
+                                    store_id: store.store_id
+                                },
+                                include: {
+                                    product: {
+                                        select: {
+                                            product_id: true,
+                                            name: true,
+                                            price: true,
+                                            category: {
+                                                select: {
+                                                    category_name: true
+                                                }
+                                            }
+                                        }
                                     }
                                 }
-                            }
-                        }
-                    }
-                });
-                // Format the report data
-                const formattedReport = inventoryReport.map(item => ({
-                    product_id: item.product_id,
-                    product_name: item.product.name,
-                    category: item.product.category.category_name,
-                    current_quantity: item.qty,
-                    total_quantity: item.total_qty,
-                    price: item.product.price,
-                    estimated_value: item.qty * item.product.price,
-                    last_updated: item.updated_at
-                }));
-                // Calculate summary statistics
-                const totalItems = formattedReport.reduce((sum, item) => sum + item.current_quantity, 0);
-                const totalValue = formattedReport.reduce((sum, item) => sum + item.estimated_value, 0);
-                return res.status(200).json({
-                    status: "success",
-                    data: {
-                        store_name: store.store_name,
-                        store_id: store.store_id,
-                        report_date: new Date(),
-                        summary: {
-                            total_items: totalItems,
-                            total_value: totalValue,
-                            product_count: formattedReport.length
-                        },
-                        inventory: formattedReport
-                    }
-                });
-            }
-            catch (error) {
-                console.error("Error generating inventory report:", error);
-                // Fix: Handle the 'unknown' type error properly
-                const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-                return res.status(500).json({
-                    status: "error",
-                    message: "Failed to generate inventory report",
-                    error: errorMessage
-                });
-            }
+                            })];
+                    case 2:
+                        inventoryReport = _b.sent();
+                        formattedReport = inventoryReport.map(function (item) { return ({
+                            product_id: item.product_id,
+                            product_name: item.product.name,
+                            category: item.product.category.category_name,
+                            current_quantity: item.qty,
+                            total_quantity: item.total_qty,
+                            price: item.product.price,
+                            estimated_value: item.qty * item.product.price,
+                            last_updated: item.updated_at
+                        }); });
+                        totalItems = formattedReport.reduce(function (sum, item) { return sum + item.current_quantity; }, 0);
+                        totalValue = formattedReport.reduce(function (sum, item) { return sum + item.estimated_value; }, 0);
+                        return [2 /*return*/, res.status(200).json({
+                                status: "success",
+                                data: {
+                                    store_name: store.store_name,
+                                    store_id: store.store_id,
+                                    report_date: new Date(),
+                                    summary: {
+                                        total_items: totalItems,
+                                        total_value: totalValue,
+                                        product_count: formattedReport.length
+                                    },
+                                    inventory: formattedReport
+                                }
+                            })];
+                    case 3:
+                        error_1 = _b.sent();
+                        console.error("Error generating inventory report:", error_1);
+                        errorMessage = error_1 instanceof Error ? error_1.message : 'Unknown error occurred';
+                        return [2 /*return*/, res.status(500).json({
+                                status: "error",
+                                message: "Failed to generate inventory report",
+                                error: errorMessage
+                            })];
+                    case 4: return [2 /*return*/];
+                }
+            });
         });
-    }
-}
+    };
+    return ReportStore;
+}());
 exports.ReportStore = ReportStore;

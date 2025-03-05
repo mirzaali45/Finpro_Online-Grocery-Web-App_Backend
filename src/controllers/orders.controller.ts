@@ -110,37 +110,67 @@ export class OrdersController {
             take: 1,
           },
         },
-      });
+      },
+    });
 
-      if (!user) {
-        responseError(res, "User tidak ditemukan / tidak terautentikasi.");
-        return;
-      }
-      if (!user.Address || user.Address.length === 0) {
-        responseError(res, "User tidak memiliki alamat pengiriman.");
-        return;
-      }
-      const address = user.Address[0];
-      // Get cart items
-      const cartItems = await prisma.cartItem.findMany({
-        where: { user_id: Number(user_id) },
-        include: { product: { include: { store: true } } },
-      });
+    if (!user) {
+      responseError(res, "User tidak ditemukan / tidak terautentikasi.");
+      return;
+    }
+    if (!user.Address || user.Address.length === 0) {
+      responseError(res, "User tidak memiliki alamat pengiriman.");
+      return;
+    }
+    const address = user.Address[0];
+    // Get cart items
+    const cartItems = await prisma.cartItem.findMany({
+      where: { user_id: Number(user_id) },
+      include: { product: { include: { store: true } } },
+    });
 
-      if (cartItems.length === 0) {
-        responseError(res, "Keranjang belanja kosong.");
-        return;
-      }
+    if (cartItems.length === 0) {
+      responseError(res, "Keranjang belanja kosong.");
+      return;
+    }
+
+    // Check if all products are from the same store
+    const storeIds = new Set(cartItems.map((item) => item.product.store_id));
+    if (storeIds.size > 1) {
+      responseError(
+        res,
+        "Tidak dapat membuat pesanan, produk berasal dari toko yang berbeda. Harap hanya pilih produk dari toko yang sama."
+      );
+      return;
+    }
+
+    const storeId = cartItems[0].product.store_id;
+    // Calculate total price
+    const total_price = cartItems.reduce(
+      (sum, item) => sum + item.product.price * item.quantity,
+      0
+    );
+
+    // Check inventories
+    const productIds = cartItems.map((item) => item.product_id);
+    const inventories = await prisma.inventory.findMany({
+      where: {
+        product_id: { in: productIds },
+        store_id: storeId,
+      },
+    });
 
       // Check if all products are from the same store
       const storeIds = new Set(cartItems.map((item) => item.product.store_id));
       if (storeIds.size > 1) {
         responseError(
           res,
-          "Tidak dapat membuat pesanan, produk berasal dari toko yang berbeda. Harap hanya pilih produk dari toko yang sama."
+          `Stok tidak cukup untuk produk "${item.product.name}". Tersedia: ${
+            inventory ? inventory.total_qty : 0
+          }, Dibutuhkan: ${item.quantity}`
         );
         return;
       }
+
 
       const storeId = cartItems[0].product.store_id;
       // Calculate total price
@@ -208,74 +238,61 @@ export class OrdersController {
             // Create order item
             await prisma.orderItem.create({
               data: {
-                order_id: newOrder.order_id,
-                product_id: item.product_id,
-                qty: item.quantity,
-                price: item.product.price,
-                total_price: item.product.price * item.quantity,
+                total_qty: inventory.total_qty - item.quantity,
+                updated_at: new Date(),
               },
             });
-            // Update inventory
-            const inventory = inventoryMap.get(item.product_id);
-            if (inventory) {
-              await prisma.inventory.update({
-                where: { inv_id: inventory.inv_id },
-                data: {
-                  total_qty: inventory.total_qty - item.quantity,
-                  updated_at: new Date(),
-                },
-              });
-            }
           }
+        }
 
-          // Create shipping record
-          await prisma.shipping.create({
-            data: {
-              order_id: newOrder.order_id,
-              shipping_cost: 0,
-              shipping_address: `${address.address}, ${address.city}, ${
-                address.province
-              }, ${address.postcode || ""}`,
-              shipping_status: ShippingStatus.pending,
-              created_at: new Date(),
-              updated_at: new Date(),
+        // Create shipping record
+        await prisma.shipping.create({
+          data: {
+            order_id: newOrder.order_id,
+            shipping_cost: 0,
+            shipping_address: `${address.address}, ${address.city}, ${
+              address.province
+            }, ${address.postcode || ""}`,
+            shipping_status: ShippingStatus.pending,
+            created_at: new Date(),
+            updated_at: new Date(),
+          },
+        });
+
+        // Clear cart items in chunks to avoid timeout
+        const cartItemChunkSize = 5;
+        const userIdNum = Number(user_id);
+
+        // Get all cart item IDs
+        const allCartItems = await prisma.cartItem.findMany({
+          where: { user_id: userIdNum },
+          select: { cartitem_id: true },
+        });
+
+        // Delete in smaller chunks
+        for (let i = 0; i < allCartItems.length; i += cartItemChunkSize) {
+          const chunk = allCartItems.slice(i, i + cartItemChunkSize);
+          const ids = chunk.map((item) => item.cartitem_id);
+          await prisma.cartItem.deleteMany({
+            where: {
+              cartitem_id: { in: ids },
             },
           });
-
-          // Clear cart items in chunks to avoid timeout
-          const cartItemChunkSize = 5;
-          const userIdNum = Number(user_id);
-
-          // Get all cart item IDs
-          const allCartItems = await prisma.cartItem.findMany({
-            where: { user_id: userIdNum },
-            select: { cartitem_id: true },
-          });
-
-          // Delete in smaller chunks
-          for (let i = 0; i < allCartItems.length; i += cartItemChunkSize) {
-            const chunk = allCartItems.slice(i, i + cartItemChunkSize);
-            const ids = chunk.map((item) => item.cartitem_id);
-            await prisma.cartItem.deleteMany({
-              where: {
-                cartitem_id: { in: ids },
-              },
-            });
-          }
-          console.log(
-            `Order ${newOrder.order_id} processing completed successfully`
-          );
-        } catch (backgroundError) {
-          console.error("Background processing error:", backgroundError);
-          // Consider sending this to an error tracking service
-          // or storing in a separate errors table
         }
-      })();
-    } catch (error: any) {
-      console.error("createOrderFromCart error:", error);
-      responseError(res, error.message);
-    }
+        console.log(
+          `Order ${newOrder.order_id} processing completed successfully`
+        );
+      } catch (backgroundError) {
+        console.error("Background processing error:", backgroundError);
+        // Consider sending this to an error tracking service
+        // or storing in a separate errors table
+      }
+    });
+  } catch (error: any) {
+    console.error("createOrderFromCart error:", error);
+    responseError(res, error.message);
   }
+}
 
   async getMyOrders(req: Request, res: Response): Promise<void> {
     try {
