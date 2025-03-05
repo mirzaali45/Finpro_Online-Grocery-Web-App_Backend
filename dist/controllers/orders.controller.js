@@ -61,48 +61,108 @@ var OrdersController = /** @class */ (function () {
     function OrdersController() {
     }
 
-    OrdersController.prototype.getOrders = function (req, res) {
-        return __awaiter(this, void 0, void 0, function () {
-            var _a, status_1, user_id, store_id, date, where, startDate, endDate, orders, error_1;
-            return __generator(this, function (_b) {
-                switch (_b.label) {
-                    case 0:
-                        _b.trys.push([0, 2, , 3]);
-                        _a = req.query, status_1 = _a.status, user_id = _a.user_id, store_id = _a.store_id, date = _a.date;
-                        where = {};
-                        if (status_1 &&
-                            Object.values(client_1.OrderStatus).includes(status_1)) {
-                            where.order_status = status_1;
-                        }
-                        // Filter by user_id
-                        if (user_id) {
-                            where.user_id = Number(user_id);
-                        }
-                        // Filter by store_id
-                        if (store_id) {
-                            where.store_id = Number(store_id);
-                        }
-                        // Filter by date (created_at)
-                        if (date) {
-                            startDate = new Date(date);
-                            if (!isNaN(startDate.getTime())) {
-                                endDate = new Date(startDate);
-                                endDate.setDate(endDate.getDate() + 1);
-                                where.created_at = {
-                                    gte: startDate,
-                                    lt: endDate,
-                                };
-                            }
-                        }
-                        return [4 /*yield*/, prisma.order.findMany({
-                                where: where,
-                                include: {
-                                    user: true,
-                                    store: true,
-                                    // misalnya item detail:
-                                    OrderItem: true,
-                                    // shipping, dsb.:
-                                    Shipping: true,
+    createOrderFromCart(req, res) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                const { user_id } = req.body;
+                console.log("Creating order from cart for user:", user_id);
+                // Step 1: Quick response to prevent Vercel timeout
+                // This is key - send a response early while processing continues
+                const responsePromise = new Promise((resolve) => {
+                    // We'll resolve this later to send the actual response
+                    setTimeout(() => resolve(), 8000); // Backup resolve after 8 seconds
+                });
+                // Do initial validation checks synchronously
+                const user = yield prisma.user.findUnique({
+                    where: { user_id: Number(user_id) },
+                    include: {
+                        Address: {
+                            where: { is_primary: true },
+                            take: 1,
+                        },
+                    },
+                });
+                if (!user) {
+                    (0, responseError_1.responseError)(res, "User tidak ditemukan / tidak terautentikasi.");
+                    return;
+                }
+                if (!user.Address || user.Address.length === 0) {
+                    (0, responseError_1.responseError)(res, "User tidak memiliki alamat pengiriman.");
+                    return;
+                }
+                const address = user.Address[0];
+                // Get cart items
+                const cartItems = yield prisma.cartItem.findMany({
+                    where: { user_id: Number(user_id) },
+                    include: { product: { include: { store: true } } },
+                });
+                if (cartItems.length === 0) {
+                    (0, responseError_1.responseError)(res, "Keranjang belanja kosong.");
+                    return;
+                }
+                // Check if all products are from the same store
+                const storeIds = new Set(cartItems.map((item) => item.product.store_id));
+                if (storeIds.size > 1) {
+                    (0, responseError_1.responseError)(res, "Tidak dapat membuat pesanan, produk berasal dari toko yang berbeda. Harap hanya pilih produk dari toko yang sama.");
+                    return;
+                }
+                const storeId = cartItems[0].product.store_id;
+                // Calculate total price
+                const total_price = cartItems.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
+                // Check inventories
+                const productIds = cartItems.map((item) => item.product_id);
+                const inventories = yield prisma.inventory.findMany({
+                    where: {
+                        product_id: { in: productIds },
+                        store_id: storeId,
+                    },
+                });
+                const inventoryMap = new Map();
+                inventories.forEach((inv) => inventoryMap.set(inv.product_id, inv));
+                // Check inventory for each item
+                for (const item of cartItems) {
+                    const inventory = inventoryMap.get(item.product_id);
+                    if (!inventory || inventory.total_qty < item.quantity) {
+                        (0, responseError_1.responseError)(res, `Stok tidak cukup untuk produk "${item.product.name}". Tersedia: ${inventory ? inventory.total_qty : 0}, Dibutuhkan: ${item.quantity}`);
+                        return;
+                    }
+                }
+                // CRITICAL: Create order first - this is the core operation
+                const newOrder = yield prisma.order.create({
+                    data: {
+                        user_id: Number(user_id),
+                        store_id: storeId,
+                        total_price,
+                        order_status: client_1.OrderStatus.awaiting_payment,
+                        created_at: new Date(),
+                        updated_at: new Date(),
+                    },
+                });
+                // Send response immediately after order creation
+                res.status(201).json({
+                    message: "Order berhasil dibuat dari keranjang belanja. Pembayaran harus dilakukan dalam 1 jam.",
+                    data: {
+                        order_id: newOrder.order_id,
+                        user_id: newOrder.user_id,
+                        store_id: newOrder.store_id,
+                        total_price: newOrder.total_price,
+                        order_status: newOrder.order_status,
+                    },
+                });
+                // Continue processing in the background
+                // This will run even after response is sent
+                (() => __awaiter(this, void 0, void 0, function* () {
+                    try {
+                        // Process order items one at a time to avoid timeouts
+                        for (const item of cartItems) {
+                            // Create order item
+                            yield prisma.orderItem.create({
+                                data: {
+                                    order_id: newOrder.order_id,
+                                    product_id: item.product_id,
+                                    qty: item.quantity,
+                                    price: item.product.price,
+                                    total_price: item.product.price * item.quantity,
                                 },
                                 orderBy: { created_at: "desc" },
                             })];
@@ -193,21 +253,8 @@ var OrdersController = /** @class */ (function () {
                                 return [2 /*return*/];
                             }
                         }
-                        return [4 /*yield*/, prisma.order.create({
-                                data: {
-                                    user_id: Number(user_id_1),
-                                    store_id: storeId,
-                                    total_price: total_price,
-                                    order_status: client_1.OrderStatus.awaiting_payment,
-                                    created_at: new Date(),
-                                    updated_at: new Date(),
-                                },
-                            })];
-                    case 4:
-                        newOrder_1 = _a.sent();
-                        // Send response immediately after order creation
-                        res.status(201).json({
-                            message: "Order berhasil dibuat dari keranjang belanja. Pembayaran harus dilakukan dalam 1 jam.",
+                        // Create shipping record
+                        yield prisma.shipping.create({
                             data: {
                                 order_id: newOrder_1.order_id,
                                 user_id: newOrder_1.user_id,

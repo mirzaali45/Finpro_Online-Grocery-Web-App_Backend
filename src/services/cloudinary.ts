@@ -3,8 +3,13 @@ import multer from "multer";
 import path from "path";
 import fs from "fs";
 
+// Determine upload directory based on environment
+const uploadDir =
+  process.env.NODE_ENV === "production"
+    ? "/tmp/uploads" // Use /tmp in production (serverless)
+    : path.join(process.cwd(), "uploads"); // Use local path in development
+
 // Create uploads directory if it doesn't exist
-const uploadDir = path.join(process.cwd(), "uploads");
 if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });
 }
