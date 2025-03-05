@@ -5,7 +5,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.snap = void 0;
 // src/config/midtrans.ts
-const midtrans_client_1 = __importDefault(require("midtrans-client"));
+var midtrans_client_1 = __importDefault(require("midtrans-client"));
 /**
  * Pastikan Anda sudah set environment variable:
  * - MIDTRANS_SERVER_KEY
