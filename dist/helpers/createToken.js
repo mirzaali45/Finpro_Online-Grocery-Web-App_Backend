@@ -1,39 +1,41 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.tokenService = void 0;
-const jsonwebtoken_1 = require("jsonwebtoken");
+var jsonwebtoken_1 = require("jsonwebtoken");
 require("dotenv/config");
-const SECRET_KEY = process.env.SECRET_KEY || "Temporarykey";
-class TokenService {
-    createTokenWithExpiry(payload, expiresIn) {
+var SECRET_KEY = process.env.SECRET_KEY || "Temporarykey";
+var TokenService = /** @class */ (function () {
+    function TokenService() {
+    }
+    TokenService.prototype.createTokenWithExpiry = function (payload, expiresIn) {
         try {
-            const options = { expiresIn };
+            var options = { expiresIn: expiresIn };
             return (0, jsonwebtoken_1.sign)(payload, SECRET_KEY, options);
         }
         catch (error) {
             console.error("Token generation failed:", error);
             throw new Error("Failed to generate token");
         }
-    }
-    createAccessToken(payload) {
+    };
+    TokenService.prototype.createAccessToken = function (payload) {
         return this.createTokenWithExpiry(payload, 3600); // 1 hour in seconds
-    }
-    createLoginToken(payload) {
+    };
+    TokenService.prototype.createLoginToken = function (payload) {
         return this.createTokenWithExpiry(payload, 86400); // 24 hours in seconds
-    }
-    createOAuthToken(payload) {
+    };
+    TokenService.prototype.createOAuthToken = function (payload) {
         return this.createTokenWithExpiry(payload, 86400);
-    }
-    createEmailRegisterToken(payload) {
+    };
+    TokenService.prototype.createEmailRegisterToken = function (payload) {
         return this.createTokenWithExpiry(payload, 3600);
-    }
-    createEmailToken(payload) {
+    };
+    TokenService.prototype.createEmailToken = function (payload) {
         return this.createTokenWithExpiry(payload, 86400);
-    }
-    createResetToken(payload) {
+    };
+    TokenService.prototype.createResetToken = function (payload) {
         return this.createTokenWithExpiry(payload, 86400);
-    }
-    verifyEmailToken(token) {
+    };
+    TokenService.prototype.verifyEmailToken = function (token) {
         try {
             return (0, jsonwebtoken_1.verify)(token, SECRET_KEY);
         }
@@ -41,6 +43,7 @@ class TokenService {
             console.error("Email token verification failed:", error);
             throw new Error("Invalid or expired email token");
         }
-    }
-}
+    };
+    return TokenService;
+}());
 exports.tokenService = new TokenService();
