@@ -2,6 +2,10 @@ import { PrismaClient } from "../../prisma/generated/client";
 import { Request, Response } from "express";
 import bcrypt from "bcrypt";
 import { generateReferralCode } from "../helpers/reffcode";
+import {
+  uploadAvatarImage,
+  deleteAvatarImage,
+} from "../services/cloudinary";
 
 const prisma = new PrismaClient();
 
@@ -10,12 +14,34 @@ export class SuperAdminController {
     try {
       const { email, password, role, username, firstName, lastName, phone } =
         req.body;
+      let avatarUrl = null;
+
+      // Check if file was uploaded
+      if (req.file) {
+        try {
+          // Upload avatar to Cloudinary
+          const result = await uploadAvatarImage(req.file.path);
+          avatarUrl = result.secure_url;
+        } catch (error) {
+          // Properly type the error
+          const uploadError = error as Error;
+          return res
+            .status(400)
+            .json({
+              error: "Failed to upload avatar",
+              details: uploadError.message,
+            });
+        }
+      }
 
       const existingUser = await prisma.user.findUnique({
         where: { email },
       });
 
       if (existingUser) {
+        if (avatarUrl) {
+          await deleteAvatarImage(avatarUrl);
+        }
         return res.status(400).json({ error: "Email already exists" });
       }
 
@@ -30,6 +56,7 @@ export class SuperAdminController {
           first_name: firstName,
           last_name: lastName,
           phone,
+          avatar: avatarUrl,
           verified: true,
           referral_code: role === "customer" ? generateReferralCode(8) : null,
         },
@@ -41,6 +68,7 @@ export class SuperAdminController {
         data: newUser,
       });
     } catch (error) {
+      console.error("Create user error:", error);
       return res.status(500).json({ error: "Could not create user" });
     }
   }
@@ -67,12 +95,12 @@ export class SuperAdminController {
         skip,
         take: limit,
       });
-  
+
       // Calculate pagination metadata
       const totalPages = Math.ceil(totalUsers / limit);
       const hasNextPage = page < totalPages;
       const hasPrevPage = page > 1;
-  
+
       return res.status(200).json({
         status: "success",
         data: users,
