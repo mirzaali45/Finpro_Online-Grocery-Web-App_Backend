@@ -253,6 +253,7 @@ var OrdersController = /** @class */ (function () {
                                 return [2 /*return*/];
                             }
                         }
+
                         // Create shipping record
                         yield prisma.shipping.create({
                             data: {
@@ -399,6 +400,7 @@ var OrdersController = /** @class */ (function () {
                                             address: true,
                                             city: true,
                                             province: true,
+
                                         },
                                     },
                                     OrderItem: {

@@ -43,6 +43,7 @@ exports.deleteDiscountImage = exports.deleteCategoryImage = exports.deleteAvatar
 var cloudinary_1 = require("cloudinary");
 Object.defineProperty(exports, "cloudinary", { enumerable: true, get: function () { return cloudinary_1.v2; } });
 
+
 const multer_1 = __importDefault(require("multer"));
 const path_1 = __importDefault(require("path"));
 const fs_1 = __importDefault(require("fs"));
