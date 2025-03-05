@@ -42,11 +42,16 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.deleteDiscountImage = exports.deleteCategoryImage = exports.deleteAvatarImage = exports.deleteProductImage = exports.deleteFromCloudinary = exports.uploadDiscountThumbnail = exports.uploadCategoryThumbnail = exports.uploadAvatarImage = exports.uploadProductImage = exports.uploadToCloudinary = exports.uploadDiscountImage = exports.uploadCategoryImage = exports.uploadAvatar = exports.uploadProduct = exports.cloudinary = void 0;
 var cloudinary_1 = require("cloudinary");
 Object.defineProperty(exports, "cloudinary", { enumerable: true, get: function () { return cloudinary_1.v2; } });
-var multer_1 = __importDefault(require("multer"));
-var path_1 = __importDefault(require("path"));
-var fs_1 = __importDefault(require("fs"));
+
+
+const multer_1 = __importDefault(require("multer"));
+const path_1 = __importDefault(require("path"));
+const fs_1 = __importDefault(require("fs"));
+// Determine upload directory based on environment
+const uploadDir = process.env.NODE_ENV === "production"
+    ? "/tmp/uploads" // Use /tmp in production (serverless)
+    : path_1.default.join(process.cwd(), "uploads"); // Use local path in development
 // Create uploads directory if it doesn't exist
-var uploadDir = path_1.default.join(process.cwd(), "uploads");
 if (!fs_1.default.existsSync(uploadDir)) {
     fs_1.default.mkdirSync(uploadDir, { recursive: true });
 }
