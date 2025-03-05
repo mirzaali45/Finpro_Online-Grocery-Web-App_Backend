@@ -6,11 +6,11 @@ exports.formatPrice = exports.calculateTotalSavings = exports.calculateCartTotal
  * @param product Product with potential discount information
  * @returns The final price after discount
  */
-var calculateDiscountedPrice = function (product) {
+const calculateDiscountedPrice = (product) => {
     if (!product.Discount || product.Discount.length === 0) {
         return product.price;
     }
-    var discount = product.Discount[0];
+    const discount = product.Discount[0];
     if (discount.discount_type === "percentage") {
         return (product.price -
             Math.floor((product.price * discount.discount_value) / 100));
@@ -25,9 +25,9 @@ exports.calculateDiscountedPrice = calculateDiscountedPrice;
  * @param items Array of cart items
  * @returns Total price with discounts applied
  */
-var calculateCartTotal = function (items) {
-    return items.reduce(function (total, item) {
-        var itemPrice = (0, exports.calculateDiscountedPrice)(item.product);
+const calculateCartTotal = (items) => {
+    return items.reduce((total, item) => {
+        const itemPrice = (0, exports.calculateDiscountedPrice)(item.product);
         return total + itemPrice * item.quantity;
     }, 0);
 };
@@ -37,14 +37,14 @@ exports.calculateCartTotal = calculateCartTotal;
  * @param items Array of cart items
  * @returns Total amount saved from all discounts
  */
-var calculateTotalSavings = function (items) {
-    return items.reduce(function (savings, item) {
+const calculateTotalSavings = (items) => {
+    return items.reduce((savings, item) => {
         if (!item.product.Discount || item.product.Discount.length === 0) {
             return savings;
         }
-        var originalPrice = item.product.price;
-        var discountedPrice = (0, exports.calculateDiscountedPrice)(item.product);
-        var itemSavings = (originalPrice - discountedPrice) * item.quantity;
+        const originalPrice = item.product.price;
+        const discountedPrice = (0, exports.calculateDiscountedPrice)(item.product);
+        const itemSavings = (originalPrice - discountedPrice) * item.quantity;
         return savings + itemSavings;
     }, 0);
 };
@@ -54,7 +54,7 @@ exports.calculateTotalSavings = calculateTotalSavings;
  * @param price Number to format
  * @returns Formatted price string
  */
-var formatPrice = function (price) {
-    return "Rp.".concat(price.toLocaleString("id-ID"));
+const formatPrice = (price) => {
+    return `Rp.${price.toLocaleString("id-ID")}`;
 };
 exports.formatPrice = formatPrice;
