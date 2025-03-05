@@ -93,13 +93,13 @@ export class OrdersController {
     try {
       const { user_id } = req.body;
       console.log("Creating order from cart for user:", user_id);
-
       // Step 1: Quick response to prevent Vercel timeout
       // This is key - send a response early while processing continues
       const responsePromise = new Promise<void>((resolve) => {
         // We'll resolve this later to send the actual response
         setTimeout(() => resolve(), 8000); // Backup resolve after 8 seconds
       });
+
 
       // Do initial validation checks synchronously
       const user = await prisma.user.findUnique({
@@ -199,7 +199,6 @@ export class OrdersController {
           order_status: newOrder.order_status,
         },
       });
-
       // Continue processing in the background
       // This will run even after response is sent
       (async () => {
@@ -228,7 +227,6 @@ export class OrdersController {
               });
             }
           }
-
           // Create shipping record
           await prisma.shipping.create({
             data: {
@@ -242,7 +240,6 @@ export class OrdersController {
               updated_at: new Date(),
             },
           });
-
           // Clear cart items in chunks to avoid timeout
           const cartItemChunkSize = 5;
           const userIdNum = Number(user_id);

@@ -98,6 +98,7 @@ class OrdersController {
                     setTimeout(() => resolve(), 8000); // Backup resolve after 8 seconds
                 });
                 // Do initial validation checks synchronously
+
                 const user = yield prisma.user.findUnique({
                     where: { user_id: Number(user_id) },
                     include: {
@@ -207,6 +208,7 @@ class OrdersController {
                                 });
                             }
                         }
+
                         // Create shipping record
                         yield prisma.shipping.create({
                             data: {
