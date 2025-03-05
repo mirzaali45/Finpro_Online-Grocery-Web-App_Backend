@@ -93,13 +93,14 @@ export class OrdersController {
     try {
       const { user_id } = req.body;
       console.log("Creating order from cart for user:", user_id);
-
       // Step 1: Quick response to prevent Vercel timeout
       // This is key - send a response early while processing continues
       const responsePromise = new Promise<void>((resolve) => {
         // We'll resolve this later to send the actual response
         setTimeout(() => resolve(), 8000); // Backup resolve after 8 seconds
       });
+
+
 
       // Do initial validation checks synchronously
       const user = await prisma.user.findUnique({
@@ -131,7 +132,6 @@ export class OrdersController {
         responseError(res, "Keranjang belanja kosong.");
         return;
       }
-
 
       // Check if all products are from the same store
       const storeIds = new Set(cartItems.map((item) => item.product.store_id));
@@ -246,7 +246,6 @@ export class OrdersController {
           // Clear cart items in chunks to avoid timeout
           const cartItemChunkSize = 5;
           const userIdNum = Number(user_id);
-
           // Get all cart item IDs
           const allCartItems = await prisma.cartItem.findMany({
             where: { user_id: userIdNum },
@@ -503,7 +502,6 @@ export class OrdersController {
       return;
     }
   }
-  
   async checkExpiredOrders(req: Request, res: Response): Promise<void> {
     try {
       // Find orders created more than 1 hour ago that are still in awaiting_payment status

@@ -1,18 +1,18 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.DiscountRouter = void 0;
-const express_1 = require("express");
-const discount_controller_1 = require("../controllers/discount.controller");
-const auth_verify_1 = require("../middleware/auth.verify");
-const cloudinary_1 = require("../services/cloudinary");
-class DiscountRouter {
-    constructor() {
+var express_1 = require("express");
+var discount_controller_1 = require("../controllers/discount.controller");
+var auth_verify_1 = require("../middleware/auth.verify");
+var cloudinary_1 = require("../services/cloudinary");
+var DiscountRouter = /** @class */ (function () {
+    function DiscountRouter() {
         this.router = (0, express_1.Router)();
         this.discountController = new discount_controller_1.DiscountController();
         this.authMiddleware = new auth_verify_1.AuthMiddleware();
         this.initializeRoutes();
     }
-    initializeRoutes() {
+    DiscountRouter.prototype.initializeRoutes = function () {
         // Get discount routes
         this.router.get("/", this.discountController.getAllDiscounts);
         this.router.get("/store", this.authMiddleware.verifyToken, this.authMiddleware.checkStrAdmin, this.discountController.getStoreDiscounts);
@@ -26,9 +26,10 @@ class DiscountRouter {
         this.router.delete("/:id", this.authMiddleware.verifyToken, this.authMiddleware.checkStrAdmin, this.discountController.deleteDiscount);
         // Discount application routes
         this.router.post("/apply", this.discountController.applyDiscount);
-    }
-    getRouter() {
+    };
+    DiscountRouter.prototype.getRouter = function () {
         return this.router;
-    }
-}
+    };
+    return DiscountRouter;
+}());
 exports.DiscountRouter = DiscountRouter;
