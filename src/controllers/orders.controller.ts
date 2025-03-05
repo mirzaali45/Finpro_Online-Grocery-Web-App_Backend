@@ -132,7 +132,6 @@ export class OrdersController {
         return;
       }
 
-
       // Check if all products are from the same store
       const storeIds = new Set(cartItems.map((item) => item.product.store_id));
       if (storeIds.size > 1) {
@@ -202,7 +201,7 @@ export class OrdersController {
 
       // Continue processing in the background
       // This will run even after response is sent
-      (async () => {
+      Promise.resolve().then(async () => {
         try {
           // Process order items one at a time to avoid timeouts
           for (const item of cartItems) {
@@ -271,7 +270,7 @@ export class OrdersController {
           // Consider sending this to an error tracking service
           // or storing in a separate errors table
         }
-      })();
+      });
     } catch (error: any) {
       console.error("createOrderFromCart error:", error);
       responseError(res, error.message);
@@ -503,7 +502,7 @@ export class OrdersController {
       return;
     }
   }
-  
+
   async checkExpiredOrders(req: Request, res: Response): Promise<void> {
     try {
       // Find orders created more than 1 hour ago that are still in awaiting_payment status

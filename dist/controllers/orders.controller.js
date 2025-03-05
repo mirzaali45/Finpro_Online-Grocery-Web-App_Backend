@@ -174,7 +174,7 @@ class OrdersController {
                 });
                 // Continue processing in the background
                 // This will run even after response is sent
-                (() => __awaiter(this, void 0, void 0, function* () {
+                Promise.resolve().then(() => __awaiter(this, void 0, void 0, function* () {
                     try {
                         // Process order items one at a time to avoid timeouts
                         for (const item of cartItems) {
@@ -236,7 +236,7 @@ class OrdersController {
                         // Consider sending this to an error tracking service
                         // or storing in a separate errors table
                     }
-                }))();
+                }));
             }
             catch (error) {
                 console.error("createOrderFromCart error:", error);
