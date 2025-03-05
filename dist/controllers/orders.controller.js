@@ -60,6 +60,7 @@ else {
 var OrdersController = /** @class */ (function () {
     function OrdersController() {
     }
+
     OrdersController.prototype.getOrders = function (req, res) {
         return __awaiter(this, void 0, void 0, function () {
             var _a, status_1, user_id, store_id, date, where, startDate, endDate, orders, error_1;
