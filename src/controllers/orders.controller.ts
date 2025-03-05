@@ -132,7 +132,6 @@ export class OrdersController {
         return;
       }
 
-
       // Check if all products are from the same store
       const storeIds = new Set(cartItems.map((item) => item.product.store_id));
       if (storeIds.size > 1) {
@@ -503,7 +502,7 @@ export class OrdersController {
       return;
     }
   }
-  
+
   async checkExpiredOrders(req: Request, res: Response): Promise<void> {
     try {
       // Find orders created more than 1 hour ago that are still in awaiting_payment status
