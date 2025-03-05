@@ -100,7 +100,6 @@ export class OrdersController {
         setTimeout(() => resolve(), 8000); // Backup resolve after 8 seconds
       });
 
-
       // Do initial validation checks synchronously
       const user = await prisma.user.findUnique({
         where: { user_id: Number(user_id) },
@@ -162,6 +161,7 @@ export class OrdersController {
       const inventoryMap = new Map();
       inventories.forEach((inv) => inventoryMap.set(inv.product_id, inv));
 
+
       // Check inventory for each item
       for (const item of cartItems) {
         const inventory = inventoryMap.get(item.product_id);
@@ -199,6 +199,7 @@ export class OrdersController {
           order_status: newOrder.order_status,
         },
       });
+
       // Continue processing in the background
       // This will run even after response is sent
       (async () => {
@@ -227,6 +228,7 @@ export class OrdersController {
               });
             }
           }
+
           // Create shipping record
           await prisma.shipping.create({
             data: {
@@ -240,6 +242,7 @@ export class OrdersController {
               updated_at: new Date(),
             },
           });
+
           // Clear cart items in chunks to avoid timeout
           const cartItemChunkSize = 5;
           const userIdNum = Number(user_id);
@@ -260,6 +263,7 @@ export class OrdersController {
               },
             });
           }
+
           console.log(
             `Order ${newOrder.order_id} processing completed successfully`
           );
