@@ -90,24 +90,25 @@ export class OrdersController {
   }
 
   async createOrderFromCart(req: Request, res: Response): Promise<void> {
-  try {
-    const { user_id } = req.body;
-    console.log("Creating order from cart for user:", user_id);
+    try {
+      const { user_id } = req.body;
+      console.log("Creating order from cart for user:", user_id);
 
-    // Step 1: Quick response to prevent Vercel timeout
-    // This is key - send a response early while processing continues
-    const responsePromise = new Promise<void>((resolve) => {
-      // We'll resolve this later to send the actual response
-      setTimeout(() => resolve(), 8000); // Backup resolve after 8 seconds
-    });
+      // Step 1: Quick response to prevent Vercel timeout
+      // This is key - send a response early while processing continues
+      const responsePromise = new Promise<void>((resolve) => {
+        // We'll resolve this later to send the actual response
+        setTimeout(() => resolve(), 8000); // Backup resolve after 8 seconds
+      });
 
-    // Do initial validation checks synchronously
-    const user = await prisma.user.findUnique({
-      where: { user_id: Number(user_id) },
-      include: {
-        Address: {
-          where: { is_primary: true },
-          take: 1,
+      // Do initial validation checks synchronously
+      const user = await prisma.user.findUnique({
+        where: { user_id: Number(user_id) },
+        include: {
+          Address: {
+            where: { is_primary: true },
+            take: 1,
+          },
         },
       },
     });
@@ -158,11 +159,9 @@ export class OrdersController {
       },
     });
 
-
-    // Check inventory for each item
-    for (const item of cartItems) {
-      const inventory = inventoryMap.get(item.product_id);
-      if (!inventory || inventory.total_qty < item.quantity) {
+      // Check if all products are from the same store
+      const storeIds = new Set(cartItems.map((item) => item.product.store_id));
+      if (storeIds.size > 1) {
         responseError(
           res,
           `Stok tidak cukup untuk produk "${item.product.name}". Tersedia: ${
