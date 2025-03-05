@@ -151,6 +151,7 @@ class OrdersController {
                         (0, responseError_1.responseError)(res, `Stok tidak cukup untuk produk "${item.product.name}". Tersedia: ${inventory ? inventory.total_qty : 0}, Dibutuhkan: ${item.quantity}`);
                         return;
                     }
+                }
 
                 // CRITICAL: Create order first - this is the core operation
                 const newOrder = yield prisma.order.create({
@@ -202,7 +203,6 @@ class OrdersController {
                                 });
                             }
                         }
-
                         // Create shipping record
                         yield prisma.shipping.create({
                             data: {
