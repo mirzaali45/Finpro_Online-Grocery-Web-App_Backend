@@ -93,12 +93,7 @@ export class OrdersController {
     try {
       const { user_id } = req.body;
       console.log("Creating order from cart for user:", user_id);
-      // Step 1: Quick response to prevent Vercel timeout
-      // This is key - send a response early while processing continues
-      const responsePromise = new Promise<void>((resolve) => {
-        // We'll resolve this later to send the actual response
-        setTimeout(() => resolve(), 8000); // Backup resolve after 8 seconds
-      });
+
       // Step 1: Quick response to prevent Vercel timeout
       // This is key - send a response early while processing continues
       const responsePromise = new Promise<void>((resolve) => {
@@ -200,6 +195,7 @@ export class OrdersController {
           updated_at: new Date(),
         },
       });
+
       // Send response immediately after order creation
       res.status(201).json({
         message:
