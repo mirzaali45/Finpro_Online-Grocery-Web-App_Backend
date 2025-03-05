@@ -3,34 +3,34 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-const dotenv_1 = __importDefault(require("dotenv"));
+var dotenv_1 = __importDefault(require("dotenv"));
 dotenv_1.default.config();
-const express_1 = __importDefault(require("express"));
-const cookie_parser_1 = __importDefault(require("cookie-parser"));
-const cors_1 = __importDefault(require("cors"));
-const auth_router_1 = require("./routers/auth.router");
-const customer_router_1 = require("./routers/customer.router");
-const super_admin_router_1 = require("./routers/super-admin.router");
-const store_admin_router_1 = require("./routers/store-admin.router");
-const product_router_1 = require("./routers/product.router");
-const inventory_router_1 = require("./routers/inventory.router");
-const store_router_1 = require("./routers/store.router");
-const category_router_1 = require("./routers/category.router");
-const product_image_router_1 = require("./routers/product-image.router");
-const cart_router_1 = require("./routers/cart.router");
-const rajaongkir_router_1 = require("./routers/rajaongkir.router");
-const cekongkir_router_1 = require("./routers/cekongkir.router");
-const order_router_1 = require("./routers/order.router");
-const payments_router_1 = require("./routers/payments.router");
-const discount_router_1 = require("./routers/discount-router");
-const voucher_router_1 = require("./routers/voucher.router");
-const reports_store_router_1 = require("./routers/reports-store.router");
-const reports_superadmin_router_1 = require("./routers/reports-superadmin.router");
-const revenue_store_router_1 = require("./routers/revenue-store.router");
-const revenue_superadmin_router_1 = require("./routers/revenue-superadmin.router");
-const PORT = 8000;
-const base_url_fe = process.env.BASE_URL_FE;
-const app = (0, express_1.default)();
+var express_1 = __importDefault(require("express"));
+var cookie_parser_1 = __importDefault(require("cookie-parser"));
+var cors_1 = __importDefault(require("cors"));
+var auth_router_1 = require("./routers/auth.router");
+var customer_router_1 = require("./routers/customer.router");
+var super_admin_router_1 = require("./routers/super-admin.router");
+var store_admin_router_1 = require("./routers/store-admin.router");
+var product_router_1 = require("./routers/product.router");
+var inventory_router_1 = require("./routers/inventory.router");
+var store_router_1 = require("./routers/store.router");
+var category_router_1 = require("./routers/category.router");
+var product_image_router_1 = require("./routers/product-image.router");
+var cart_router_1 = require("./routers/cart.router");
+var rajaongkir_router_1 = require("./routers/rajaongkir.router");
+var cekongkir_router_1 = require("./routers/cekongkir.router");
+var order_router_1 = require("./routers/order.router");
+var payments_router_1 = require("./routers/payments.router");
+var discount_router_1 = require("./routers/discount-router");
+var voucher_router_1 = require("./routers/voucher.router");
+var reports_store_router_1 = require("./routers/reports-store.router");
+var reports_superadmin_router_1 = require("./routers/reports-superadmin.router");
+var revenue_store_router_1 = require("./routers/revenue-store.router");
+var revenue_superadmin_router_1 = require("./routers/revenue-superadmin.router");
+var PORT = 8000;
+var base_url_fe = process.env.BASE_URL_FE;
+var app = (0, express_1.default)();
 app.use(express_1.default.json());
 app.use((0, cookie_parser_1.default)());
 app.use((0, cors_1.default)({
@@ -39,26 +39,26 @@ app.use((0, cors_1.default)({
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
     allowedHeaders: ["Content-Type", "Authorization"],
 }));
-const authRouter = new auth_router_1.AuthRouter();
-const customerRouter = new customer_router_1.CustomerRouter();
-const superAdminRouter = new super_admin_router_1.SuperAdminRouter();
-const storeAdminRouter = new store_admin_router_1.StoreAdminRouter();
-const productRouter = new product_router_1.ProductRouter();
-const inventoryRouter = new inventory_router_1.InventoryRouter();
-const storeRouter = new store_router_1.StoreRouter();
-const categoryRouter = new category_router_1.CategoryRouter();
-const productImageRouter = new product_image_router_1.ProductImageRouter();
-const cartRouter = new cart_router_1.CartRouter();
-const rajaOngkirRouter = new rajaongkir_router_1.RajaOngkirRouter();
-const cekOngkir = new cekongkir_router_1.CekOngkirRouter();
-const ordersRouter = new order_router_1.OrdersRouter();
-const paymentsRouter = new payments_router_1.PaymentsRouter();
-const discountRouter = new discount_router_1.DiscountRouter();
-const voucherRouter = new voucher_router_1.VoucherRouter();
-const reportRouter = new reports_store_router_1.ReportsRouter();
-const reportSuperAdminRouter = new reports_superadmin_router_1.ReportSuperAdminRouter();
-const revenueStoreRouter = new revenue_store_router_1.RevenueStoreRouter();
-const revenueSuperRouter = new revenue_superadmin_router_1.RevenueSuperAdminRouter();
+var authRouter = new auth_router_1.AuthRouter();
+var customerRouter = new customer_router_1.CustomerRouter();
+var superAdminRouter = new super_admin_router_1.SuperAdminRouter();
+var storeAdminRouter = new store_admin_router_1.StoreAdminRouter();
+var productRouter = new product_router_1.ProductRouter();
+var inventoryRouter = new inventory_router_1.InventoryRouter();
+var storeRouter = new store_router_1.StoreRouter();
+var categoryRouter = new category_router_1.CategoryRouter();
+var productImageRouter = new product_image_router_1.ProductImageRouter();
+var cartRouter = new cart_router_1.CartRouter();
+var rajaOngkirRouter = new rajaongkir_router_1.RajaOngkirRouter();
+var cekOngkir = new cekongkir_router_1.CekOngkirRouter();
+var ordersRouter = new order_router_1.OrdersRouter();
+var paymentsRouter = new payments_router_1.PaymentsRouter();
+var discountRouter = new discount_router_1.DiscountRouter();
+var voucherRouter = new voucher_router_1.VoucherRouter();
+var reportRouter = new reports_store_router_1.ReportsRouter();
+var reportSuperAdminRouter = new reports_superadmin_router_1.ReportSuperAdminRouter();
+var revenueStoreRouter = new revenue_store_router_1.RevenueStoreRouter();
+var revenueSuperRouter = new revenue_superadmin_router_1.RevenueSuperAdminRouter();
 app.use("/api/auth", authRouter.getRouter()); // sasa
 app.use("/api/customer", customerRouter.getRouter()); // sasa
 app.use("/api/super-admin", superAdminRouter.getRouter()); // zaki
@@ -79,10 +79,10 @@ app.use("/api/reports/", reportRouter.getRouter());
 app.use("/api/reports-superadmin", reportSuperAdminRouter.getRouter());
 app.use("/api/revenueorder/", revenueStoreRouter.getRouter());
 app.use("/api/revenue-superadmin", revenueSuperRouter.getRouter());
-app.get("/api", (req, res) => {
+app.get("/api", function (req, res) {
     res.send("Welcome to the API!");
 });
-app.listen(PORT, () => {
-    console.log(`Server is running on -> http://localhost:${PORT}/api`);
+app.listen(PORT, function () {
+    console.log("Server is running on -> http://localhost:".concat(PORT, "/api"));
 });
 exports.default = app;
