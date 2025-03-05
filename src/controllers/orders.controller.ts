@@ -106,12 +106,14 @@ export class OrdersController {
         setTimeout(() => resolve(), 8000); // Backup resolve after 8 seconds
       });
 
+
       // Step 1: Quick response to prevent Vercel timeout
       // This is key - send a response early while processing continues
       const responsePromise = new Promise<void>((resolve) => {
         // We'll resolve this later to send the actual response
         setTimeout(() => resolve(), 8000); // Backup resolve after 8 seconds
       });
+
 
 
       // Do initial validation checks synchronously

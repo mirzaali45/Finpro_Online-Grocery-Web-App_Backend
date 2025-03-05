@@ -153,6 +153,7 @@ class OrdersController {
                     }
                 }
 
+
                 // CRITICAL: Create order first - this is the core operation
                 const newOrder = yield prisma.order.create({
                     data: {
