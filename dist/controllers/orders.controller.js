@@ -151,7 +151,7 @@ var OrdersController = /** @class */ (function () {
                 });
                 // Continue processing in the background
                 // This will run even after response is sent
-                (() => __awaiter(this, void 0, void 0, function* () {
+                Promise.resolve().then(() => __awaiter(this, void 0, void 0, function* () {
                     try {
                         // Process order items one at a time to avoid timeouts
                         for (const item of cartItems) {
@@ -253,7 +253,6 @@ var OrdersController = /** @class */ (function () {
                                 return [2 /*return*/];
                             }
                         }
-
                         // Create shipping record
                         yield prisma.shipping.create({
                             data: {
@@ -355,16 +354,21 @@ var OrdersController = /** @class */ (function () {
                                     case 13: return [2 /*return*/];
                                 }
                             });
-                        }); })();
-                        return [3 /*break*/, 6];
-                    case 5:
-                        error_2 = _a.sent();
-                        console.error("createOrderFromCart error:", error_2);
-                        (0, responseError_1.responseError)(res, error_2.message);
-                        return [3 /*break*/, 6];
-                    case 6: return [2 /*return*/];
-                }
-            });
+
+                        }
+                        console.log(`Order ${newOrder.order_id} processing completed successfully`);
+                    }
+                    catch (backgroundError) {
+                        console.error("Background processing error:", backgroundError);
+                        // Consider sending this to an error tracking service
+                        // or storing in a separate errors table
+                    }
+                }));
+            }
+            catch (error) {
+                console.error("createOrderFromCart error:", error);
+                (0, responseError_1.responseError)(res, error.message);
+            }
         });
     };
     OrdersController.prototype.getMyOrders = function (req, res) {
