@@ -151,6 +151,7 @@ var OrdersController = /** @class */ (function () {
                 });
                 // Continue processing in the background
                 // This will run even after response is sent
+
                 Promise.resolve().then(() => __awaiter(this, void 0, void 0, function* () {
                     try {
                         // Process order items one at a time to avoid timeouts
