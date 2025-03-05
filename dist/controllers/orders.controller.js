@@ -89,6 +89,7 @@ class OrdersController {
             try {
                 const { user_id } = req.body;
                 console.log("Creating order from cart for user:", user_id);
+
                 // Step 1: Quick response to prevent Vercel timeout
                 // This is key - send a response early while processing continues
                 const responsePromise = new Promise((resolve) => {
@@ -96,6 +97,7 @@ class OrdersController {
                     setTimeout(() => resolve(), 8000); // Backup resolve after 8 seconds
                 });
                 // Do initial validation checks synchronously
+
                 const user = yield prisma.user.findUnique({
                     where: { user_id: Number(user_id) },
                     include: {
@@ -114,7 +116,7 @@ class OrdersController {
                     return;
                 }
                 const address = user.Address[0];
-                // Get cart items
+
                 const cartItems = yield prisma.cartItem.findMany({
                     where: { user_id: Number(user_id) },
                     include: { product: { include: { store: true } } },
@@ -132,7 +134,7 @@ class OrdersController {
                 const storeId = cartItems[0].product.store_id;
                 // Calculate total price
                 const total_price = cartItems.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
-                // Check inventories
+
                 const productIds = cartItems.map((item) => item.product_id);
                 const inventories = yield prisma.inventory.findMany({
                     where: {
@@ -149,7 +151,7 @@ class OrdersController {
                         (0, responseError_1.responseError)(res, `Stok tidak cukup untuk produk "${item.product.name}". Tersedia: ${inventory ? inventory.total_qty : 0}, Dibutuhkan: ${item.quantity}`);
                         return;
                     }
-                }
+
                 // CRITICAL: Create order first - this is the core operation
                 const newOrder = yield prisma.order.create({
                     data: {
@@ -200,6 +202,7 @@ class OrdersController {
                                 });
                             }
                         }
+
                         // Create shipping record
                         yield prisma.shipping.create({
                             data: {
