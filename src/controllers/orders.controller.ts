@@ -6,7 +6,7 @@ import {
 } from "../../prisma/generated/client";
 import { responseError } from "../helpers/responseError";
 
-let prisma = new PrismaClient;
+let prisma = new PrismaClient();
 if (process.env.NODE_ENV === "production") {
   prisma = new PrismaClient({
     log: ["query", "info", "warn", "error"],
@@ -158,8 +158,6 @@ export class OrdersController {
       },
     });
 
-    const inventoryMap = new Map();
-    inventories.forEach((inv) => inventoryMap.set(inv.product_id, inv));
 
     // Check inventory for each item
     for (const item of cartItems) {
@@ -174,53 +172,72 @@ export class OrdersController {
         return;
       }
 
-    }
-    // CRITICAL: Create order first - this is the core operation
-    const newOrder = await prisma.order.create({
-      data: {
-        user_id: Number(user_id),
-        store_id: storeId,
-        total_price,
-        order_status: OrderStatus.awaiting_payment,
-        created_at: new Date(),
-        updated_at: new Date(),
-      },
-    });
 
-    // Send response immediately after order creation
-    res.status(201).json({
-      message:
-        "Order berhasil dibuat dari keranjang belanja. Pembayaran harus dilakukan dalam 1 jam.",
-      data: {
-        order_id: newOrder.order_id,
-        user_id: newOrder.user_id,
-        store_id: newOrder.store_id,
-        total_price: newOrder.total_price,
-        order_status: newOrder.order_status,
-      },
-    });
+      const storeId = cartItems[0].product.store_id;
+      // Calculate total price
+      const total_price = cartItems.reduce(
+        (sum, item) => sum + item.product.price * item.quantity,
+        0
+      );
 
-    // Continue processing in the background
-    // This will run even after response is sent
-    Promise.resolve().then(async () => {
-      try {
-        // Process order items one at a time to avoid timeouts
-        for (const item of cartItems) {
-          // Create order item
-          await prisma.orderItem.create({
-            data: {
-              order_id: newOrder.order_id,
-              product_id: item.product_id,
-              qty: item.quantity,
-              price: item.product.price,
-              total_price: item.product.price * item.quantity,
-            },
-          });
-          // Update inventory
-          const inventory = inventoryMap.get(item.product_id);
-          if (inventory) {
-            await prisma.inventory.update({
-              where: { inv_id: inventory.inv_id },
+      // Check inventories
+      const productIds = cartItems.map((item) => item.product_id);
+      const inventories = await prisma.inventory.findMany({
+        where: {
+          product_id: { in: productIds },
+          store_id: storeId,
+        },
+      });
+
+      const inventoryMap = new Map();
+      inventories.forEach((inv) => inventoryMap.set(inv.product_id, inv));
+
+      // Check inventory for each item
+      for (const item of cartItems) {
+        const inventory = inventoryMap.get(item.product_id);
+        if (!inventory || inventory.total_qty < item.quantity) {
+          responseError(
+            res,
+            `Stok tidak cukup untuk produk "${item.product.name}". Tersedia: ${
+              inventory ? inventory.total_qty : 0
+            }, Dibutuhkan: ${item.quantity}`
+          );
+          return;
+        }
+      }
+      // CRITICAL: Create order first - this is the core operation
+      const newOrder = await prisma.order.create({
+        data: {
+          user_id: Number(user_id),
+          store_id: storeId,
+          total_price,
+          order_status: OrderStatus.awaiting_payment,
+          created_at: new Date(),
+          updated_at: new Date(),
+        },
+      });
+
+      // Send response immediately after order creation
+      res.status(201).json({
+        message:
+          "Order berhasil dibuat dari keranjang belanja. Pembayaran harus dilakukan dalam 1 jam.",
+        data: {
+          order_id: newOrder.order_id,
+          user_id: newOrder.user_id,
+          store_id: newOrder.store_id,
+          total_price: newOrder.total_price,
+          order_status: newOrder.order_status,
+        },
+      });
+
+      // Continue processing in the background
+      // This will run even after response is sent
+      (async () => {
+        try {
+          // Process order items one at a time to avoid timeouts
+          for (const item of cartItems) {
+            // Create order item
+            await prisma.orderItem.create({
               data: {
                 total_qty: inventory.total_qty - item.quantity,
                 updated_at: new Date(),
