@@ -247,7 +247,6 @@ export class OrdersController {
             },
           });
 
-
           // Clear cart items in chunks to avoid timeout
           const cartItemChunkSize = 5;
           const userIdNum = Number(user_id);
