@@ -173,6 +173,7 @@ export class OrdersController {
         );
         return;
       }
+
     }
     // CRITICAL: Create order first - this is the core operation
     const newOrder = await prisma.order.create({
@@ -502,7 +503,6 @@ export class OrdersController {
       return;
     }
   }
-  
   async checkExpiredOrders(req: Request, res: Response): Promise<void> {
     try {
       // Find orders created more than 1 hour ago that are still in awaiting_payment status
