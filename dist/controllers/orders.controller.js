@@ -520,6 +520,7 @@ class OrdersController {
             }
         });
     }
+
     updateOrder(req, res) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
@@ -565,5 +566,6 @@ class OrdersController {
             }
         });
     }
+
 }
 exports.OrdersController = OrdersController;
