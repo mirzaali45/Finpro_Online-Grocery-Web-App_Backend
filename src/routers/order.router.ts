@@ -36,12 +36,24 @@ export class OrdersRouter {
       this.ordersController.getMyOrders.bind(this.ordersController)
     );
 
+    // Delete/cancel the user's order
     this.router.delete(
       "/my-orders/:order_id",
       this.authMiddleware.verifyToken.bind(this.authMiddleware),
       this.ordersController.deleteMyOrder.bind(this.ordersController)
     );
-    this.router.get("/Query", this.authMiddleware.verifyToken.bind(this.authMiddleware), this.ordersController.QueryOrders.bind(this.ordersController))
+    this.router.get(
+      "/Query",
+      this.authMiddleware.verifyToken.bind(this.authMiddleware),
+      this.ordersController.QueryOrders.bind(this.ordersController)
+    );
+
+    // Update order total price
+    this.router.put(
+      "/:order_id",
+      this.authMiddleware.verifyToken.bind(this.authMiddleware),
+      this.ordersController.updateOrder.bind(this.ordersController)
+    );
   }
 
   getRouter(): Router {
