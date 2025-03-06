@@ -156,7 +156,7 @@ class OrdersController {
                         user_id: Number(user_id),
                         store_id: storeId,
                         total_price,
-                        order_status: client_1.OrderStatus.awaiting_payment,
+                        order_status: client_1.OrderStatus.pending,
                         created_at: new Date(),
                         updated_at: new Date(),
                     },
@@ -383,7 +383,7 @@ class OrdersController {
                     return;
                 }
                 // Check if order can be deleted (only if status is awaiting_payment)
-                if (order.order_status !== client_1.OrderStatus.awaiting_payment) {
+                if (order.order_status !== client_1.OrderStatus.pending) {
                     (0, responseError_1.responseError)(res, "Hanya pesanan dengan status menunggu pembayaran yang dapat dibatalkan.");
                     return;
                 }
