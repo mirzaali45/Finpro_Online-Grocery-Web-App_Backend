@@ -20,11 +20,8 @@ class OrdersRouter {
         this.router.get("/my-orders", this.authMiddleware.verifyToken.bind(this.authMiddleware), this.ordersController.getMyOrders.bind(this.ordersController));
         // Delete/cancel the user's order
         this.router.delete("/my-orders/:order_id", this.authMiddleware.verifyToken.bind(this.authMiddleware), this.ordersController.deleteMyOrder.bind(this.ordersController));
-<<<<<<< HEAD
         // Update order total price
         this.router.put("/:order_id", this.authMiddleware.verifyToken.bind(this.authMiddleware), this.ordersController.updateOrder.bind(this.ordersController));
-=======
->>>>>>> b22e89b6d7804382b8133d60ed27946448b55b72
     }
     getRouter() {
         return this.router;

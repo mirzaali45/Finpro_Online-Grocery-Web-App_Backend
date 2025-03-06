@@ -12,7 +12,6 @@ class PaymentsRouter {
         this.initializeRoutes();
     }
     initializeRoutes() {
-<<<<<<< HEAD
         // Route for payment initiation
         this.router.post("/:order_id", this.authMiddleware.verifyToken, this.paymentsController.initiatePayment);
         // Callback route - receives notifications from Midtrans
@@ -32,10 +31,6 @@ class PaymentsRouter {
         // Public endpoint to manually check and update payment status - WITHOUT authentication
         // This will be useful for the payment success page
         this.router.get("/public/:order_id/check-status", this.paymentsController.checkPaymentStatus);
-=======
-        this.router.post("/create", this.authMiddleware.verifyToken, this.paymentsController.createPaymentOrder);
-        this.router.post("/callback", this.paymentsController.paymentCallback);
->>>>>>> b22e89b6d7804382b8133d60ed27946448b55b72
     }
     getRouter() {
         return this.router;
