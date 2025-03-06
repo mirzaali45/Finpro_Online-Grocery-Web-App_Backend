@@ -16,12 +16,11 @@ export class InventoryRouter {
   }
 
   private initializeRoutes() {
-    // Create inventory - Super Admin only
-    this.router.post(
-      "/",
+    // Get low stock products - Both Super Admin and Store Admin
+    this.router.get(
+      "/low-stock",
       this.authMiddleware.verifyToken as unknown as RequestHandler,
-      this.authMiddleware.checkSuperAdmin as unknown as RequestHandler,
-      this.inventoryController.createInventory as unknown as RequestHandler
+      this.inventoryController.getLowStockProducts as unknown as RequestHandler
     );
 
     // Get all inventory - Both Super Admin and Store Admin
@@ -31,6 +30,14 @@ export class InventoryRouter {
       this.inventoryController.getInventory as unknown as RequestHandler
     );
 
+    // Create inventory - Super Admin only
+    this.router.post(
+      "/",
+      this.authMiddleware.verifyToken as unknown as RequestHandler,
+      this.authMiddleware.checkSuperAdmin as unknown as RequestHandler,
+      this.inventoryController.createInventory as unknown as RequestHandler
+    );
+
     // Get specific inventory - Both Super Admin and Store Admin
     this.router.get(
       "/:inv_id",
@@ -38,12 +45,21 @@ export class InventoryRouter {
       this.inventoryController.getInventoryById as unknown as RequestHandler
     );
 
-    // Update inventory - Super Admin only
+    // Update inventory (store front) - Super Admin only
     this.router.put(
       "/:inv_id",
       this.authMiddleware.verifyToken as unknown as RequestHandler,
       this.authMiddleware.checkSuperAdmin as unknown as RequestHandler,
-      this.inventoryController.updateInventory as unknown as RequestHandler
+      this.inventoryController
+        .updateStoreFrontInventory as unknown as RequestHandler
+    );
+
+    // Transfer inventory from warehouse to store - Super Admin only
+    this.router.post(
+      "/:inv_id/transfer",
+      this.authMiddleware.verifyToken as unknown as RequestHandler,
+      this.authMiddleware.checkSuperAdmin as unknown as RequestHandler,
+      this.inventoryController.transferToStore as unknown as RequestHandler
     );
 
     // Delete inventory - Super Admin only
@@ -52,13 +68,6 @@ export class InventoryRouter {
       this.authMiddleware.verifyToken as unknown as RequestHandler,
       this.authMiddleware.checkSuperAdmin as unknown as RequestHandler,
       this.inventoryController.deleteInventory as unknown as RequestHandler
-    );
-
-    // Get low stock products - Both Super Admin and Store Admin
-    this.router.get(
-      "/low-stock",
-      this.authMiddleware.verifyToken as unknown as RequestHandler,
-      this.inventoryController.getLowStockProducts as unknown as RequestHandler
     );
   }
 
