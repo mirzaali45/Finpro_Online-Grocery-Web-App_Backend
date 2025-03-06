@@ -1,0 +1,104 @@
+# Midtrans Payment Gateway Integration Guide
+ngrok start --all --config=ngrok.yml 
+Panduan ini akan membantu Anda mengintegrasikan Midtrans sebagai gateway pembayaran untuk aplikasi e-commerce Anda.
+
+## Prasyarat
+
+1. Buat akun Midtrans di [https://midtrans.com/id](https://midtrans.com/id)
+2. Setelah mendaftar, akses Dashboard Midtrans
+3. Dapatkan Server Key dan Client Key dari dashboard
+
+## Instalasi
+
+Install midtrans-client untuk Node.js:
+
+```bash
+npm install midtrans-client
+```
+
+## Konfigurasi Environment Variables
+
+Tambahkan variabel lingkungan berikut ke file `.env` Anda:
+
+```
+# Midtrans Configuration
+MIDTRANS_SERVER_KEY=your_server_key_here
+MIDTRANS_CLIENT_KEY=your_client_key_here
+BASE_URL_FE=http://localhost:3000/
+```
+
+## Struktur Direktori Penyimpanan Data
+
+PaymentController menggunakan sistem file untuk menyimpan data pembayaran, bukan database. Pastikan direktori berikut bisa diakses dan ditulis oleh aplikasi:
+
+```
+project_root/
+├── data/
+│   └── payments/  # Direktori ini akan dibuat otomatis
+```
+
+## Mengatur Webhook Midtrans
+
+1. Di dashboard Midtrans, buka Settings > Configuration > Webhooks
+2. Tambahkan URL webhook baru: `https://your-api-url.com/api/payment/notification`
+3. Pastikan server Anda mampu menerima permintaan webhook
+
+## Alur Kerja Pembayaran
+
+```
+1. Pengguna membuat pesanan
+2. Sistem membuat pesanan dengan status "pending"
+3. Pengguna memulai pembayaran
+4. Sistem membuat token Midtrans Snap
+5. Status pesanan diubah menjadi "awaiting_payment"
+6. Pengguna dialihkan ke halaman pembayaran Midtrans
+7. Pengguna menyelesaikan pembayaran
+8. Midtrans mengirim notifikasi ke webhook
+9. Sistem memproses notifikasi dan memperbarui status pesanan
+10. Jika pembayaran berhasil, status pesanan diubah menjadi "processing"
+11. Jika pembayaran gagal, status pesanan diubah menjadi "cancelled" dan stok dikembalikan
+```
+
+## Metode Pembayaran yang Didukung
+
+Midtrans mendukung berbagai metode pembayaran, termasuk:
+
+- Kartu kredit/debit
+- Transfer bank
+- GoPay
+- QRIS
+- ShopeePay
+- Indomaret
+- Alfamart
+- dan banyak lagi
+
+Semua metode pembayaran diaktifkan secara default dengan Snap.
+
+## Pengujian
+
+Untuk pengujian, Midtrans menyediakan lingkungan sandbox:
+
+1. Gunakan Server Key dan Client Key Sandbox
+2. Set `isProduction: false` dalam inisialisasi klien Midtrans
+
+### Kartu Uji untuk Sandbox
+
+| Nomor Kartu        | CVV | Tanggal Kadaluarsa | Keterangan               |
+|--------------------|-----|-------------------|--------------------------|
+| 4811 1111 1111 1114 | Any | Any               | Transaksi sukses         |
+| 5211 1111 1111 1117 | Any | Any               | Transaksi sukses         |
+| 4911 1111 1111 1113 | Any | Any               | Ditolak oleh bank        |
+
+## Implementasi Frontend
+
+Untuk mengintegrasikan dengan frontend, ikuti langkah-langkah berikut:
+
+1. Buat halaman pembayaran dengan tombol "Bayar"
+2. Saat tombol diklik, kirim permintaan ke endpoint `/orders/:order_id/payment`
+3. Terima token Snap dan URL redirect
+4. Redirect pengguna ke URL Midtrans atau gunakan Snap.js untuk memunculkan popup pembayaran
+5. Setelah pembayaran selesai, periksa status dengan endpoint `/orders/:order_id/payment`
+
+### Contoh Penggunaan Snap.js
+
+```
