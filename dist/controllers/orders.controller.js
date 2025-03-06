@@ -383,8 +383,10 @@ class OrdersController {
                     return;
                 }
                 // Check if order can be deleted (only if status is awaiting_payment)
-                if (order.order_status !== client_1.OrderStatus.pending) {
-                    (0, responseError_1.responseError)(res, "Hanya pesanan dengan status menunggu pembayaran yang dapat dibatalkan.");
+                // Check if order can be deleted (only if status is awaiting_payment or pending)
+                if (order.order_status !== client_1.OrderStatus.awaiting_payment &&
+                    order.order_status !== client_1.OrderStatus.pending) {
+                    (0, responseError_1.responseError)(res, "Hanya pesanan dengan status menunggu pembayaran atau tertunda yang dapat dibatalkan.");
                     return;
                 }
                 // Start a transaction to ensure all operations succeed or fail together
@@ -515,6 +517,51 @@ class OrdersController {
                 (0, responseError_1.responseError)(res, error instanceof Error
                     ? error.message
                     : "Failed to process expired orders");
+            }
+        });
+    }
+    updateOrder(req, res) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                console.log("updateOrder called with params:", req.params);
+                console.log("updateOrder called with body:", req.body);
+                const { order_id } = req.params;
+                const { total_price } = req.body;
+                console.log(`Attempting to update order ${order_id} with total_price ${total_price}`);
+                // Rest of your code...
+                // Before update
+                const order = yield prisma.order.findUnique({
+                    where: { order_id: Number(order_id) }
+                });
+                console.log("Found order before update:", order);
+                // Update operation
+                try {
+                    const updatedOrder = yield prisma.order.update({
+                        where: { order_id: Number(order_id) },
+                        data: {
+                            total_price: Number(total_price),
+                            updated_at: new Date()
+                        }
+                    });
+                    console.log("Order updated successfully:", updatedOrder);
+                    // Send response
+                    res.status(200).json({
+                        message: "Harga pesanan berhasil diperbarui.",
+                        data: {
+                            order_id: updatedOrder.order_id,
+                            total_price: updatedOrder.total_price,
+                            updated_at: updatedOrder.updated_at
+                        }
+                    });
+                }
+                catch (updateError) {
+                    console.error("Error during Prisma update:", updateError);
+                    throw updateError;
+                }
+            }
+            catch (error) {
+                console.error("updateOrder error:", error);
+                (0, responseError_1.responseError)(res, error.message);
             }
         });
     }
