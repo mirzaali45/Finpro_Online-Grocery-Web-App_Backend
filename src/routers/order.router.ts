@@ -41,6 +41,7 @@ export class OrdersRouter {
       this.authMiddleware.verifyToken.bind(this.authMiddleware),
       this.ordersController.deleteMyOrder.bind(this.ordersController)
     );
+    this.router.get("/Query", this.authMiddleware.verifyToken.bind(this.authMiddleware), this.ordersController.QueryOrders.bind(this.ordersController))
   }
 
   getRouter(): Router {

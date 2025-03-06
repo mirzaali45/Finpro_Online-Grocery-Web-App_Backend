@@ -15,9 +15,9 @@ export class PaymentsRouter {
   }
   private initializeRoutes() {
     this.router.post(
-      "/create",
-      this.authMiddleware.verifyToken,
-      this.paymentsController.createPaymentOrder
+      "/:order_id",
+      // this.authMiddleware.verifyToken,
+      this.paymentsController.initiatePayment
     );
     this.router.post("/callback", this.paymentsController.paymentCallback);
   }

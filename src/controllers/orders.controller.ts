@@ -597,4 +597,52 @@ export class OrdersController {
       );
     }
   }
+  async QueryOrders(req: Request, res: Response): Promise<void> {
+    const { order_id, order_date, order_status } = req.query;
+
+    try {
+      const whereConditions: any = {};
+
+      // Filter berdasarkan order_id jika diberikan
+      if (order_id) {
+        whereConditions.order_id = parseInt(order_id as string);
+      }
+
+      // Filter berdasarkan order_date jika diberikan
+      if (order_date) {
+        const startOfDay = new Date(order_date as string);
+        startOfDay.setHours(0, 0, 0, 0); // Set waktu ke 00:00:00 agar menyaring pada hari yang tepat
+        const endOfDay = new Date(startOfDay);
+        endOfDay.setDate(startOfDay.getDate() + 1); // Set waktu ke hari berikutnya untuk memastikan menyaring seluruh hari
+
+        whereConditions.created_at = {
+          gte: startOfDay,
+          lt: endOfDay,
+        };
+      }
+
+      // Filter berdasarkan order_status jika diberikan
+      if (order_status) {
+        whereConditions.order_status = order_status as string;
+      }
+
+      // Menjalankan query untuk mendapatkan pesanan sesuai filter
+      const orders = await prisma.order.findMany({
+        where: whereConditions,
+        include: {
+          user: true, // Menyertakan informasi user
+          store: true, // Menyertakan informasi store
+          OrderItem: true, // Menyertakan item pesanan
+          Shipping: true, // Menyertakan informasi pengiriman
+        },
+      });
+
+      res.json({ data: orders });
+      return;
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ msg: "Failed to fetch orders" });
+      return;
+    }
+  }
 }
