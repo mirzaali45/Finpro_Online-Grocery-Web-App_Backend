@@ -28,12 +28,12 @@ export class InventoryController {
   async getInventory(req: Request, res: Response) {
     try {
       const { store_id, page = "1" } = req.query;
-      
+
       // Convert page to number and handle pagination
       const pageNumber = parseInt(page as string) || 1;
       const pageSize = 10;
       const skip = (pageNumber - 1) * pageSize;
-  
+
       // Get total count for pagination metadata
       const totalCount = await prisma.inventory.count({
         where: store_id
@@ -42,7 +42,7 @@ export class InventoryController {
             }
           : undefined,
       });
-  
+
       // Get paginated inventory data
       const inventory = await prisma.inventory.findMany({
         where: store_id
@@ -66,10 +66,10 @@ export class InventoryController {
         skip,
         take: pageSize,
       });
-  
+
       // Calculate pagination metadata
       const totalPages = Math.ceil(totalCount / pageSize);
-  
+
       return res.status(200).json({
         data: inventory,
         pagination: {
@@ -123,7 +123,7 @@ export class InventoryController {
     }
   }
 
-  async updateInventory(req: Request, res: Response) {
+  async updateStoreFrontInventory(req: Request, res: Response) {
     try {
       const { inv_id } = req.params;
       const { qty, operation } = req.body;
@@ -136,25 +136,24 @@ export class InventoryController {
         throw new Error("Inventory not found");
       }
 
+      // Calculate new qty based on operation
       const newQty =
         operation === "add"
           ? currentInventory.qty + qty
           : currentInventory.qty - qty;
 
+      // Check if we have enough stock in the warehouse
       if (newQty < 0) {
-        throw new Error("Insufficient stock");
+        throw new Error("Insufficient warehouse stock");
       }
 
+      // Update only the qty (warehouse stock)
       const updatedInventory = await prisma.inventory.update({
         where: {
           inv_id: parseInt(inv_id),
         },
         data: {
           qty: newQty,
-          total_qty:
-            operation === "add"
-              ? currentInventory.total_qty + qty
-              : currentInventory.total_qty,
           updated_at: new Date(),
         },
       });
@@ -167,6 +166,47 @@ export class InventoryController {
     }
   }
 
+  async transferToStore(req: Request, res: Response) {
+    try {
+      const { inv_id } = req.params;
+      const { transferAmount } = req.body;
+
+      if (transferAmount <= 0) {
+        throw new Error("Transfer amount must be greater than zero");
+      }
+
+      const currentInventory = await prisma.inventory.findUnique({
+        where: { inv_id: parseInt(inv_id) },
+      });
+
+      if (!currentInventory) {
+        throw new Error("Inventory not found");
+      }
+
+      // Check if warehouse has enough stock
+      if (currentInventory.qty < transferAmount) {
+        throw new Error("Insufficient warehouse stock for transfer");
+      }
+
+      // Update both qty (decrease) and total_qty (increase)
+      const updatedInventory = await prisma.inventory.update({
+        where: {
+          inv_id: parseInt(inv_id),
+        },
+        data: {
+          qty: currentInventory.qty - transferAmount, // Decrease warehouse stock
+          total_qty: currentInventory.total_qty + transferAmount, // Increase store stock
+          updated_at: new Date(),
+        },
+      });
+
+      return res.status(200).json(updatedInventory);
+    } catch (error: unknown) {
+      const message =
+        error instanceof Error ? error.message : "Unknown error occurred";
+      return res.status(500).json({ error: message });
+    }
+  }
   async deleteInventory(req: Request, res: Response) {
     try {
       const { inv_id } = req.params;
