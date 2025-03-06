@@ -269,40 +269,144 @@ export class RevenueSuperAdminController {
       const today = new Date();
       const thirtyDaysAgo = new Date(today);
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-
-      // Get previous period for comparison
       const sixtyDaysAgo = new Date(today);
       sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 60);
 
-      // Get total users count
-      const totalUsers = await prisma.user.count({
-        where: {
-          role: Role.customer,
-        },
-      });
+      // Run all queries in parallel
+      const [
+        userCounts,
+        totalStores,
+        totalProducts,
+        totalOrders,
+        revenueStats,
+        topStores,
+        topCategories,
+      ] = await Promise.all([
+        // Query 1: Get user counts (total, new, previous period)
+        prisma.$transaction([
+          prisma.user.count({
+            where: { role: Role.customer },
+          }),
+          prisma.user.count({
+            where: {
+              role: Role.customer,
+              created_at: { gte: thirtyDaysAgo },
+            },
+          }),
+          prisma.user.count({
+            where: {
+              role: Role.customer,
+              created_at: { gte: sixtyDaysAgo, lt: thirtyDaysAgo },
+            },
+          }),
+        ]),
 
-      // Get new users in last 30 days
-      const newUsers = await prisma.user.count({
-        where: {
-          role: Role.customer,
-          created_at: {
-            gte: thirtyDaysAgo,
-          },
-        },
-      });
+        // Query 2: Total stores count
+        prisma.store.count(),
 
-      // Get new users in previous 30 days for growth calculation
-      const previousPeriodNewUsers = await prisma.user.count({
-        where: {
-          role: Role.customer,
-          created_at: {
-            gte: sixtyDaysAgo,
-            lt: thirtyDaysAgo,
-          },
-        },
-      });
+        // Query 3: Total products count
+        prisma.product.count(),
 
-      // Calculate user growth percentage
+        // Query 4: Total orders count
+        prisma.order.count(),
+
+        // Query 5: Revenue statistics (all, recent, previous)
+        prisma.$transaction([
+          prisma.order.aggregate({
+            where: {
+              order_status: { not: OrderStatus.cancelled },
+            },
+            _sum: { total_price: true },
+          }),
+          prisma.order.aggregate({
+            where: {
+              created_at: { gte: thirtyDaysAgo },
+              order_status: { not: OrderStatus.cancelled },
+            },
+            _sum: { total_price: true },
+          }),
+          prisma.order.aggregate({
+            where: {
+              created_at: { gte: sixtyDaysAgo, lt: thirtyDaysAgo },
+              order_status: { not: OrderStatus.cancelled },
+            },
+            _sum: { total_price: true },
+          }),
+        ]),
+
+        // Query 6: Top performing stores with details in one query
+        prisma.order
+          .groupBy({
+            by: ["store_id"],
+            where: {
+              created_at: { gte: thirtyDaysAgo },
+              order_status: { not: OrderStatus.cancelled },
+            },
+            _sum: { total_price: true },
+            orderBy: { _sum: { total_price: "desc" } },
+            take: 5,
+          })
+          .then(async (stores) => {
+            // Get all store details in one query instead of multiple
+            const storeIds = stores.map((store) => store.store_id);
+            const storeDetails = await prisma.store.findMany({
+              where: { store_id: { in: storeIds } },
+              select: { store_id: true, store_name: true },
+            });
+
+            return stores.map((store) => {
+              const details = storeDetails.find(
+                (s) => s.store_id === store.store_id
+              );
+              return {
+                store_id: store.store_id,
+                store_name: details?.store_name,
+                revenue: store._sum.total_price,
+              };
+            });
+          }),
+
+        // Query 7: Top categories by sales
+        prisma.$transaction(async (tx) => {
+          const topItems = await tx.orderItem.groupBy({
+            by: ["product_id"],
+            _sum: { qty: true, total_price: true },
+            orderBy: { _sum: { total_price: "desc" } },
+            take: 5,
+          });
+
+          const productIds = topItems.map((item) => item.product_id);
+
+          // Get all products with their categories in one query
+          const products = await tx.product.findMany({
+            where: { product_id: { in: productIds } },
+            include: { category: true },
+          });
+
+          return topItems.map((item) => {
+            const product = products.find(
+              (p) => p.product_id === item.product_id
+            );
+            return {
+              category_id: product?.category.category_id,
+              category_name: product?.category.category_name,
+              sales: item._sum.total_price,
+              units_sold: item._sum.qty,
+            };
+          });
+        }),
+      ]);
+
+      // Extract values from results
+      const [totalUsers, newUsers, previousPeriodNewUsers] = userCounts;
+      const [totalRevenueResult, recentRevenueResult, previousRevenueResult] =
+        revenueStats;
+
+      const totalRevenue = totalRevenueResult._sum.total_price || 0;
+      const recentRevenue = recentRevenueResult._sum.total_price || 0;
+      const previousRevenue = previousRevenueResult._sum.total_price || 0;
+
+      // Calculate growth rates
       const userGrowthRate =
         previousPeriodNewUsers > 0
           ? ((newUsers - previousPeriodNewUsers) / previousPeriodNewUsers) * 100
@@ -310,149 +414,12 @@ export class RevenueSuperAdminController {
           ? 100
           : 0;
 
-      // Get total stores count
-      const totalStores = await prisma.store.count();
-
-      // Get total products count
-      const totalProducts = await prisma.product.count();
-
-      // Get total orders
-      const totalOrders = await prisma.order.count();
-
-      // Get total revenue
-      const revenueResult = await prisma.order.aggregate({
-        where: {
-          order_status: {
-            not: OrderStatus.cancelled,
-          },
-        },
-        _sum: {
-          total_price: true,
-        },
-      });
-
-      const totalRevenue = revenueResult._sum.total_price || 0;
-
-      // Get revenue for last 30 days
-      const recentRevenueResult = await prisma.order.aggregate({
-        where: {
-          created_at: {
-            gte: thirtyDaysAgo,
-          },
-          order_status: {
-            not: OrderStatus.cancelled,
-          },
-        },
-        _sum: {
-          total_price: true,
-        },
-      });
-
-      const recentRevenue = recentRevenueResult._sum.total_price || 0;
-
-      // Get revenue for previous 30 days
-      const previousRevenueResult = await prisma.order.aggregate({
-        where: {
-          created_at: {
-            gte: sixtyDaysAgo,
-            lt: thirtyDaysAgo,
-          },
-          order_status: {
-            not: OrderStatus.cancelled,
-          },
-        },
-        _sum: {
-          total_price: true,
-        },
-      });
-
-      const previousRevenue = previousRevenueResult._sum.total_price || 0;
-
-      // Calculate revenue growth percentage
       const revenueGrowthRate =
         previousRevenue > 0
           ? ((recentRevenue - previousRevenue) / previousRevenue) * 100
           : recentRevenue > 0
           ? 100
           : 0;
-
-      // Get top performing stores
-      const topStores = await prisma.order.groupBy({
-        by: ["store_id"],
-        where: {
-          created_at: {
-            gte: thirtyDaysAgo,
-          },
-          order_status: {
-            not: OrderStatus.cancelled,
-          },
-        },
-        _sum: {
-          total_price: true,
-        },
-        orderBy: {
-          _sum: {
-            total_price: "desc",
-          },
-        },
-        take: 5,
-      });
-
-      // Get store details for the top stores
-      const topStoresWithDetails = await Promise.all(
-        topStores.map(async (store) => {
-          const storeDetails = await prisma.store.findUnique({
-            where: {
-              store_id: store.store_id,
-            },
-            select: {
-              store_id: true,
-              store_name: true,
-            },
-          });
-
-          return {
-            store_id: store.store_id,
-            store_name: storeDetails?.store_name,
-            revenue: store._sum.total_price,
-          };
-        })
-      );
-
-      // Get top categories by sales
-      const topCategories = await prisma.orderItem.groupBy({
-        by: ["product_id"],
-        _sum: {
-          qty: true,
-          total_price: true,
-        },
-        orderBy: {
-          _sum: {
-            total_price: "desc",
-          },
-        },
-        take: 5,
-      });
-
-      const topCategoriesWithDetails = await Promise.all(
-        topCategories.map(async (item) => {
-          const product = await prisma.product.findUnique({
-            where: {
-              product_id: item.product_id,
-            },
-            include: {
-              category: true,
-            },
-          });
-
-          return {
-            category_id: product?.category.category_id,
-            category_name: product?.category.category_name,
-            sales: item._sum.total_price,
-            units_sold: item._sum.qty,
-          };
-        })
-      );
 
       return res.status(200).json({
         status: "success",
@@ -478,8 +445,8 @@ export class RevenueSuperAdminController {
             growthRate: revenueGrowthRate.toFixed(2),
           },
           topPerformers: {
-            stores: topStoresWithDetails,
-            categories: topCategoriesWithDetails,
+            stores: topStores,
+            categories: topCategories,
           },
         },
       });

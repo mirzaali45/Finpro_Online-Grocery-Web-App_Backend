@@ -6,7 +6,23 @@ import {
 } from "../../prisma/generated/client";
 import { responseError } from "../helpers/responseError";
 
-const prisma = new PrismaClient();
+let prisma = new PrismaClient;
+if (process.env.NODE_ENV === "production") {
+  prisma = new PrismaClient({
+    log: ["query", "info", "warn", "error"],
+    datasources: {
+      db: {
+        url: process.env.DATABASE_URL,
+      },
+    },
+  });
+} else {
+  // For development, use global instance to prevent too many connections
+  if (!(global as any).prisma) {
+    (global as any).prisma = new PrismaClient();
+  }
+  prisma = (global as any).prisma;
+}
 
 export class OrdersController {
   async getOrders(req: Request, res: Response): Promise<void> {
@@ -18,10 +34,8 @@ export class OrdersController {
         date?: string;
       };
 
-      // Buat objek "where" sesuai tipe Prisma.OrderWhereInput
       const where: any = {};
 
-      // Filter by order_status
       if (
         status &&
         Object.values(OrderStatus).includes(status as OrderStatus)
@@ -78,10 +92,18 @@ export class OrdersController {
   async createOrderFromCart(req: Request, res: Response): Promise<void> {
     try {
       const { user_id } = req.body;
-
       console.log("Creating order from cart for user:", user_id);
 
-      // Find user with primary address
+
+
+      // Step 1: Quick response to prevent Vercel timeout
+      // This is key - send a response early while processing continues
+      const responsePromise = new Promise<void>((resolve) => {
+        // We'll resolve this later to send the actual response
+        setTimeout(() => resolve(), 8000); // Backup resolve after 8 seconds
+      });
+
+      // Do initial validation checks synchronously
       const user = await prisma.user.findUnique({
         where: { user_id: Number(user_id) },
         include: {
@@ -92,29 +114,19 @@ export class OrdersController {
         },
       });
 
-      // Validate user and address
       if (!user) {
         responseError(res, "User tidak ditemukan / tidak terautentikasi.");
         return;
       }
-
       if (!user.Address || user.Address.length === 0) {
         responseError(res, "User tidak memiliki alamat pengiriman.");
         return;
       }
-
       const address = user.Address[0];
-
-      // Get cart items with product and store info
+      // Get cart items
       const cartItems = await prisma.cartItem.findMany({
         where: { user_id: Number(user_id) },
-        include: {
-          product: {
-            include: {
-              store: true,
-            },
-          },
-        },
+        include: { product: { include: { store: true } } },
       });
 
       if (cartItems.length === 0) {
@@ -122,9 +134,9 @@ export class OrdersController {
         return;
       }
 
+
       // Check if all products are from the same store
       const storeIds = new Set(cartItems.map((item) => item.product.store_id));
-
       if (storeIds.size > 1) {
         responseError(
           res,
@@ -134,22 +146,30 @@ export class OrdersController {
       }
 
       const storeId = cartItems[0].product.store_id;
-
       // Calculate total price
-      let total_price = 0;
-      for (const item of cartItems) {
-        total_price += item.product.price * item.quantity;
-      }
+      const total_price = cartItems.reduce(
+        (sum, item) => sum + item.product.price * item.quantity,
+        0
+      );
+
+      // Check inventories
+      const productIds = cartItems.map((item) => item.product_id);
+      const inventories = await prisma.inventory.findMany({
+        where: {
+          product_id: { in: productIds },
+          store_id: storeId,
+        },
+      });
+
+
+
+      const inventoryMap = new Map();
+      inventories.forEach((inv) => inventoryMap.set(inv.product_id, inv));
+
 
       // Check inventory for each item
       for (const item of cartItems) {
-        const inventory = await prisma.inventory.findFirst({
-          where: {
-            product_id: item.product_id,
-            store_id: storeId,
-          },
-        });
-
+        const inventory = inventoryMap.get(item.product_id);
         if (!inventory || inventory.total_qty < item.quantity) {
           responseError(
             res,
@@ -160,8 +180,7 @@ export class OrdersController {
           return;
         }
       }
-
-      // Create the order
+      // CRITICAL: Create order first - this is the core operation
       const newOrder = await prisma.order.create({
         data: {
           user_id: Number(user_id),
@@ -173,154 +192,97 @@ export class OrdersController {
         },
       });
 
-      // Create order items and update inventory
-      for (const item of cartItems) {
-        await prisma.orderItem.create({
-          data: {
-            order_id: newOrder.order_id,
-            product_id: item.product_id,
-            qty: item.quantity,
-            price: item.product.price,
-            total_price: item.product.price * item.quantity,
-          },
-        });
-
-        // Update inventory
-        const inventory = await prisma.inventory.findFirst({
-          where: {
-            product_id: item.product_id,
-            store_id: storeId,
-          },
-        });
-
-        if (inventory) {
-          console.log(
-            `Updating inventory for product ${item.product_id}: Current total_qty=${inventory.total_qty}, reducing by ${item.quantity}`
-          );
-
-          await prisma.inventory.update({
-            where: { inv_id: inventory.inv_id },
-            data: {
-              total_qty: inventory.total_qty - item.quantity,
-              updated_at: new Date(),
-            },
-          });
-
-          console.log(
-            `Inventory updated for product ${item.product_id}: New total_qty=${
-              inventory.total_qty - item.quantity
-            }`
-          );
-        } else {
-          console.error(
-            `Critical error: Inventory record suddenly not found for product ${item.product_id} in store ${storeId}`
-          );
-        }
-      }
-
-      // Create shipping record
-      await prisma.shipping.create({
-        data: {
-          order_id: newOrder.order_id,
-          shipping_cost: 0,
-          shipping_address: `${address.address}, ${address.city}, ${
-            address.province
-          }, ${address.postcode || ""}`,
-          shipping_status: ShippingStatus.pending,
-          created_at: new Date(),
-          updated_at: new Date(),
-        },
-      });
-
-      // Set up auto-cancellation
-      this.setupAutoCancellation(newOrder.order_id);
-
-      // Get order details for response
-      const orderWithDetails = await prisma.order.findUnique({
-        where: { order_id: newOrder.order_id },
-        include: {
-          OrderItem: {
-            include: {
-              product: true,
-            },
-          },
-          Shipping: true,
-          store: true,
-        },
-      });
-
-      // Clear user's cart after successful order creation
-      await prisma.cartItem.deleteMany({
-        where: { user_id: Number(user_id) },
-      });
-
+      // Send response immediately after order creation
       res.status(201).json({
         message:
           "Order berhasil dibuat dari keranjang belanja. Pembayaran harus dilakukan dalam 1 jam.",
-        data: orderWithDetails,
+        data: {
+          order_id: newOrder.order_id,
+          user_id: newOrder.user_id,
+          store_id: newOrder.store_id,
+          total_price: newOrder.total_price,
+          order_status: newOrder.order_status,
+        },
       });
-    } catch (error: any) {
-      console.error("createOrderFromCart error:", error);
-      responseError(res, error.message);
-    }
-  }
 
-  private setupAutoCancellation(orderId: number): void {
-    setTimeout(async () => {
-      try {
-        const order = await prisma.order.findUnique({
-          where: { order_id: orderId },
-        });
-
-        if (order && order.order_status === OrderStatus.awaiting_payment) {
-          console.log(`Order ${orderId} payment time expired. Cancelling...`);
-          const orderItems = await prisma.orderItem.findMany({
-            where: { order_id: orderId },
-          });
-          for (const item of orderItems) {
-            const inventory = await prisma.inventory.findFirst({
-              where: {
+      // Continue processing in the background
+      // This will run even after response is sent
+      (async () => {
+        try {
+          // Process order items one at a time to avoid timeouts
+          for (const item of cartItems) {
+            // Create order item
+            await prisma.orderItem.create({
+              data: {
+                order_id: newOrder.order_id,
                 product_id: item.product_id,
-                store_id: order.store_id,
+                qty: item.quantity,
+                price: item.product.price,
+                total_price: item.product.price * item.quantity,
               },
             });
-
+            // Update inventory
+            const inventory = inventoryMap.get(item.product_id);
             if (inventory) {
               await prisma.inventory.update({
                 where: { inv_id: inventory.inv_id },
                 data: {
-                  total_qty: inventory.total_qty + item.qty,
+                  total_qty: inventory.total_qty - item.quantity,
                   updated_at: new Date(),
                 },
               });
-              console.log(
-                `Restored ${item.qty} units to inventory total_qty for product ${item.product_id}`
-              );
-            } else {
-              console.warn(
-                `Cannot restore inventory for product ${item.product_id}: No inventory record found`
-              );
             }
           }
-          await prisma.orderItem.deleteMany({
-            where: { order_id: orderId },
-          });
-          await prisma.shipping.deleteMany({
-            where: { order_id: orderId },
-          });
-          await prisma.order.delete({
-            where: { order_id: orderId },
+
+
+          // Create shipping record
+          await prisma.shipping.create({
+            data: {
+              order_id: newOrder.order_id,
+              shipping_cost: 0,
+              shipping_address: `${address.address}, ${address.city}, ${
+                address.province
+              }, ${address.postcode || ""}`,
+              shipping_status: ShippingStatus.pending,
+              created_at: new Date(),
+              updated_at: new Date(),
+            },
           });
 
-          console.log(`Order ${orderId} cancelled and inventory restored.`);
+
+          // Clear cart items in chunks to avoid timeout
+          const cartItemChunkSize = 5;
+          const userIdNum = Number(user_id);
+
+          // Get all cart item IDs
+          const allCartItems = await prisma.cartItem.findMany({
+            where: { user_id: userIdNum },
+            select: { cartitem_id: true },
+          });
+
+          // Delete in smaller chunks
+          for (let i = 0; i < allCartItems.length; i += cartItemChunkSize) {
+            const chunk = allCartItems.slice(i, i + cartItemChunkSize);
+            const ids = chunk.map((item) => item.cartitem_id);
+            await prisma.cartItem.deleteMany({
+              where: {
+                cartitem_id: { in: ids },
+              },
+            });
+          }
+          console.log(
+            `Order ${newOrder.order_id} processing completed successfully`
+          );
+        } catch (backgroundError) {
+          console.error("Background processing error:", backgroundError);
+          // Consider sending this to an error tracking service
+          // or storing in a separate errors table
         }
-      } catch (error) {
-        console.error(
-          `Error in auto-cancellation for order ${orderId}:`,
-          error
-        );
-      }
-    }, 60 * 60 * 1000);
+      })();
+    } catch (error: any) {
+      console.error("createOrderFromCart error:", error);
+      responseError(res, error.message);
+    }
   }
 
   async getMyOrders(req: Request, res: Response): Promise<void> {
@@ -546,6 +508,101 @@ export class OrdersController {
       console.error("deleteMyOrder error:", error);
       responseError(res, error.message);
       return;
+    }
+  }
+  async checkExpiredOrders(req: Request, res: Response): Promise<void> {
+    try {
+      // Find orders created more than 1 hour ago that are still in awaiting_payment status
+      const oneHourAgo = new Date();
+      oneHourAgo.setHours(oneHourAgo.getHours() - 1);
+
+      const expiredOrders = await prisma.order.findMany({
+        where: {
+          order_status: OrderStatus.awaiting_payment,
+          created_at: {
+            lt: oneHourAgo,
+          },
+        },
+        include: {
+          OrderItem: true,
+        },
+      });
+
+      console.log(`Found ${expiredOrders.length} expired orders to process`);
+
+      // Process each expired order
+      const processedOrders = [];
+
+      for (const order of expiredOrders) {
+        try {
+          await prisma.$transaction(async (tx) => {
+            // Get order items to restore inventory
+            const orderItems = order.OrderItem;
+
+            // Restore inventory for each item
+            for (const item of orderItems) {
+              const inventory = await tx.inventory.findFirst({
+                where: {
+                  product_id: item.product_id,
+                  store_id: order.store_id,
+                },
+              });
+
+              if (inventory) {
+                await tx.inventory.update({
+                  where: { inv_id: inventory.inv_id },
+                  data: {
+                    total_qty: {
+                      increment: item.qty,
+                    },
+                    updated_at: new Date(),
+                  },
+                });
+                console.log(
+                  `Restored ${item.qty} units to inventory for product ${item.product_id}`
+                );
+              }
+            }
+
+            // Update order status to cancelled
+            await tx.order.update({
+              where: { order_id: order.order_id },
+              data: {
+                order_status: OrderStatus.cancelled,
+                updated_at: new Date(),
+              },
+            });
+          });
+
+          console.log(
+            `Order ${order.order_id} has been cancelled due to payment timeout`
+          );
+          processedOrders.push(order.order_id);
+        } catch (orderError) {
+          console.error(
+            `Error processing expired order ${order.order_id}:`,
+            orderError
+          );
+          // Continue with other orders even if one fails
+        }
+      }
+
+      res.status(200).json({
+        status: "success",
+        message: `Processed ${processedOrders.length} expired orders`,
+        data: {
+          processedCount: processedOrders.length,
+          processedOrders,
+        },
+      });
+    } catch (error) {
+      console.error("Error processing expired orders:", error);
+      responseError(
+        res,
+        error instanceof Error
+          ? error.message
+          : "Failed to process expired orders"
+      );
     }
   }
 }

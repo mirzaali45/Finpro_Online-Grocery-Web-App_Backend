@@ -120,7 +120,7 @@ exports.PaymentsController = void 0;
 //     }
 //   }
 // }
-const client_1 = require("@prisma/client");
+const client_1 = require("../../prisma/generated/client");
 const midtrans_client_1 = __importDefault(require("midtrans-client"));
 const prisma = new client_1.PrismaClient();
 // Konfigurasi Midtrans Client

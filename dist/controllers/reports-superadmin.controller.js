@@ -20,6 +20,7 @@ class ReportSuperAdmin {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
 >>>>>>> 61002e687c9e70025e37606d3111acf5333b5fde
 =======
@@ -32,12 +33,65 @@ class ReportSuperAdmin {
                 const filter = {};
 <<<<<<< HEAD
 <<<<<<< HEAD
+=======
+                const storeId = req.query.storeId
+                    ? parseInt(req.query.storeId)
+                    : undefined;
+                const productId = req.query.productId
+                    ? parseInt(req.query.productId)
+                    : undefined;
+                const lowStock = req.query.lowStock === "true";
+                const threshold = req.query.threshold
+                    ? parseInt(req.query.threshold)
+                    : 5; // Default threshold
+                // Store pagination parameters
+                const storePage = Number(req.query.storePage) || 1;
+                const storeLimit = Number(req.query.storeLimit) || 10;
+                const storeSkip = (storePage - 1) * storeLimit;
+                // Inventory pagination parameters - separate from store pagination
+                const inventoryPage = Number(req.query.page) || 1;
+                const inventoryLimit = Number(req.query.limit) || 10;
+                const inventorySkip = (inventoryPage - 1) * inventoryLimit;
+                // First, get ALL stores regardless of inventory (with counting)
+                const storeFilter = {};
+>>>>>>> 506b755e4a59dae7458f61fc9b2766e5a49f0a90
                 if (storeId) {
-                    filter.store_id = storeId;
+                    storeFilter.store_id = storeId;
+                }
+                // Count total stores for pagination
+                const totalStores = yield prisma.store.count({
+                    where: storeFilter,
+                });
+                // Get stores for the current page
+                const allStores = yield prisma.store.findMany({
+                    where: storeFilter,
+                    select: {
+                        store_id: true,
+                        store_name: true,
+                        city: true,
+                        province: true,
+                    },
+                    orderBy: {
+                        store_id: "asc",
+                    },
+                    skip: storeSkip,
+                    take: storeLimit,
+                });
+                // Get all store IDs for the current page to use in inventory filtering
+                const storeIds = allStores.map((store) => store.store_id);
+                // Build the inventory filter
+                const inventoryFilter = {};
+                // Only filter by store IDs if storeId isn't specifically provided
+                if (storeId) {
+                    inventoryFilter.store_id = storeId;
+                }
+                else {
+                    inventoryFilter.store_id = { in: storeIds };
                 }
                 if (productId) {
-                    filter.product_id = productId;
+                    inventoryFilter.product_id = productId;
                 }
+<<<<<<< HEAD
                 // Get inventory data with related store and product information
                 const inventoryData = yield prisma.inventory.findMany({
                     where: filter,
@@ -74,6 +128,8 @@ class ReportSuperAdmin {
                 }
 <<<<<<< HEAD
 <<<<<<< HEAD
+=======
+>>>>>>> 506b755e4a59dae7458f61fc9b2766e5a49f0a90
                 // First, count total inventory items that match our filters for pagination
                 let totalInventoryCount = yield prisma.inventory.count({
                     where: inventoryFilter,
@@ -91,7 +147,10 @@ class ReportSuperAdmin {
                 // Get inventory summary data for all matching stores (for store summary)
                 const inventorySummaryData = yield prisma.inventory.findMany({
                     where: inventoryFilter,
+<<<<<<< HEAD
 >>>>>>> b0ae97aa709b9db278bccab6cdcf5c196ae71e70
+=======
+>>>>>>> 506b755e4a59dae7458f61fc9b2766e5a49f0a90
                     include: {
                         store: {
                             select: {
@@ -99,9 +158,12 @@ class ReportSuperAdmin {
                                 store_name: true,
                                 city: true,
 <<<<<<< HEAD
+<<<<<<< HEAD
                                 province: true
                             }
 =======
+=======
+>>>>>>> 506b755e4a59dae7458f61fc9b2766e5a49f0a90
                                 province: true,
                             },
                         },
@@ -119,6 +181,7 @@ class ReportSuperAdmin {
                     ? inventorySummaryData.filter((item) => item.qty <= threshold)
                     : inventorySummaryData;
                 // Now get paginated inventory items for detailed display
+<<<<<<< HEAD
 =======
                 // Get inventory data with related store and product information
 >>>>>>> 61002e687c9e70025e37606d3111acf5333b5fde
@@ -127,12 +190,17 @@ class ReportSuperAdmin {
 >>>>>>> 61002e687c9e70025e37606d3111acf5333b5fde
                 const inventoryData = yield prisma.inventory.findMany({
                     where: filter,
+=======
+                const inventoryData = yield prisma.inventory.findMany({
+                    where: inventoryFilter,
+>>>>>>> 506b755e4a59dae7458f61fc9b2766e5a49f0a90
                     include: {
                         store: {
                             select: {
                                 store_id: true,
                                 store_name: true,
                                 city: true,
+<<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
                                 province: true,
@@ -146,6 +214,10 @@ class ReportSuperAdmin {
                                 province: true
                             }
 >>>>>>> 61002e687c9e70025e37606d3111acf5333b5fde
+=======
+                                province: true,
+                            },
+>>>>>>> 506b755e4a59dae7458f61fc9b2766e5a49f0a90
                         },
                         product: {
                             select: {
@@ -155,6 +227,7 @@ class ReportSuperAdmin {
                                 category: {
                                     select: {
                                         category_id: true,
+<<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
@@ -169,31 +242,50 @@ class ReportSuperAdmin {
                         }
 <<<<<<< HEAD
 <<<<<<< HEAD
+=======
+                                        category_name: true,
+                                    },
+                                },
+                            },
+                        },
+>>>>>>> 506b755e4a59dae7458f61fc9b2766e5a49f0a90
                     },
                     orderBy: {
-                        store_id: 'asc'
-                    }
+                        store_id: "asc",
+                    },
+                    skip: inventorySkip,
+                    take: inventoryLimit,
                 });
                 // Filter for low stock items if requested
                 const filteredInventory = lowStock
-                    ? inventoryData.filter(item => item.qty <= threshold)
+                    ? inventoryData.filter((item) => item.qty <= threshold)
                     : inventoryData;
-                // Calculate aggregated statistics
-                const totalItems = filteredInventory.reduce((sum, item) => sum + item.qty, 0);
-                const totalValue = filteredInventory.reduce((sum, item) => sum + (item.qty * item.product.price), 0);
-                // Group by store for summary
-                const storesSummary = filteredInventory.reduce((acc, item) => {
-                    const storeId = item.store_id;
-                    if (!acc[storeId]) {
-                        acc[storeId] = {
-                            store_id: storeId,
-                            store_name: item.store.store_name,
-                            location: `${item.store.city}, ${item.store.province}`,
-                            totalItems: 0,
-                            totalValue: 0,
-                            itemCount: 0
-                        };
+                // Calculate aggregated statistics from the summary inventory (not paginated)
+                const totalItems = filteredSummaryInventory.reduce((sum, item) => sum + item.qty, 0);
+                const totalValue = filteredSummaryInventory.reduce((sum, item) => sum + item.qty * item.product.price, 0);
+                // Initialize storesSummary with ALL stores (even those with no inventory)
+                const storesSummary = {};
+                // First, add all stores with zero values
+                allStores.forEach((store) => {
+                    storesSummary[store.store_id] = {
+                        store_id: store.store_id,
+                        store_name: store.store_name,
+                        location: `${store.city || ""}, ${store.province || ""}`.trim(),
+                        totalItems: 0,
+                        totalValue: 0,
+                        itemCount: 0,
+                    };
+                });
+                // Then update with inventory summary data
+                filteredSummaryInventory.forEach((item) => {
+                    // Only include if this store is on the current page
+                    if (storesSummary[item.store_id]) {
+                        storesSummary[item.store_id].totalItems += item.qty;
+                        storesSummary[item.store_id].totalValue +=
+                            item.qty * item.product.price;
+                        storesSummary[item.store_id].itemCount += 1;
                     }
+<<<<<<< HEAD
                     acc[storeId].totalItems += item.qty;
                     acc[storeId].totalValue += (item.qty * item.product.price);
                     acc[storeId].itemCount += 1;
@@ -236,6 +328,8 @@ class ReportSuperAdmin {
                     }
 <<<<<<< HEAD
 <<<<<<< HEAD
+=======
+>>>>>>> 506b755e4a59dae7458f61fc9b2766e5a49f0a90
                 });
                 // Calculate pagination metadata for stores
                 const storeTotalPages = Math.ceil(totalStores / storeLimit);
@@ -245,6 +339,7 @@ class ReportSuperAdmin {
                 const inventoryTotalPages = Math.ceil(totalInventoryCount / inventoryLimit);
                 const inventoryHasNextPage = inventoryPage < inventoryTotalPages;
                 const inventoryHasPrevPage = inventoryPage > 1;
+<<<<<<< HEAD
 >>>>>>> b0ae97aa709b9db278bccab6cdcf5c196ae71e70
 =======
 =======
@@ -258,6 +353,8 @@ class ReportSuperAdmin {
 >>>>>>> 61002e687c9e70025e37606d3111acf5333b5fde
 =======
 >>>>>>> 61002e687c9e70025e37606d3111acf5333b5fde
+=======
+>>>>>>> 506b755e4a59dae7458f61fc9b2766e5a49f0a90
                 // Return the response
                 return res.status(200).json({
                     status: "success",
@@ -267,18 +364,27 @@ class ReportSuperAdmin {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
 >>>>>>> 61002e687c9e70025e37606d3111acf5333b5fde
                             totalStores: Object.keys(storesSummary).length,
+=======
+                            totalStores, // Total count of ALL stores
+                            displayedStores: allStores.length, // Count of stores on current page
+                            storesWithInventory: Object.values(storesSummary).filter((s) => s.itemCount > 0).length,
+>>>>>>> 506b755e4a59dae7458f61fc9b2766e5a49f0a90
                             totalItems,
                             totalValue,
-                            averageItemsPerStore: totalItems / Math.max(1, Object.keys(storesSummary).length)
+                            averageItemsPerStore: totalItems /
+                                Math.max(1, Object.values(storesSummary).filter((s) => s.itemCount > 0)
+                                    .length),
                         },
                         storesSummary: Object.values(storesSummary),
-                        inventory: filteredInventory.map(item => ({
+                        inventory: filteredInventory.map((item) => ({
                             inventory_id: item.inv_id,
                             store: {
                                 id: item.store_id,
+<<<<<<< HEAD
                                 name: item.store.store_name
 <<<<<<< HEAD
 =======
@@ -305,11 +411,15 @@ class ReportSuperAdmin {
 >>>>>>> 61002e687c9e70025e37606d3111acf5333b5fde
 =======
 >>>>>>> 61002e687c9e70025e37606d3111acf5333b5fde
+=======
+                                name: item.store.store_name,
+>>>>>>> 506b755e4a59dae7458f61fc9b2766e5a49f0a90
                             },
                             product: {
                                 id: item.product_id,
                                 name: item.product.name,
                                 category: item.product.category.category_name,
+<<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
@@ -323,6 +433,9 @@ class ReportSuperAdmin {
 =======
                                 price: item.product.price
 >>>>>>> 61002e687c9e70025e37606d3111acf5333b5fde
+=======
+                                price: item.product.price,
+>>>>>>> 506b755e4a59dae7458f61fc9b2766e5a49f0a90
                             },
                             current_quantity: item.qty,
                             total_quantity: item.total_qty,
@@ -330,10 +443,13 @@ class ReportSuperAdmin {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
                             lowStock: item.qty <= threshold
                         }))
                     }
 =======
+=======
+>>>>>>> 506b755e4a59dae7458f61fc9b2766e5a49f0a90
                             lowStock: item.qty <= threshold,
                         })),
                         inventoryCount: totalInventoryCount, // Total count of inventory items
@@ -358,6 +474,7 @@ class ReportSuperAdmin {
                             hasPrevPage: inventoryHasPrevPage,
                         },
                     },
+<<<<<<< HEAD
 >>>>>>> b0ae97aa709b9db278bccab6cdcf5c196ae71e70
 =======
                             lowStock: item.qty <= threshold
@@ -369,6 +486,8 @@ class ReportSuperAdmin {
                         }))
                     }
 >>>>>>> 61002e687c9e70025e37606d3111acf5333b5fde
+=======
+>>>>>>> 506b755e4a59dae7458f61fc9b2766e5a49f0a90
                 });
             }
             catch (error) {
@@ -376,6 +495,7 @@ class ReportSuperAdmin {
                 return res.status(500).json({
                     status: "error",
                     message: "Failed to retrieve inventory report",
+<<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
@@ -389,6 +509,9 @@ class ReportSuperAdmin {
 =======
                     error: error instanceof Error ? error.message : "Unknown error"
 >>>>>>> 61002e687c9e70025e37606d3111acf5333b5fde
+=======
+                    error: error instanceof Error ? error.message : "Unknown error",
+>>>>>>> 506b755e4a59dae7458f61fc9b2766e5a49f0a90
                 });
             }
         });
