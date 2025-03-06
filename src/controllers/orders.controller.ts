@@ -438,12 +438,12 @@ export class OrdersController {
 
       // Check if order can be deleted (only if status is awaiting_payment)
 
+
       // Check if order can be deleted (only if status is awaiting_payment or pending)
       if (
         order.order_status !== OrderStatus.awaiting_payment &&
         order.order_status !== OrderStatus.pending
       ) {
-
         responseError(
           res,
           "Hanya pesanan dengan status menunggu pembayaran atau tertunda yang dapat dibatalkan."
