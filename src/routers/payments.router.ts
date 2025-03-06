@@ -19,10 +19,7 @@ export class PaymentsRouter {
       this.authMiddleware.verifyToken,
       this.paymentsController.createPaymentOrder
     );
-    this.router.post(
-      "/callback",
-      this.paymentsController.paymentCallback
-    );
+    this.router.post("/callback", this.paymentsController.paymentCallback);
   }
   getRouter(): Router {
     return this.router;
