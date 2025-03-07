@@ -41,16 +41,6 @@ const sendVerificationEmail = (email, token) => __awaiter(void 0, void 0, void 0
             to: email,
             subject: "Verify Youre Email Address",
             html,
-<<<<<<< HEAD
-=======
-            attachments: [
-                {
-                    filename: "/LIT.png",
-                    path: path_1.default.join(__dirname, "../../public/LIT.png"),
-                    cid: "logo",
-                },
-            ],
->>>>>>> 4c1860705a7dfa2423dc30897986971170f80551
         });
     }
     catch (error) {
@@ -73,27 +63,13 @@ const sendResetPassEmail = (email, token) => __awaiter(void 0, void 0, void 0, f
         const templateSource = fs_1.default.readFileSync(templatePath, "utf-8");
         const compiledTemplate = handlebars_1.default.compile(templateSource);
         const html = compiledTemplate({
-<<<<<<< HEAD
-            link: `${process.env.BASE_URL_FE}/verification/reverify?token=${token}`,
-=======
             link: `${process.env.BASE_URL_FE}/verification/reset-password/${token}`,
->>>>>>> 4c1860705a7dfa2423dc30897986971170f80551
         });
         yield transporter.sendMail({
             from: process.env.MAIL_USER,
             to: email,
             subject: "Reset your password",
             html,
-<<<<<<< HEAD
-=======
-            attachments: [
-                {
-                    filename: "/LIT.png",
-                    path: path_1.default.join(__dirname, "../../public/LIT.png"),
-                    cid: "logo",
-                },
-            ],
->>>>>>> 4c1860705a7dfa2423dc30897986971170f80551
         });
     }
     catch (error) {
@@ -107,20 +83,12 @@ const sendReverificationEmail = (email, token) => __awaiter(void 0, void 0, void
         const templateSource = fs_1.default.readFileSync(templatePath, "utf-8");
         const compiledTemplate = handlebars_1.default.compile(templateSource);
         const html = compiledTemplate({
-<<<<<<< HEAD
             link: `${process.env.BASE_URL_FE}/verification/reverify?token=${token}`,
-=======
-            link: `${process.env.BASE_URL_FRONTEND}/reverify/${token}`,
->>>>>>> 4c1860705a7dfa2423dc30897986971170f80551
         });
         yield transporter.sendMail({
             from: process.env.MAIL_USER,
             to: email,
-<<<<<<< HEAD
             subject: "Changing Email Address",
-=======
-            subject: "Changing email address",
->>>>>>> 4c1860705a7dfa2423dc30897986971170f80551
             html,
         });
     }
