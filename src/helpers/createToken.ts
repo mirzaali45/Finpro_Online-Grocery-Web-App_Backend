@@ -16,9 +16,14 @@ interface ResetPassTokenPayload extends TokenPayload {
   resetPassword: string;
 }
 
+interface EmailChangeTokenPayload {
+  userId: number;
+  newEmail: string;
+}
+
 class TokenService {
   private createTokenWithExpiry(
-    payload: TokenPayload | EmailTokenPayload | ResetPassTokenPayload,
+    payload: TokenPayload | EmailTokenPayload | ResetPassTokenPayload | EmailChangeTokenPayload,
     expiresIn: number
   ): string {
     try {
@@ -53,6 +58,9 @@ class TokenService {
   createResetToken(payload: ResetPassTokenPayload): string {
     return this.createTokenWithExpiry(payload, 86400);
   }
+  createEmailChangeToken(payload: EmailChangeTokenPayload): string {
+    return this.createTokenWithExpiry(payload, 3600); // Token valid for 1 hour
+  }
 
   verifyEmailToken(token: string): EmailTokenPayload {
     try {
@@ -60,6 +68,14 @@ class TokenService {
     } catch (error) {
       console.error("Email token verification failed:", error);
       throw new Error("Invalid or expired email token");
+    }
+  }
+  verifyEmailChangeToken(token: string): EmailChangeTokenPayload {
+    try {
+      return verify(token, SECRET_KEY) as EmailChangeTokenPayload;
+    } catch (error) {
+      console.error("Email change token verification failed:", error);
+      throw new Error("Invalid or expired email change token");
     }
   }
 }
