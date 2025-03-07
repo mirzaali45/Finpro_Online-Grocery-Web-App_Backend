@@ -26,6 +26,7 @@ class AuthRouter {
         this.router.post("/verify-change-email", 
         // this.authMiddleware.verifyToken as unknown as RequestHandler,
         this.authController.verifyChangeEmail);
+
     }
     getRouter() {
         return this.router;

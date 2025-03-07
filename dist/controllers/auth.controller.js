@@ -470,8 +470,8 @@ class AuthController {
                 if (!existingUser) {
                     return res.status(400).json({ message: "User not found" });
                 }
-                if (!existingUser.verify_token || existingUser.verify_token !== token) {
-                    console.warn("⚠️ Invalid or expired token, but proceeding with email change");
+                if (existingUser.verify_token !== token) {
+                    return res.status(400).json({ message: "Invalid or expired token" });
                 }
                 yield prisma.user.update({
                     where: { user_id: userId },
