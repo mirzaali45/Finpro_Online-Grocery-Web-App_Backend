@@ -21,14 +21,12 @@ class AuthRouter {
         this.router.post("/login", this.authController.loginAny);
         this.router.get("/check-email-token/:token", this.authController.checkExpTokenEmailVerif);
         this.router.get("/cek-token", this.authMiddleware.verifyExpiredToken);
-<<<<<<< HEAD
         // 🔥 Tambahan untuk Change Email
         this.router.post("/request-change-email", this.authMiddleware.verifyToken, this.authController.requestChangeEmail);
         this.router.post("/verify-change-email", 
         // this.authMiddleware.verifyToken as unknown as RequestHandler,
         this.authController.verifyChangeEmail);
-=======
->>>>>>> 4c1860705a7dfa2423dc30897986971170f80551
+
     }
     getRouter() {
         return this.router;

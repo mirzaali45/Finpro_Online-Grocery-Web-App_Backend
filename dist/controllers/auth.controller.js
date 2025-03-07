@@ -237,7 +237,6 @@ class AuthController {
                             });
                         }
                     }
-<<<<<<< HEAD
                 }
                 return res.status(200).json({
                     status: "success",
@@ -484,189 +483,13 @@ class AuthController {
                 return res.status(200).json({
                     status: "success",
                     message: "Email successfully changed",
-=======
-                }
-                return res.status(200).json({
-                    status: "success",
-                    message: "Email verified successfully",
-                    role: user.role,
-                    referralUsed: referrer ? referrer.username : null,
->>>>>>> 4c1860705a7dfa2423dc30897986971170f80551
                 });
             }
             catch (error) {
                 console.error(error);
-<<<<<<< HEAD
                 return res.status(500).json({ message: "Could not process request" });
             }
         });
     }
-=======
-                return res.status(500).json({ error: "Could not reach the server database" });
-            }
-        });
-    }
-    resetPassword(req, res) {
-        return __awaiter(this, void 0, void 0, function* () {
-            try {
-                const { email } = req.body;
-                const isNewbie = yield prisma.user.findFirst({
-                    where: { email, password: null },
-                });
-                if (isNewbie) {
-                    return res.status(403).json({
-                        status: "error",
-                        token: "",
-                        message: "The email is have no password, Please choose another account.",
-                    });
-                }
-                const findUser = yield prisma.user.findFirst({
-                    where: { email, role: "customer" },
-                    select: {
-                        user_id: true,
-                        email: true,
-                        avatar: true,
-                        username: true,
-                        first_name: true,
-                        last_name: true,
-                        phone: true,
-                        role: true,
-                        verified: true,
-                        created_at: true,
-                        updated_at: true,
-                    },
-                });
-                if (!findUser) {
-                    return res.status(403).json({
-                        status: "error",
-                        token: "",
-                        message: "User not found.",
-                    });
-                }
-                const token = createToken_1.tokenService.createResetToken({
-                    id: findUser.user_id,
-                    role: findUser.role,
-                    resetPassword: findUser.role,
-                });
-                yield prisma.user.update({
-                    where: { user_id: findUser === null || findUser === void 0 ? void 0 : findUser.user_id },
-                    data: { password_reset_token: token },
-                });
-                yield (0, mailer_1.sendResetPassEmail)(email, token);
-                return res.status(201).json({
-                    status: "success",
-                    token: token,
-                    message: "Reset Password Link send successfully. Please check your email for verification.",
-                    user: findUser,
-                });
-            }
-            catch (error) {
-                console.error(error);
-                return res.status(500).json({ error: "Could Reach The Server Database" });
-            }
-        });
-    }
-    verifyResetPassword(req, res) {
-        return __awaiter(this, void 0, void 0, function* () {
-            try {
-                if (!req.user) {
-                    return res.status(401).json({ message: "Unauthorized" });
-                }
-                const { password, confirmPassword } = req.body;
-                // Validasi kesesuaian password baru
-                if (password !== confirmPassword) {
-                    return res.status(400).json({ message: "Passwords do not match" });
-                }
-                const userId = req.user.id;
-                // Cari pengguna berdasarkan ID
-                const user = yield prisma.user.findUnique({
-                    where: { user_id: userId },
-                });
-                if (!user) {
-                    return res
-                        .status(400)
-                        .json({ message: "Invalid Reset password request" });
-                }
-                // Hash dan simpan password baru
-                const hashedPassword = yield (0, hashpassword_1.hashPass)(password);
-                yield prisma.user.update({
-                    where: { user_id: userId },
-                    data: {
-                        password: hashedPassword,
-                        verify_token: null,
-                        password_reset_token: null,
-                    },
-                });
-                return res.status(200).json({
-                    status: "success",
-                    message: "Password Reset successfully",
-                    role: user.role,
-                });
-            }
-            catch (error) {
-                console.error(error);
-                return res
-                    .status(500)
-                    .json({ message: "Could Reach The Server Database" });
-            }
-        });
-    }
-    loginAny(req, res) {
-        return __awaiter(this, void 0, void 0, function* () {
-            // validation
-            if (!req.body.email || !req.body.password) {
-                return res
-                    .status(400)
-                    .json({ message: "Email and password are required" });
-            }
-            try {
-                const user = yield prisma.user.findUnique({
-                    where: { email: req.body.email },
-                });
-                if (!user) {
-                    return res.status(400).json({ message: "User not found" });
-                }
-                const validPass = yield bcrypt_1.default.compare(req.body.password, user.password);
-                if (!validPass) {
-                    return res.status(400).json({ message: "Password incorrect!" });
-                }
-                const token = createToken_1.tokenService.createLoginToken({
-                    id: user.user_id,
-                    role: user.role,
-                });
-                return res
-                    .status(201)
-                    .send({ status: "ok", msg: "Login Success", token, user });
-            }
-            catch (error) {
-                console.error(error);
-                return res.status(500).json({ message: "Internal server error" });
-            }
-        });
-    }
-    checkExpTokenEmailVerif(req, res) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const { token } = req.params;
-            if (!token) {
-                return res.status(401).json({ error: "Unauthorized" });
-            }
-            try {
-                // Verifikasi token
-                const decoded = jsonwebtoken_1.default.verify(token, JWT_SECRET);
-                // Cek apakah token sudah lebih dari 1 jam sejak dibuat
-                const tokenAge = Math.floor(Date.now() / 1000) - decoded.iat; // Selisih waktu dalam detik
-                if (tokenAge > 3600) {
-                    // 1 jam = 3600 detik
-                    return res.status(409).json({ status: "no", message: "Token Expired" });
-                }
-                return res.status(200).json({ status: "ok", message: "Token Active" });
-            }
-            catch (error) {
-                console.error(error);
-                return res.status(400).json({ error: "Invalid or expired token" });
-            }
-        });
-    }
->>>>>>> 4c1860705a7dfa2423dc30897986971170f80551
 }
 exports.AuthController = AuthController;
