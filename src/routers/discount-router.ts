@@ -48,6 +48,7 @@ export class DiscountRouter {
       "/:id",
       this.authMiddleware.verifyToken,
       this.authMiddleware.checkStrAdmin,
+      uploadDiscountImage.single("thumbnail"),
       this.discountController.updateDiscount
     );
 

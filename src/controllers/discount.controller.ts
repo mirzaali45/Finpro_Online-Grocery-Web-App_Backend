@@ -5,9 +5,9 @@ import { uploadDiscountThumbnail } from "../services/cloudinary";
 
 const prisma = new PrismaClient();
 const createDiscountSchema = z.object({
-  store_id: z.number().optional(),
+  store_id: z.coerce.number().optional(),
   product_id: z.coerce.number(),
-  userUser_id: z.number().optional(), // Updated to match schema
+  userUser_id: z.coerce.number().optional(), // Updated to match schema
   thumbnail: z.string().optional(),
   discount_code: z.string().min(3),
   discount_type: z.enum(["point", "percentage"]),
@@ -452,6 +452,9 @@ export class DiscountController {
         return;
       }
 
+      // Log body for debugging
+      console.log("Update request body:", req.body);
+
       const validation = updateDiscountSchema.safeParse(req.body);
 
       if (!validation.success) {
@@ -509,14 +512,21 @@ export class DiscountController {
         return;
       }
 
+      // Handle thumbnail upload if a file is provided
+      let thumbnailUrl = data.thumbnail;
+      if (req.file) {
+        const uploadResult = await uploadDiscountThumbnail(req.file.path);
+        thumbnailUrl = uploadResult.secure_url;
+      }
+
       // Update the discount
       const updatedDiscount = await prisma.discount.update({
         where: { discount_id: Number(id) },
         data: {
           store_id: data.store_id,
-          product_id: data.product_id,
+          product_id: data.product_id === 0 ? null : data.product_id, // Convert 0 to null
           userUser_id: data.userUser_id, // Updated to match schema
-          thumbnail: data.thumbnail,
+          thumbnail: thumbnailUrl, // Use the processed thumbnail URL
           discount_code: data.discount_code,
           discount_type: data.discount_type as Type,
           discount_value: data.discount_value,

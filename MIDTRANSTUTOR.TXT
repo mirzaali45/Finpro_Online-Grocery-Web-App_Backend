@@ -1,104 +1,237 @@
-# Midtrans Payment Gateway Integration Guide
-ngrok start --all --config=ngrok.yml 
-Panduan ini akan membantu Anda mengintegrasikan Midtrans sebagai gateway pembayaran untuk aplikasi e-commerce Anda.
+import dotenv from "dotenv";
+dotenv.config();
+import express from "express";
+import cookieParser from "cookie-parser";
+import cors from "cors";
+import { AuthRouter } from "./routers/auth.router";
+import { CustomerRouter } from "./routers/customer.router";
+import { SuperAdminRouter } from "./routers/super-admin.router";
+import { StoreAdminRouter } from "./routers/store-admin.router";
+import { ProductRouter } from "./routers/product.router";
+import { InventoryRouter } from "./routers/inventory.router";
+import { StoreRouter } from "./routers/store.router";
+import { CategoryRouter } from "./routers/category.router";
+import { ProductImageRouter } from "./routers/product-image.router";
+import { CartRouter } from "./routers/cart.router";
+import { RajaOngkirRouter } from "./routers/rajaongkir.router";
+import { CekOngkirRouter } from "./routers/cekongkir.router";
+import { OrdersRouter } from "./routers/order.router";
+import { PaymentsRouter } from "./routers/payments.router";
+import { DiscountRouter } from "./routers/discount-router";
+import { VoucherRouter } from "./routers/voucher.router";
+import { ReportsRouter } from "./routers/reports-store.router";
+import { ReportSuperAdminRouter } from "./routers/reports-superadmin.router";
+import { RevenueStoreRouter } from "./routers/revenue-store.router";
+import { RevenueSuperAdminRouter } from "./routers/revenue-superadmin.router";
 
-## Prasyarat
+const PORT: number = 8000;
+const base_url_fe = process.env.BASE_URL_FE;
 
-1. Buat akun Midtrans di [https://midtrans.com/id](https://midtrans.com/id)
-2. Setelah mendaftar, akses Dashboard Midtrans
-3. Dapatkan Server Key dan Client Key dari dashboard
+const app = express();
 
-## Instalasi
+// Configure body parsers - Note the expanded types to handle Midtrans
+app.use(express.json({ 
+  type: ['application/json', 'application/json;charset=utf-8', 'text/plain']
+}));
+app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser());
 
-Install midtrans-client untuk Node.js:
+// Modified CORS to allow requests from Midtrans
+app.use(
+  cors({
+    origin: [base_url_fe, "https://api.sandbox.midtrans.com", "https://api.midtrans.com", "*"],
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+  })
+);
 
-```bash
-npm install midtrans-client
-```
+// Special logging middleware for debugging all requests
+app.use((req, res, next) => {
+  console.log(`${req.method} ${req.path} - Content-Type: ${req.header('content-type')}`);
+  next();
+});
 
-## Konfigurasi Environment Variables
+// Special middleware just for the payments callback route
+app.use('/api/payments/callback', (req, res, next) => {
+  // Log the incoming request
+  console.log('Callback request received:', {
+    method: req.method,
+    headers: req.headers,
+    body: req.body
+  });
+  
+  // Ensure CORS is bypassed for this endpoint
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
+  
+  // Continue to the next middleware
+  next();
+});
 
-Tambahkan variabel lingkungan berikut ke file `.env` Anda:
+// Test route for Midtrans callbacks
+app.post('/api/payments/callback-test', (req, res) => {
+  console.log('Test callback received:', req.body);
+  res.status(200).json({ success: true, message: 'Test callback received successfully' });
+});
 
-```
-# Midtrans Configuration
-MIDTRANS_SERVER_KEY=your_server_key_here
-MIDTRANS_CLIENT_KEY=your_client_key_here
-BASE_URL_FE=http://localhost:3000/
-```
+// Initialize all routers
+const authRouter = new AuthRouter();
+const customerRouter = new CustomerRouter();
+const superAdminRouter = new SuperAdminRouter();
+const storeAdminRouter = new StoreAdminRouter();
+const productRouter = new ProductRouter();
+const inventoryRouter = new InventoryRouter();
+const storeRouter = new StoreRouter();
+const categoryRouter = new CategoryRouter();
+const productImageRouter = new ProductImageRouter();
+const cartRouter = new CartRouter();
+const rajaOngkirRouter = new RajaOngkirRouter();
+const cekOngkir = new CekOngkirRouter();
+const ordersRouter = new OrdersRouter();
+const paymentsRouter = new PaymentsRouter();
+const discountRouter = new DiscountRouter()
+const voucherRouter = new VoucherRouter()
+const reportRouter = new ReportsRouter()
+const reportSuperAdminRouter = new ReportSuperAdminRouter();
+const revenueStoreRouter = new RevenueStoreRouter()
+const revenueSuperRouter = new RevenueSuperAdminRouter()
 
-## Struktur Direktori Penyimpanan Data
+// Define all routes
+app.use("/api/auth", authRouter.getRouter()); // sasa
+app.use("/api/customer", customerRouter.getRouter()) // sasa
+app.use("/api/super-admin", superAdminRouter.getRouter()) // zaki
+app.use("/api/store-admin",storeAdminRouter.getRouter()) // zaki
+app.use("/api/product",productRouter.getRouter()) // zaki
+app.use("/api/inventory",inventoryRouter.getRouter()) // zaki
+app.use("/api/store",storeRouter.getRouter()) // zaki
+app.use("/api/category",categoryRouter.getRouter()) // zaki
+app.use("/api/product-image",productImageRouter.getRouter()) // zaki
+app.use("/api/cart", cartRouter.getRouter());//mirza
+app.use("/api/orders", ordersRouter.getRouter());//mirza
+app.use("/api/payments", paymentsRouter.getRouter());//mirza
+app.use("/api/rajaongkir", rajaOngkirRouter.getRouter()); //all
+app.use("/api/cek-ongkir",cekOngkir.getRouter()) 
+app.use("/api/discount", discountRouter.getRouter())
+app.use("/api/voucher", voucherRouter.getRouter())
+app.use("/api/reports/", reportRouter.getRouter())
+app.use("/api/reports-superadmin", reportSuperAdminRouter.getRouter());
+app.use("/api/revenueorder/", revenueStoreRouter.getRouter())
+app.use("/api/revenue-superadmin",revenueSuperRouter.getRouter())
 
-PaymentController menggunakan sistem file untuk menyimpan data pembayaran, bukan database. Pastikan direktori berikut bisa diakses dan ditulis oleh aplikasi:
+// Root API route
+app.get("/api", (req, res) => {
+  res.send("Welcome to the API!");
+});
 
-```
-project_root/
-├── data/
-│   └── payments/  # Direktori ini akan dibuat otomatis
-```
+// Start the server
+app.listen(PORT, () => {
+  console.log(`Server is running on -> http://localhost:${PORT}/api`);
+});
 
-## Mengatur Webhook Midtrans
+export default app
 
-1. Di dashboard Midtrans, buka Settings > Configuration > Webhooks
-2. Tambahkan URL webhook baru: `https://your-api-url.com/api/payment/notification`
-3. Pastikan server Anda mampu menerima permintaan webhook
 
-## Alur Kerja Pembayaran
 
-```
-1. Pengguna membuat pesanan
-2. Sistem membuat pesanan dengan status "pending"
-3. Pengguna memulai pembayaran
-4. Sistem membuat token Midtrans Snap
-5. Status pesanan diubah menjadi "awaiting_payment"
-6. Pengguna dialihkan ke halaman pembayaran Midtrans
-7. Pengguna menyelesaikan pembayaran
-8. Midtrans mengirim notifikasi ke webhook
-9. Sistem memproses notifikasi dan memperbarui status pesanan
-10. Jika pembayaran berhasil, status pesanan diubah menjadi "processing"
-11. Jika pembayaran gagal, status pesanan diubah menjadi "cancelled" dan stok dikembalikan
-```
+// In your payments.router.js file
+private initializeRoutes() {
+  // Route for payment initiation
+  this.router.post(
+    "/:order_id",
+    this.authMiddleware.verifyToken, 
+    this.paymentsController.initiatePayment
+  );
 
-## Metode Pembayaran yang Didukung
+  // Callback route - receives notifications from Midtrans
+  this.router.post("/callback", this.paymentsController.paymentCallback);
+  
+  // Test route that always returns 200 OK
+  this.router.post("/callback-test", (req, res) => {
+    console.log("Test callback received - Headers:", req.headers);
+    console.log("Test callback received - Body:", req.body);
+    res.status(200).json({ success: true, message: "Test callback received" });
+  });
 
-Midtrans mendukung berbagai metode pembayaran, termasuk:
+  // Handle redirect from payment page
+  this.router.get("/redirect", this.paymentsController.handlePaymentRedirect);
+  
+  // Endpoint to manually check and update payment status - with authentication
+  this.router.get(
+    "/:order_id/check-status",
+    this.authMiddleware.verifyToken,
+    this.paymentsController.checkPaymentStatus
+  );
+  
+  // Public endpoint to manually check and update payment status - without authentication
+  this.router.get(
+    "/public/:order_id/check-status",
+    this.paymentsController.checkPaymentStatus
+  );
+  
+  // Direct endpoint to force order status update - use as a last resort
+  this.router.get(
+    "/force-update/:order_id",
+    this.paymentsController.forceUpdateOrderStatus
+  );
+}
 
-- Kartu kredit/debit
-- Transfer bank
-- GoPay
-- QRIS
-- ShopeePay
-- Indomaret
-- Alfamart
-- dan banyak lagi
 
-Semua metode pembayaran diaktifkan secara default dengan Snap.
 
-## Pengujian
+// Add this method to your PaymentsController class
 
-Untuk pengujian, Midtrans menyediakan lingkungan sandbox:
-
-1. Gunakan Server Key dan Client Key Sandbox
-2. Set `isProduction: false` dalam inisialisasi klien Midtrans
-
-### Kartu Uji untuk Sandbox
-
-| Nomor Kartu        | CVV | Tanggal Kadaluarsa | Keterangan               |
-|--------------------|-----|-------------------|--------------------------|
-| 4811 1111 1111 1114 | Any | Any               | Transaksi sukses         |
-| 5211 1111 1111 1117 | Any | Any               | Transaksi sukses         |
-| 4911 1111 1111 1113 | Any | Any               | Ditolak oleh bank        |
-
-## Implementasi Frontend
-
-Untuk mengintegrasikan dengan frontend, ikuti langkah-langkah berikut:
-
-1. Buat halaman pembayaran dengan tombol "Bayar"
-2. Saat tombol diklik, kirim permintaan ke endpoint `/orders/:order_id/payment`
-3. Terima token Snap dan URL redirect
-4. Redirect pengguna ke URL Midtrans atau gunakan Snap.js untuk memunculkan popup pembayaran
-5. Setelah pembayaran selesai, periksa status dengan endpoint `/orders/:order_id/payment`
-
-### Contoh Penggunaan Snap.js
-
-```
+// Force update order status without checking Midtrans
+forceUpdateOrderStatus = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { order_id } = req.params;
+    
+    if (!order_id) {
+      res.status(400).json({ success: false, message: "Order ID missing" });
+      return;
+    }
+    
+    const order = await prisma.order.findUnique({
+      where: { order_id: Number(order_id) },
+      include: { Shipping: true }
+    });
+    
+    if (!order) {
+      res.status(404).json({ success: false, message: "Order not found" });
+      return;
+    }
+    
+    console.log(`Force updating order ${order_id} status from ${order.order_status} to shipped`);
+    
+    // Direct update without Midtrans check
+    const updatedOrder = await prisma.order.update({
+      where: { order_id: Number(order_id) },
+      data: {
+        order_status: OrderStatus.shipped,
+        updated_at: new Date()
+      }
+    });
+    
+    // Update shipping if needed
+    if (order.Shipping.length > 0) {
+      await prisma.shipping.update({
+        where: { shipping_id: order.Shipping[0].shipping_id },
+        data: {
+          shipping_status: ShippingStatus.shipped,
+          updated_at: new Date()
+        }
+      });
+    }
+    
+    res.status(200).json({
+      success: true,
+      message: "Order status force updated to shipped",
+      previous_status: order.order_status,
+      current_status: updatedOrder.order_status
+    });
+  } catch (error: any) {
+    console.error("Error force updating order status:", error);
+    res.status(500).json({
+      success: false,
+      message: error.message || "Error updating order status"
+    });
+  }
+};

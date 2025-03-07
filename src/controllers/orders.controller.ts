@@ -438,8 +438,6 @@ export class OrdersController {
       }
 
       // Check if order can be deleted (only if status is awaiting_payment)
-
-
       // Check if order can be deleted (only if status is awaiting_payment or pending)
       if (
         order.order_status !== OrderStatus.awaiting_payment &&
