@@ -2,6 +2,7 @@ import { Router } from "express";
 import { SuperAdminController } from "../controllers/super-admin.controller";
 import { AuthMiddleware } from "../middleware/auth.verify";
 import { RequestHandler } from "express-serve-static-core";
+import { uploadAvatar } from "../services/cloudinary"; // Import the uploadAvatar middleware
 
 export class SuperAdminRouter {
   private router: Router;
@@ -16,14 +17,16 @@ export class SuperAdminRouter {
   }
 
   private initializeRoutes() {
-    // Create new user (store admin or customer)
+    // Create new user (store admin or customer) with avatar upload
     this.router.post(
       "/createusers",
       this.authMiddleware.verifyToken as unknown as RequestHandler,
       this.authMiddleware.isSuperAdmin as unknown as RequestHandler,
+      uploadAvatar.single("avatar") as unknown as RequestHandler, // Add multer middleware for avatar upload
       this.superAdminController.createUser as unknown as RequestHandler
     );
 
+    // Rest of your routes remain the same
     // Get all users
     this.router.get(
       "/showallusers",
@@ -40,7 +43,7 @@ export class SuperAdminRouter {
       this.superAdminController.getUserById as unknown as RequestHandler
     );
 
-    // Update user role 
+    // Update user role
     this.router.patch(
       "/users/:id/role",
       this.authMiddleware.verifyToken as unknown as RequestHandler,

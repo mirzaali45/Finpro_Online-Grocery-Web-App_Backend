@@ -16,16 +16,39 @@ exports.SuperAdminController = void 0;
 const client_1 = require("../../prisma/generated/client");
 const bcrypt_1 = __importDefault(require("bcrypt"));
 const reffcode_1 = require("../helpers/reffcode");
+const cloudinary_1 = require("../services/cloudinary");
 const prisma = new client_1.PrismaClient();
 class SuperAdminController {
     createUser(req, res) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
                 const { email, password, role, username, firstName, lastName, phone } = req.body;
+                let avatarUrl = null;
+                // Check if file was uploaded
+                if (req.file) {
+                    try {
+                        // Upload avatar to Cloudinary
+                        const result = yield (0, cloudinary_1.uploadAvatarImage)(req.file.path);
+                        avatarUrl = result.secure_url;
+                    }
+                    catch (error) {
+                        // Properly type the error
+                        const uploadError = error;
+                        return res
+                            .status(400)
+                            .json({
+                            error: "Failed to upload avatar",
+                            details: uploadError.message,
+                        });
+                    }
+                }
                 const existingUser = yield prisma.user.findUnique({
                     where: { email },
                 });
                 if (existingUser) {
+                    if (avatarUrl) {
+                        yield (0, cloudinary_1.deleteAvatarImage)(avatarUrl);
+                    }
                     return res.status(400).json({ error: "Email already exists" });
                 }
                 const hashedPassword = yield bcrypt_1.default.hash(password, 10);
@@ -38,6 +61,7 @@ class SuperAdminController {
                         first_name: firstName,
                         last_name: lastName,
                         phone,
+                        avatar: avatarUrl,
                         verified: true,
                         referral_code: role === "customer" ? (0, reffcode_1.generateReferralCode)(8) : null,
                     },
@@ -49,6 +73,7 @@ class SuperAdminController {
                 });
             }
             catch (error) {
+                console.error("Create user error:", error);
                 return res.status(500).json({ error: "Could not create user" });
             }
         });

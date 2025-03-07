@@ -17,10 +17,7 @@ const transporter = nodemailer.createTransport({
 
 export const sendVerificationEmail = async (email: string, token: string) => {
   try {
-    const templatePath = path.join(
-      __dirname,
-      "../templates/verify.hbs"
-    );
+    const templatePath = path.join(__dirname, "../templates/verify.hbs");
     const source = fs.readFileSync(templatePath, "utf-8");
     const template = handlebars.compile(source);
 
@@ -33,13 +30,6 @@ export const sendVerificationEmail = async (email: string, token: string) => {
       to: email,
       subject: "Verify Youre Email Address",
       html,
-      attachments: [
-        {
-          filename: "/LIT.png",
-          path: path.join(__dirname, "../../public/LIT.png"),
-          cid: "logo",
-        },
-      ],
     });
   } catch (error) {
     console.error("Error sending verification email:", error);
@@ -61,7 +51,7 @@ export const sendResetPassEmail = async (email: string, token: string) => {
     const templateSource = fs.readFileSync(templatePath, "utf-8");
     const compiledTemplate = handlebars.compile(templateSource);
     const html = compiledTemplate({
-      link: `${process.env.BASE_URL_FE}/verification/reset-password/${token}`,
+      link: `${process.env.BASE_URL_FE}/verification/reverify?token=${token}`,
     });
 
     await transporter.sendMail({
@@ -69,13 +59,6 @@ export const sendResetPassEmail = async (email: string, token: string) => {
       to: email,
       subject: "Reset your password",
       html,
-      attachments: [
-        {
-          filename: "/LIT.png",
-          path: path.join(__dirname, "../../public/LIT.png"),
-          cid: "logo",
-        },
-      ],
     });
   } catch (error) {
     throw error;
@@ -86,19 +69,18 @@ export const sendReverificationEmail = async (email: string, token: string) => {
   try {
     const templatePath = path.join(
       __dirname,
-      "../templates",
-      "reverification.hbs"
+      "../templates", "reverification.hbs"
     );
     const templateSource = fs.readFileSync(templatePath, "utf-8");
     const compiledTemplate = handlebars.compile(templateSource);
     const html = compiledTemplate({
-      link: `${process.env.BASE_URL_FRONTEND}/reverify/${token}`,
+      link: `${process.env.BASE_URL_FE}/verification/reverify?token=${token}`,
     });
 
     await transporter.sendMail({
       from: process.env.MAIL_USER,
       to: email,
-      subject: "Changing email address",
+      subject: "Changing Email Address",
       html,
     });
   } catch (error) {

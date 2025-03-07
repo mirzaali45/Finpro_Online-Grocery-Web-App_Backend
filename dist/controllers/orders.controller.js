@@ -12,7 +12,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.OrdersController = void 0;
 const client_1 = require("../../prisma/generated/client");
 const responseError_1 = require("../helpers/responseError");
-let prisma = new client_1.PrismaClient;
+let prisma = new client_1.PrismaClient();
 if (process.env.NODE_ENV === "production") {
     prisma = new client_1.PrismaClient({
         log: ["query", "info", "warn", "error"],
@@ -89,8 +89,6 @@ class OrdersController {
             try {
                 const { user_id } = req.body;
                 console.log("Creating order from cart for user:", user_id);
-
-
                 // Step 1: Quick response to prevent Vercel timeout
                 // This is key - send a response early while processing continues
                 const responsePromise = new Promise((resolve) => {
@@ -98,7 +96,6 @@ class OrdersController {
                     setTimeout(() => resolve(), 8000); // Backup resolve after 8 seconds
                 });
                 // Do initial validation checks synchronously
-
                 const user = yield prisma.user.findUnique({
                     where: { user_id: Number(user_id) },
                     include: {
@@ -117,6 +114,7 @@ class OrdersController {
                     return;
                 }
                 const address = user.Address[0];
+                // Get cart items
                 const cartItems = yield prisma.cartItem.findMany({
                     where: { user_id: Number(user_id) },
                     include: { product: { include: { store: true } } },
@@ -133,12 +131,8 @@ class OrdersController {
                 }
                 const storeId = cartItems[0].product.store_id;
                 // Calculate total price
-
-
                 const total_price = cartItems.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
                 // Check inventories
-
-
                 const productIds = cartItems.map((item) => item.product_id);
                 const inventories = yield prisma.inventory.findMany({
                     where: {
@@ -156,15 +150,13 @@ class OrdersController {
                         return;
                     }
                 }
-
-
                 // CRITICAL: Create order first - this is the core operation
                 const newOrder = yield prisma.order.create({
                     data: {
                         user_id: Number(user_id),
                         store_id: storeId,
                         total_price,
-                        order_status: client_1.OrderStatus.awaiting_payment,
+                        order_status: client_1.OrderStatus.pending,
                         created_at: new Date(),
                         updated_at: new Date(),
                     },
@@ -208,7 +200,6 @@ class OrdersController {
                                 });
                             }
                         }
-
                         // Create shipping record
                         yield prisma.shipping.create({
                             data: {
@@ -392,7 +383,7 @@ class OrdersController {
                     return;
                 }
                 // Check if order can be deleted (only if status is awaiting_payment)
-                if (order.order_status !== client_1.OrderStatus.awaiting_payment) {
+                if (order.order_status !== client_1.OrderStatus.pending) {
                     (0, responseError_1.responseError)(res, "Hanya pesanan dengan status menunggu pembayaran yang dapat dibatalkan.");
                     return;
                 }

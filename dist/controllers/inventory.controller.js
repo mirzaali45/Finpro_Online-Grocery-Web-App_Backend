@@ -125,7 +125,7 @@ class InventoryController {
             }
         });
     }
-    updateInventory(req, res) {
+    updateStoreFrontInventory(req, res) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
                 const { inv_id } = req.params;
@@ -136,21 +136,58 @@ class InventoryController {
                 if (!currentInventory) {
                     throw new Error("Inventory not found");
                 }
+                // Calculate new qty based on operation
                 const newQty = operation === "add"
                     ? currentInventory.qty + qty
                     : currentInventory.qty - qty;
+                // Check if we have enough stock in the warehouse
                 if (newQty < 0) {
-                    throw new Error("Insufficient stock");
+                    throw new Error("Insufficient warehouse stock");
                 }
+                // Update only the qty (warehouse stock)
                 const updatedInventory = yield prisma.inventory.update({
                     where: {
                         inv_id: parseInt(inv_id),
                     },
                     data: {
                         qty: newQty,
-                        total_qty: operation === "add"
-                            ? currentInventory.total_qty + qty
-                            : currentInventory.total_qty,
+                        updated_at: new Date(),
+                    },
+                });
+                return res.status(200).json(updatedInventory);
+            }
+            catch (error) {
+                const message = error instanceof Error ? error.message : "Unknown error occurred";
+                return res.status(500).json({ error: message });
+            }
+        });
+    }
+    transferToStore(req, res) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                const { inv_id } = req.params;
+                const { transferAmount } = req.body;
+                if (transferAmount <= 0) {
+                    throw new Error("Transfer amount must be greater than zero");
+                }
+                const currentInventory = yield prisma.inventory.findUnique({
+                    where: { inv_id: parseInt(inv_id) },
+                });
+                if (!currentInventory) {
+                    throw new Error("Inventory not found");
+                }
+                // Check if warehouse has enough stock
+                if (currentInventory.qty < transferAmount) {
+                    throw new Error("Insufficient warehouse stock for transfer");
+                }
+                // Update both qty (decrease) and total_qty (increase)
+                const updatedInventory = yield prisma.inventory.update({
+                    where: {
+                        inv_id: parseInt(inv_id),
+                    },
+                    data: {
+                        qty: currentInventory.qty - transferAmount, // Decrease warehouse stock
+                        total_qty: currentInventory.total_qty + transferAmount, // Increase store stock
                         updated_at: new Date(),
                     },
                 });

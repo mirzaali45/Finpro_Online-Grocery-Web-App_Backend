@@ -6,7 +6,7 @@ import {
 } from "../../prisma/generated/client";
 import { responseError } from "../helpers/responseError";
 
-let prisma = new PrismaClient;
+let prisma = new PrismaClient();
 if (process.env.NODE_ENV === "production") {
   prisma = new PrismaClient({
     log: ["query", "info", "warn", "error"],
@@ -94,8 +94,6 @@ export class OrdersController {
       const { user_id } = req.body;
       console.log("Creating order from cart for user:", user_id);
 
-
-
       // Step 1: Quick response to prevent Vercel timeout
       // This is key - send a response early while processing continues
       const responsePromise = new Promise<void>((resolve) => {
@@ -161,11 +159,8 @@ export class OrdersController {
         },
       });
 
-
-
       const inventoryMap = new Map();
       inventories.forEach((inv) => inventoryMap.set(inv.product_id, inv));
-
 
       // Check inventory for each item
       for (const item of cartItems) {
@@ -186,7 +181,7 @@ export class OrdersController {
           user_id: Number(user_id),
           store_id: storeId,
           total_price,
-          order_status: OrderStatus.awaiting_payment,
+          order_status: OrderStatus.pending,
           created_at: new Date(),
           updated_at: new Date(),
         },
@@ -234,7 +229,6 @@ export class OrdersController {
             }
           }
 
-
           // Create shipping record
           await prisma.shipping.create({
             data: {
@@ -248,7 +242,6 @@ export class OrdersController {
               updated_at: new Date(),
             },
           });
-
 
           // Clear cart items in chunks to avoid timeout
           const cartItemChunkSize = 5;
@@ -445,7 +438,7 @@ export class OrdersController {
       }
 
       // Check if order can be deleted (only if status is awaiting_payment)
-      if (order.order_status !== OrderStatus.awaiting_payment) {
+      if (order.order_status !== OrderStatus.pending) {
         responseError(
           res,
           "Hanya pesanan dengan status menunggu pembayaran yang dapat dibatalkan."

@@ -18,8 +18,11 @@ Object.defineProperty(exports, "cloudinary", { enumerable: true, get: function (
 const multer_1 = __importDefault(require("multer"));
 const path_1 = __importDefault(require("path"));
 const fs_1 = __importDefault(require("fs"));
+// Determine upload directory based on environment
+const uploadDir = process.env.NODE_ENV === "production"
+    ? "/tmp/uploads" // Use /tmp in production (serverless)
+    : path_1.default.join(process.cwd(), "uploads"); // Use local path in development
 // Create uploads directory if it doesn't exist
-const uploadDir = path_1.default.join(process.cwd(), "uploads");
 if (!fs_1.default.existsSync(uploadDir)) {
     fs_1.default.mkdirSync(uploadDir, { recursive: true });
 }

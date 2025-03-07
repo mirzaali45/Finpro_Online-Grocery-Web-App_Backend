@@ -33,6 +33,9 @@ class TokenService {
     createResetToken(payload) {
         return this.createTokenWithExpiry(payload, 86400);
     }
+    createEmailChangeToken(payload) {
+        return this.createTokenWithExpiry(payload, 3600); // Token valid for 1 hour
+    }
     verifyEmailToken(token) {
         try {
             return (0, jsonwebtoken_1.verify)(token, SECRET_KEY);
@@ -40,6 +43,15 @@ class TokenService {
         catch (error) {
             console.error("Email token verification failed:", error);
             throw new Error("Invalid or expired email token");
+        }
+    }
+    verifyEmailChangeToken(token) {
+        try {
+            return (0, jsonwebtoken_1.verify)(token, SECRET_KEY);
+        }
+        catch (error) {
+            console.error("Email change token verification failed:", error);
+            throw new Error("Invalid or expired email change token");
         }
     }
 }
