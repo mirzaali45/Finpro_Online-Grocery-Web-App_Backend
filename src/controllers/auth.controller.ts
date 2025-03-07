@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import { PrismaClient, Type } from "../../prisma/generated/client";
 import { tokenService } from "../helpers/createToken";
-import { sendResetPassEmail, sendVerificationEmail } from "../services/mailer";
+import { sendResetPassEmail, sendReverificationEmail, sendVerificationEmail } from "../services/mailer";
 import { hashPass } from "../helpers/hashpassword";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
@@ -450,4 +450,101 @@ export class AuthController {
       return res.status(400).json({ error: "Invalid or expired token" });
     }
   }
+  
+  async requestChangeEmail(req: Request, res: Response) {
+    try {
+      const userId = req.user?.id;
+
+      if (!userId) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+
+      const { newEmail } = req.body;
+
+      if (!newEmail) {
+        return res.status(400).json({ message: "New email is required" });
+      }
+
+      // Cek apakah email sudah digunakan
+      const existingUser = await prisma.user.findUnique({
+        where: { email: newEmail },
+      });
+
+      if (existingUser) {
+        return res.status(400).json({ message: "Email is already in use" });
+      }
+
+      // Buat token verifikasi email
+      const token = tokenService.createEmailChangeToken({ userId, newEmail });
+
+      // Simpan token verifikasi di database
+      await prisma.user.update({
+        where: { user_id: userId },
+        data: { verify_token: token },
+      });
+
+      // Kirim email verifikasi
+      await sendReverificationEmail(newEmail, token);
+
+      
+
+      return res.status(200).json({
+        status: "success",
+        message: "Verification email sent. Please check your inbox.",
+      });
+    } catch (error) {
+      console.error(error);
+      return res.status(500).json({ message: "Could not process request" });
+    }
+  }
+
+  async verifyChangeEmail(req: Request, res: Response) {
+    try {
+      const { token } = req.body; // Change from req.query to req.body
+      if (!token) {
+        return res.status(400).json({ message: "Token is required" });
+      }
+  
+      let decoded;
+      try {
+        decoded = tokenService.verifyEmailChangeToken(token as string);
+      } catch (error) {
+        return res.status(400).json({ message: "Invalid or expired token" });
+      }
+  
+      const { userId, newEmail } = decoded;
+  
+      const existingUser = await prisma.user.findUnique({ where: { user_id: userId } });
+      if (!existingUser) {
+        return res.status(400).json({ message: "User not found" });
+      }
+
+
+      if (existingUser.verify_token !== token) {
+        return res.status(400).json({ message: "Invalid or expired token" });
+    }
+  
+    
+      await prisma.user.update({
+        where: { user_id: userId },
+        data: {
+          email: newEmail,
+          verify_token: null,
+        },
+      });
+  
+      return res.status(200).json({
+        status: "success",
+        message: "Email successfully changed",
+      });
+    } catch (error) {
+      console.error(error);
+      return res.status(500).json({ message: "Could not process request" });
+    }
+  }
+  
+  
+
+  
+
 }

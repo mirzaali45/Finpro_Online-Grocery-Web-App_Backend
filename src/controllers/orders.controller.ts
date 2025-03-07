@@ -132,6 +132,7 @@ export class OrdersController {
         return;
       }
 
+
       // Check if all products are from the same store
       const storeIds = new Set(cartItems.map((item) => item.product.store_id));
       if (storeIds.size > 1) {

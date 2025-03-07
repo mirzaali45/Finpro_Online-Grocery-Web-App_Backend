@@ -63,7 +63,20 @@ export class AuthRouter {
       "/cek-token",
       this.authMiddleware.verifyExpiredToken as unknown as RequestHandler
     );
-  }
+      // 🔥 Tambahan untuk Change Email
+      this.router.post(
+        "/request-change-email",
+        this.authMiddleware.verifyToken as unknown as RequestHandler,
+        this.authController.requestChangeEmail as unknown as RequestHandler
+      );
+  
+      this.router.post(
+        "/verify-change-email",
+        // this.authMiddleware.verifyToken as unknown as RequestHandler,
+        this.authController.verifyChangeEmail as unknown as RequestHandler
+      );
+    }
+  
 
   getRouter(): Router {
     return this.router;

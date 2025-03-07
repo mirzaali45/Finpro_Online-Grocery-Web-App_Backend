@@ -383,12 +383,17 @@ class OrdersController {
                     return;
                 }
                 // Check if order can be deleted (only if status is awaiting_payment)
+<<<<<<< HEAD
+                if (order.order_status !== client_1.OrderStatus.pending) {
+                    (0, responseError_1.responseError)(res, "Hanya pesanan dengan status menunggu pembayaran yang dapat dibatalkan.");
+=======
 
                 // Check if order can be deleted (only if status is awaiting_payment or pending)
                 if (order.order_status !== client_1.OrderStatus.awaiting_payment &&
                     order.order_status !== client_1.OrderStatus.pending) {
                     (0, responseError_1.responseError)(res, "Hanya pesanan dengan status menunggu pembayaran atau tertunda yang dapat dibatalkan.");
 
+>>>>>>> 4c1860705a7dfa2423dc30897986971170f80551
                     return;
                 }
                 // Start a transaction to ensure all operations succeed or fail together
