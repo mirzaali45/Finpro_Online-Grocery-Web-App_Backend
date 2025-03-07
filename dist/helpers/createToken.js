@@ -33,9 +33,12 @@ class TokenService {
     createResetToken(payload) {
         return this.createTokenWithExpiry(payload, 86400);
     }
+<<<<<<< HEAD
     createEmailChangeToken(payload) {
         return this.createTokenWithExpiry(payload, 3600); // Token valid for 1 hour
     }
+=======
+>>>>>>> 4c1860705a7dfa2423dc30897986971170f80551
     verifyEmailToken(token) {
         try {
             return (0, jsonwebtoken_1.verify)(token, SECRET_KEY);
@@ -45,6 +48,7 @@ class TokenService {
             throw new Error("Invalid or expired email token");
         }
     }
+<<<<<<< HEAD
     verifyEmailChangeToken(token) {
         try {
             return (0, jsonwebtoken_1.verify)(token, SECRET_KEY);
@@ -54,5 +58,7 @@ class TokenService {
             throw new Error("Invalid or expired email change token");
         }
     }
+=======
+>>>>>>> 4c1860705a7dfa2423dc30897986971170f80551
 }
 exports.tokenService = new TokenService();
