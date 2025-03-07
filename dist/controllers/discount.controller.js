@@ -15,9 +15,9 @@ const zod_1 = require("zod");
 const cloudinary_1 = require("../services/cloudinary");
 const prisma = new client_1.PrismaClient();
 const createDiscountSchema = zod_1.z.object({
-    store_id: zod_1.z.number().optional(),
+    store_id: zod_1.z.coerce.number().optional(),
     product_id: zod_1.z.coerce.number(),
-    userUser_id: zod_1.z.number().optional(), // Updated to match schema
+    userUser_id: zod_1.z.coerce.number().optional(), // Updated to match schema
     thumbnail: zod_1.z.string().optional(),
     discount_code: zod_1.z.string().min(3),
     discount_type: zod_1.z.enum(["point", "percentage"]),
@@ -429,6 +429,8 @@ class DiscountController {
                     });
                     return;
                 }
+                // Log body for debugging
+                console.log("Update request body:", req.body);
                 const validation = updateDiscountSchema.safeParse(req.body);
                 if (!validation.success) {
                     res.status(400).json({
@@ -474,14 +476,20 @@ class DiscountController {
                     });
                     return;
                 }
+                // Handle thumbnail upload if a file is provided
+                let thumbnailUrl = data.thumbnail;
+                if (req.file) {
+                    const uploadResult = yield (0, cloudinary_1.uploadDiscountThumbnail)(req.file.path);
+                    thumbnailUrl = uploadResult.secure_url;
+                }
                 // Update the discount
                 const updatedDiscount = yield prisma.discount.update({
                     where: { discount_id: Number(id) },
                     data: {
                         store_id: data.store_id,
-                        product_id: data.product_id,
+                        product_id: data.product_id === 0 ? null : data.product_id, // Convert 0 to null
                         userUser_id: data.userUser_id, // Updated to match schema
-                        thumbnail: data.thumbnail,
+                        thumbnail: thumbnailUrl, // Use the processed thumbnail URL
                         discount_code: data.discount_code,
                         discount_type: data.discount_type,
                         discount_value: data.discount_value,

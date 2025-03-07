@@ -12,7 +12,6 @@ class PaymentsRouter {
         this.initializeRoutes();
     }
     initializeRoutes() {
-
         // Route for payment initiation
         this.router.post("/:order_id", this.authMiddleware.verifyToken, this.paymentsController.initiatePayment);
         // Callback route - receives notifications from Midtrans

@@ -383,12 +383,10 @@ class OrdersController {
                     return;
                 }
                 // Check if order can be deleted (only if status is awaiting_payment)
-
                 // Check if order can be deleted (only if status is awaiting_payment or pending)
                 if (order.order_status !== client_1.OrderStatus.awaiting_payment &&
                     order.order_status !== client_1.OrderStatus.pending) {
                     (0, responseError_1.responseError)(res, "Hanya pesanan dengan status menunggu pembayaran atau tertunda yang dapat dibatalkan.");
-
                     return;
                 }
                 // Start a transaction to ensure all operations succeed or fail together
@@ -522,7 +520,6 @@ class OrdersController {
             }
         });
     }
-
     updateOrder(req, res) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
@@ -568,6 +565,5 @@ class OrdersController {
             }
         });
     }
-
 }
 exports.OrdersController = OrdersController;
