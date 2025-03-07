@@ -438,7 +438,6 @@ export class OrdersController {
 
       // Check if order can be deleted (only if status is awaiting_payment)
 
-
       // Check if order can be deleted (only if status is awaiting_payment or pending)
       if (
         order.order_status !== OrderStatus.awaiting_payment &&
@@ -603,7 +602,7 @@ export class OrdersController {
       );
     }
   }
-  
+
   async QueryOrders(req: Request, res: Response): Promise<void> {
     const { order_id, order_date, order_status } = req.query;
 
@@ -653,50 +652,52 @@ export class OrdersController {
     }
   }
   async updateOrder(req: Request, res: Response): Promise<void> {
-  try {
-    console.log("updateOrder called with params:", req.params);
-    console.log("updateOrder called with body:", req.body);
-    
-    const { order_id } = req.params;
-    const { total_price } = req.body;
-    
-    console.log(`Attempting to update order ${order_id} with total_price ${total_price}`);
-    
-    // Rest of your code...
-    
-    // Before update
-    const order = await prisma.order.findUnique({
-      where: { order_id: Number(order_id) }
-    });
-    console.log("Found order before update:", order);
-    
-    // Update operation
     try {
-      const updatedOrder = await prisma.order.update({
+      console.log("updateOrder called with params:", req.params);
+      console.log("updateOrder called with body:", req.body);
+
+      const { order_id } = req.params;
+      const { total_price } = req.body;
+
+      console.log(
+        `Attempting to update order ${order_id} with total_price ${total_price}`
+      );
+
+      // Rest of your code...
+
+      // Before update
+      const order = await prisma.order.findUnique({
         where: { order_id: Number(order_id) },
-        data: {
-          total_price: Number(total_price),
-          updated_at: new Date()
-        }
       });
-      console.log("Order updated successfully:", updatedOrder);
-      
-      // Send response
-      res.status(200).json({
-        message: "Harga pesanan berhasil diperbarui.",
-        data: {
-          order_id: updatedOrder.order_id,
-          total_price: updatedOrder.total_price,
-          updated_at: updatedOrder.updated_at
-        }
-      });
-    } catch (updateError) {
-      console.error("Error during Prisma update:", updateError);
-      throw updateError;
+      console.log("Found order before update:", order);
+
+      // Update operation
+      try {
+        const updatedOrder = await prisma.order.update({
+          where: { order_id: Number(order_id) },
+          data: {
+            total_price: Number(total_price),
+            updated_at: new Date(),
+          },
+        });
+        console.log("Order updated successfully:", updatedOrder);
+
+        // Send response
+        res.status(200).json({
+          message: "Harga pesanan berhasil diperbarui.",
+          data: {
+            order_id: updatedOrder.order_id,
+            total_price: updatedOrder.total_price,
+            updated_at: updatedOrder.updated_at,
+          },
+        });
+      } catch (updateError) {
+        console.error("Error during Prisma update:", updateError);
+        throw updateError;
+      }
+    } catch (error: any) {
+      console.error("updateOrder error:", error);
+      responseError(res, error.message);
     }
-  } catch (error: any) {
-    console.error("updateOrder error:", error);
-    responseError(res, error.message);
   }
-}
 }
