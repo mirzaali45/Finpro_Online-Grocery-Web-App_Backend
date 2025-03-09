@@ -342,7 +342,7 @@ const config = {
       "value": "prisma-client-js"
     },
     "output": {
-      "value": "C:\\Users\\SASA\\Downloads\\Finpro_Online-Grocery-Web-App_Backend-dzakymergetestBE (1)\\Finpro_Online-Grocery-Web-App_Backend-dzakymergetestBE\\prisma\\generated\\client",
+      "value": "E:\\FinPro_Online Grocery Web App\\Finpro_Online-Grocery-Web-App_Backend\\prisma\\generated\\client",
       "fromEnvVar": null
     },
     "config": {
@@ -356,7 +356,7 @@ const config = {
       }
     ],
     "previewFeatures": [],
-    "sourceFilePath": "C:\\Users\\SASA\\Downloads\\Finpro_Online-Grocery-Web-App_Backend-dzakymergetestBE (1)\\Finpro_Online-Grocery-Web-App_Backend-dzakymergetestBE\\prisma\\schema.prisma",
+    "sourceFilePath": "E:\\FinPro_Online Grocery Web App\\Finpro_Online-Grocery-Web-App_Backend\\prisma\\schema.prisma",
     "isCustomOutput": true
   },
   "relativeEnvPaths": {
