@@ -34,17 +34,17 @@ export class CategoryController {
         description,
       };
 
-      if (req.file) {
-        try {
-          const result = await uploadCategoryThumbnail(req.file.path);
-          categoryData.category_thumbnail = result.secure_url;
-        } catch (uploadError) {
-          console.error("Error uploading thumbnail:", uploadError);
-          return res.status(500).json({
-            error: "Failed to upload category thumbnail",
-          });
-        }
-      }
+     if (req.file) {
+       try {
+         const result = await uploadCategoryThumbnail(req.file.path);
+         categoryData.category_thumbnail = result.secure_url; // Change from category_image to category_thumbnail
+       } catch (uploadError) {
+         console.error("Error uploading thumbnail:", uploadError);
+         return res.status(500).json({
+           error: "Failed to upload category thumbnail",
+         });
+       }
+     }
 
       const category = await prisma.category.create({
         data: categoryData,

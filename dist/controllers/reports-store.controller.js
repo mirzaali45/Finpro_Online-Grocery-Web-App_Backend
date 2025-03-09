@@ -67,11 +67,11 @@ class ReportStore {
                     current_quantity: item.qty,
                     total_quantity: item.total_qty,
                     price: item.product.price,
-                    estimated_value: item.qty * item.product.price,
+                    estimated_value: item.total_qty * item.product.price,
                     last_updated: item.updated_at
                 }));
                 // Calculate summary statistics
-                const totalItems = formattedReport.reduce((sum, item) => sum + item.current_quantity, 0);
+                const totalItems = formattedReport.reduce((sum, item) => sum + item.total_quantity, 0);
                 const totalValue = formattedReport.reduce((sum, item) => sum + item.estimated_value, 0);
                 return res.status(200).json({
                     status: "success",

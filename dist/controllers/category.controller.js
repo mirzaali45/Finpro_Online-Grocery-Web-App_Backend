@@ -44,7 +44,7 @@ class CategoryController {
                 if (req.file) {
                     try {
                         const result = yield (0, cloudinary_1.uploadCategoryThumbnail)(req.file.path);
-                        categoryData.category_thumbnail = result.secure_url;
+                        categoryData.category_thumbnail = result.secure_url; // Change from category_image to category_thumbnail
                     }
                     catch (uploadError) {
                         console.error("Error uploading thumbnail:", uploadError);

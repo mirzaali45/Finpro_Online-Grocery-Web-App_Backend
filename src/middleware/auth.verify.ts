@@ -28,7 +28,7 @@ export class AuthMiddleware {
       responseError(res, error);
     }
   }
-  
+
   verifyExpiredToken(req: Request, res: Response, next: NextFunction) {
     try {
       let token = req.headers.authorization?.replace("Bearer ", "");
@@ -39,7 +39,10 @@ export class AuthMiddleware {
 
       // Validasi manual token expired
       if (user.exp && Date.now() >= user.exp * 86400) {
-        throw new TokenExpiredError("Token expired", new Date(user.exp * 86400));
+        throw new TokenExpiredError(
+          "Token expired",
+          new Date(user.exp * 86400)
+        );
       }
 
       req.user = { id: user.id as number, role: user.role as string };
@@ -105,5 +108,3 @@ export class AuthMiddleware {
     }
   }
 }
-
-
