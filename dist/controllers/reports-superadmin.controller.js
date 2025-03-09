@@ -82,7 +82,7 @@ class ReportSuperAdmin {
                     // We need to get all the inventory items to check the qty
                     const allInventoryItems = yield prisma.inventory.findMany({
                         where: inventoryFilter,
-                        select: { qty: true },
+                        select: { qty: true, total_qty: true },
                     });
                     // Filter for low stock and count
                     totalInventoryCount = allInventoryItems.filter((item) => item.qty <= threshold).length;
@@ -150,7 +150,7 @@ class ReportSuperAdmin {
                     : inventoryData;
                 // Calculate aggregated statistics from the summary inventory (not paginated)
                 const totalItems = filteredSummaryInventory.reduce((sum, item) => sum + item.qty, 0);
-                const totalValue = filteredSummaryInventory.reduce((sum, item) => sum + item.qty * item.product.price, 0);
+                const totalValue = filteredSummaryInventory.reduce((sum, item) => sum + (item.qty + item.total_qty) * item.product.price, 0);
                 // Initialize storesSummary with ALL stores (even those with no inventory)
                 const storesSummary = {};
                 // First, add all stores with zero values
@@ -212,7 +212,7 @@ class ReportSuperAdmin {
                             },
                             current_quantity: item.qty,
                             total_quantity: item.total_qty,
-                            stockValue: item.qty * item.product.price,
+                            stockValue: (item.total_qty + item.qty) * item.product.price,
                             lowStock: item.qty <= threshold,
                         })),
                         inventoryCount: totalInventoryCount, // Total count of inventory items

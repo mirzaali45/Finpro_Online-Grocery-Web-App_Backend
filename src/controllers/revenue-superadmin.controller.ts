@@ -124,7 +124,7 @@ export class RevenueSuperAdminController {
           lte: endDate,
         },
         order_status: {
-          not: OrderStatus.cancelled,
+          in: ["completed", "shipped"],
         },
       };
 
@@ -314,21 +314,21 @@ export class RevenueSuperAdminController {
         prisma.$transaction([
           prisma.order.aggregate({
             where: {
-              order_status: { not: OrderStatus.cancelled },
+              order_status: { in: ["completed", "shipped"] },
             },
             _sum: { total_price: true },
           }),
           prisma.order.aggregate({
             where: {
               created_at: { gte: thirtyDaysAgo },
-              order_status: { not: OrderStatus.cancelled },
+              order_status: { in: ["completed", "shipped"] },
             },
             _sum: { total_price: true },
           }),
           prisma.order.aggregate({
             where: {
               created_at: { gte: sixtyDaysAgo, lt: thirtyDaysAgo },
-              order_status: { not: OrderStatus.cancelled },
+              order_status: { in: ["completed", "shipped"] },
             },
             _sum: { total_price: true },
           }),
@@ -340,7 +340,7 @@ export class RevenueSuperAdminController {
             by: ["store_id"],
             where: {
               created_at: { gte: thirtyDaysAgo },
-              order_status: { not: OrderStatus.cancelled },
+              order_status: { in: ["completed", "shipped"] },
             },
             _sum: { total_price: true },
             orderBy: { _sum: { total_price: "desc" } },
