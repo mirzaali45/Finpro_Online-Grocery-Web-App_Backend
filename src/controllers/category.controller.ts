@@ -17,7 +17,7 @@ export class CategoryController {
         where: {
           category_name: {
             equals: category_name,
-            mode: "insensitive", 
+            mode: "insensitive",
           },
         },
       });
@@ -34,17 +34,17 @@ export class CategoryController {
         description,
       };
 
-     if (req.file) {
-       try {
-         const result = await uploadCategoryThumbnail(req.file.path);
-         categoryData.category_thumbnail = result.secure_url; // Change from category_image to category_thumbnail
-       } catch (uploadError) {
-         console.error("Error uploading thumbnail:", uploadError);
-         return res.status(500).json({
-           error: "Failed to upload category thumbnail",
-         });
-       }
-     }
+      if (req.file) {
+        try {
+          const result = await uploadCategoryThumbnail(req.file.path);
+          categoryData.category_thumbnail = result.secure_url; // Change from category_image to category_thumbnail
+        } catch (uploadError) {
+          console.error("Error uploading thumbnail:", uploadError);
+          return res.status(500).json({
+            error: "Failed to upload category thumbnail",
+          });
+        }
+      }
 
       const category = await prisma.category.create({
         data: categoryData,
@@ -67,27 +67,50 @@ export class CategoryController {
 
   async getCategories(req: Request, res: Response) {
     try {
+      // Check if "all" parameter is present to return all categories
+      const getAll = req.query.all === "true";
+
+      // Get pagination parameters if not getting all
       const page = parseInt(req.query.page as string) || 1;
       const limit = parseInt(req.query.limit as string) || 8;
-      const skip = (page - 1) * limit;
 
+      // Count total categories
       const totalCount = await prisma.category.count();
-      const categories = await prisma.category.findMany({
+
+      // Define query options
+      const queryOptions: any = {
         include: {
           Product: true,
         },
-        skip,
-        take: limit,
-      });
-      return res.status(200).json({
-        data: categories,
-        pagination: {
-          currentPage: page,
-          totalPages: Math.ceil(totalCount / limit),
+      };
+
+      // Add pagination if not getting all
+      if (!getAll) {
+        const skip = (page - 1) * limit;
+        queryOptions.skip = skip;
+        queryOptions.take = limit;
+      }
+
+      // Get categories with options
+      const categories = await prisma.category.findMany(queryOptions);
+
+      // Return response with or without pagination details
+      if (getAll) {
+        return res.status(200).json({
+          data: categories,
           totalItems: totalCount,
-          itemsPerPage: limit,
-        },
-      });
+        });
+      } else {
+        return res.status(200).json({
+          data: categories,
+          pagination: {
+            currentPage: page,
+            totalPages: Math.ceil(totalCount / limit),
+            totalItems: totalCount,
+            itemsPerPage: limit,
+          },
+        });
+      }
     } catch (error: unknown) {
       const message =
         error instanceof Error ? error.message : "Unknown error occurred";
