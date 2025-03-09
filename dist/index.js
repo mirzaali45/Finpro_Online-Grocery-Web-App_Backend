@@ -28,6 +28,9 @@ const reports_store_router_1 = require("./routers/reports-store.router");
 const reports_superadmin_router_1 = require("./routers/reports-superadmin.router");
 const revenue_store_router_1 = require("./routers/revenue-store.router");
 const revenue_superadmin_router_1 = require("./routers/revenue-superadmin.router");
+const store_orderManagements_router_1 = require("./routers/store-orderManagements.router");
+const super_orderManagements_router_1 = require("./routers/super-orderManagements.router");
+const getstore_router_1 = require("./routers/getstore.router");
 const PORT = 8000;
 const base_url_fe = process.env.BASE_URL_FE;
 const app = (0, express_1.default)();
@@ -59,6 +62,9 @@ const reportRouter = new reports_store_router_1.ReportsRouter();
 const reportSuperAdminRouter = new reports_superadmin_router_1.ReportSuperAdminRouter();
 const revenueStoreRouter = new revenue_store_router_1.RevenueStoreRouter();
 const revenueSuperRouter = new revenue_superadmin_router_1.RevenueSuperAdminRouter();
+const superordermanagementsRouter = new super_orderManagements_router_1.SuperordermanagementsRouter();
+const storeordermanagementsRouter = new store_orderManagements_router_1.StoreordermanagementsRouter();
+const storecustomerRouter = new getstore_router_1.StoreCustomerRouter();
 app.use("/api/auth", authRouter.getRouter()); // sasa
 app.use("/api/customer", customerRouter.getRouter()); // sasa
 app.use("/api/super-admin", superAdminRouter.getRouter()); // zaki
@@ -79,6 +85,9 @@ app.use("/api/reports/", reportRouter.getRouter());
 app.use("/api/reports-superadmin", reportSuperAdminRouter.getRouter());
 app.use("/api/revenueorder/", revenueStoreRouter.getRouter());
 app.use("/api/revenue-superadmin", revenueSuperRouter.getRouter());
+app.use("/api/super-ordermanagements", superordermanagementsRouter.getRouter());
+app.use("/api/store-ordermanagements", storeordermanagementsRouter.getRouter());
+app.use("/api/getstore", storecustomerRouter.getRouter());
 app.get("/api", (req, res) => {
     res.send("Welcome to the API!");
 });

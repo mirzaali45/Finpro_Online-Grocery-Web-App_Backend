@@ -25,7 +25,7 @@ export class OrdersRouter {
     // Get orders with optional filters (admin route)
     this.router.get(
       "/",
-      this.authMiddleware.verifyToken.bind(this.authMiddleware),
+      this.authMiddleware.verifyToken,
       this.ordersController.getOrders.bind(this.ordersController)
     );
 
@@ -42,12 +42,22 @@ export class OrdersRouter {
       this.authMiddleware.verifyToken.bind(this.authMiddleware),
       this.ordersController.deleteMyOrder.bind(this.ordersController)
     );
+    this.router.get(
+      "/Query",
+      this.authMiddleware.verifyToken.bind(this.authMiddleware),
+      this.ordersController.QueryOrders.bind(this.ordersController)
+    );
 
     // Update order total price
     this.router.put(
       "/:order_id",
       this.authMiddleware.verifyToken.bind(this.authMiddleware),
       this.ordersController.updateOrder.bind(this.ordersController)
+    );
+    this.router.post(
+      "/confirm",
+      this.authMiddleware.verifyToken.bind(this.authMiddleware),
+      this.ordersController.confirmOrder.bind(this.ordersController)
     );
   }
 

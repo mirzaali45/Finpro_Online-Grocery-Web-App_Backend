@@ -21,7 +21,7 @@ class DiscountRouter {
         this.router.get("/:id", this.discountController.getDiscountById);
         this.router.post("/create", this.authMiddleware.verifyToken, this.authMiddleware.checkStrAdmin, cloudinary_1.uploadDiscountImage.single("thumbnail"), this.discountController.createDiscount);
         // Update discount route
-        this.router.put("/:id", this.authMiddleware.verifyToken, this.authMiddleware.checkStrAdmin, this.discountController.updateDiscount);
+        this.router.put("/:id", this.authMiddleware.verifyToken, this.authMiddleware.checkStrAdmin, cloudinary_1.uploadDiscountImage.single("thumbnail"), this.discountController.updateDiscount);
         // Delete discount route
         this.router.delete("/:id", this.authMiddleware.verifyToken, this.authMiddleware.checkStrAdmin, this.discountController.deleteDiscount);
         // Discount application routes
