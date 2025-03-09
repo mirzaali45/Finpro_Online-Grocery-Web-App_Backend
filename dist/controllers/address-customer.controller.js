@@ -64,6 +64,11 @@ class AddressCustomerController {
                 if (!address_name || !address || !city || !province) {
                     return res.status(400).json({ error: "Please fill in all required fields." });
                 }
+                const addressCount = yield prisma.address.count({
+                    where: { user_id: req.user.id },
+                });
+                // Jika belum ada alamat, set is_primary: true, jika sudah ada, set is_primary: false
+                const isFirstAddress = addressCount === 0;
                 const newAddress = yield prisma.address.create({
                     data: {
                         user_id: req.user.id,
@@ -77,7 +82,7 @@ class AddressCustomerController {
                         postcode: postcode || null,
                         latitude: latitude ? Number(latitude) : 0,
                         longitude: longitude ? Number(longitude) : 0,
-                        is_primary: is_primary !== null && is_primary !== void 0 ? is_primary : false,
+                        is_primary: isFirstAddress, // Hanya true jika ini alamat pertama
                     },
                 });
                 return res.status(201).json({
