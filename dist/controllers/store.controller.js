@@ -67,45 +67,76 @@ class StoreController {
     getStores(req, res) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
+                // Check if we want all records
+                const getAllRecords = req.query.getAll === "true";
                 // Extract pagination parameters from query
                 const page = Number(req.query.page) || 1;
-                const limit = Number(req.query.limit) || 10;
-                const skip = (page - 1) * limit;
-                // Get total count of stores
-                const totalStores = yield prisma.store.count();
-                // Get paginated stores
-                const stores = yield prisma.store.findMany({
-                    include: {
-                        User: {
-                            select: {
-                                email: true,
-                                username: true,
-                                phone: true,
+                const limitValue = Number(req.query.limit) || 10;
+                if (getAllRecords) {
+                    // Get all stores without pagination
+                    const stores = yield prisma.store.findMany({
+                        include: {
+                            User: {
+                                select: {
+                                    email: true,
+                                    username: true,
+                                    phone: true,
+                                },
                             },
+                            Product: true,
+                            Inventory: true,
                         },
-                        Product: true,
-                        Inventory: true,
-                    },
-                    skip,
-                    take: limit,
-                });
-                // Calculate pagination metadata
-                const totalPages = Math.ceil(totalStores / limit);
-                const hasNextPage = page < totalPages;
-                const hasPrevPage = page > 1;
-                // Return paginated response
-                return res.status(200).json({
-                    status: "success",
-                    data: stores,
-                    pagination: {
-                        total: totalStores,
-                        page,
-                        limit,
-                        totalPages,
-                        hasNextPage,
-                        hasPrevPage,
-                    },
-                });
+                    });
+                    // Get total count
+                    const totalStores = stores.length;
+                    // Return response with minimal pagination info
+                    return res.status(200).json({
+                        status: "success",
+                        data: stores,
+                        pagination: {
+                            total: totalStores,
+                        },
+                    });
+                }
+                else {
+                    // Use pagination
+                    const skip = (page - 1) * limitValue;
+                    // Get total count of stores
+                    const totalStores = yield prisma.store.count();
+                    // Get paginated stores
+                    const stores = yield prisma.store.findMany({
+                        include: {
+                            User: {
+                                select: {
+                                    email: true,
+                                    username: true,
+                                    phone: true,
+                                },
+                            },
+                            Product: true,
+                            Inventory: true,
+                        },
+                        skip,
+                        take: limitValue,
+                    });
+                    // Calculate pagination metadata
+                    const totalPages = Math.ceil(totalStores / limitValue);
+                    const hasNextPage = page < totalPages;
+                    const hasPrevPage = page > 1;
+                    // Return paginated response
+                    return res.status(200).json({
+                        status: "success",
+                        data: stores,
+                        pagination: {
+                            total: totalStores,
+                            page,
+                            limit: limitValue,
+                            totalPages,
+                            hasNextPage,
+                            hasPrevPage,
+                        },
+                    });
+                }
             }
             catch (error) {
                 const message = error instanceof Error ? error.message : "Unknown error occurred";
