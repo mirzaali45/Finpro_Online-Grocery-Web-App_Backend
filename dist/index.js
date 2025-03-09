@@ -30,7 +30,6 @@ const revenue_store_router_1 = require("./routers/revenue-store.router");
 const revenue_superadmin_router_1 = require("./routers/revenue-superadmin.router");
 const store_orderManagements_router_1 = require("./routers/store-orderManagements.router");
 const super_orderManagements_router_1 = require("./routers/super-orderManagements.router");
-
 const getstore_router_1 = require("./routers/getstore.router");
 const PORT = 8000;
 const base_url_fe = process.env.BASE_URL_FE;
@@ -63,7 +62,6 @@ const reportRouter = new reports_store_router_1.ReportsRouter();
 const reportSuperAdminRouter = new reports_superadmin_router_1.ReportSuperAdminRouter();
 const revenueStoreRouter = new revenue_store_router_1.RevenueStoreRouter();
 const revenueSuperRouter = new revenue_superadmin_router_1.RevenueSuperAdminRouter();
-
 const superordermanagementsRouter = new super_orderManagements_router_1.SuperordermanagementsRouter();
 const storeordermanagementsRouter = new store_orderManagements_router_1.StoreordermanagementsRouter();
 

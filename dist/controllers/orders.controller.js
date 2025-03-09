@@ -520,7 +520,6 @@ class OrdersController {
             }
         });
     }
-
     QueryOrders(req, res) {
         return __awaiter(this, void 0, void 0, function* () {
             var _a;
@@ -569,7 +568,6 @@ class OrdersController {
             }
         });
     }
-
     updateOrder(req, res) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
@@ -615,7 +613,6 @@ class OrdersController {
             }
         });
     }
-
     confirmOrder(req, res) {
         return __awaiter(this, void 0, void 0, function* () {
             var _a, _b, _c;
@@ -758,7 +755,6 @@ class OrdersController {
             }
         });
     }
-
 }
 exports.OrdersController = OrdersController;
 exports.ordersController = new OrdersController();

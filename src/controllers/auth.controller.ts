@@ -239,6 +239,7 @@ export class AuthController {
               },
             });
 
+
             // **Langkah 2: Buat voucher unik untuk customer baru**
             const userVoucherCode = `VOUCHER-${generateReferralCode(8)}`;
             const userVoucher = await prisma.voucher.create({
@@ -264,7 +265,6 @@ export class AuthController {
                 ),
               },
             });
-
             // **Langkah 4: Simpan referral ke database**
             await prisma.referral.create({
               data: {

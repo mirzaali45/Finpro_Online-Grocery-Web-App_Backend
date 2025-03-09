@@ -476,7 +476,6 @@ class AuthController {
                 if (!existingUser) {
                     return res.status(400).json({ message: "User not found" });
                 }
-
                 yield prisma.user.update({
                     where: { user_id: userId },
                     data: {
