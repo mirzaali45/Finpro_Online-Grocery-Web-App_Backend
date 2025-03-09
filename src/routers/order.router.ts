@@ -25,7 +25,7 @@ export class OrdersRouter {
     // Get orders with optional filters (admin route)
     this.router.get(
       "/",
-      this.authMiddleware.verifyToken.bind(this.authMiddleware),
+      this.authMiddleware.verifyToken,
       this.ordersController.getOrders.bind(this.ordersController)
     );
 
@@ -53,6 +53,11 @@ export class OrdersRouter {
       "/:order_id",
       this.authMiddleware.verifyToken.bind(this.authMiddleware),
       this.ordersController.updateOrder.bind(this.ordersController)
+    );
+    this.router.post(
+      "/confirm",
+      this.authMiddleware.verifyToken.bind(this.authMiddleware),
+      this.ordersController.confirmOrder.bind(this.ordersController)
     );
   }
 

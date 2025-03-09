@@ -5,6 +5,7 @@ import {
   OrderStatus,
 } from "../../prisma/generated/client";
 import { responseError } from "../helpers/responseError";
+import { verify } from "jsonwebtoken";
 
 let prisma = new PrismaClient();
 if (process.env.NODE_ENV === "production") {
@@ -131,7 +132,6 @@ export class OrdersController {
         responseError(res, "Keranjang belanja kosong.");
         return;
       }
-
 
       // Check if all products are from the same store
       const storeIds = new Set(cartItems.map((item) => item.product.store_id));
@@ -605,42 +605,45 @@ export class OrdersController {
   }
 
   async QueryOrders(req: Request, res: Response): Promise<void> {
-    const { order_id, order_date, order_status } = req.query;
+    const { order_date, order_id } = req.query;
+    const userId = req.user?.id; // Mengambil user_id dari authenticated token yang ada di req.user
+
+    if (!userId) {
+      res.status(400).json({ msg: "User not authenticated" });
+      return;
+    }
 
     try {
-      const whereConditions: any = {};
+      const whereConditions: any = {
+        user_id: userId, // Filter berdasarkan user_id yang ada di token
+      };
+
+      // Filter berdasarkan order_date jika diberikan
+      if (order_date) {
+        const startOfDay = new Date(order_date as string);
+        startOfDay.setHours(0, 0, 0, 0); // Menyaring data pada waktu 00:00:00
+        const endOfDay = new Date(startOfDay);
+        endOfDay.setDate(startOfDay.getDate() + 1); // Memastikan hanya satu hari yang tercakup
+
+        whereConditions.created_at = {
+          gte: startOfDay, // Pesanan yang lebih besar atau sama dengan tanggal mulai
+          lt: endOfDay, // Pesanan yang lebih kecil dari tanggal akhir
+        };
+      }
 
       // Filter berdasarkan order_id jika diberikan
       if (order_id) {
         whereConditions.order_id = parseInt(order_id as string);
       }
 
-      // Filter berdasarkan order_date jika diberikan
-      if (order_date) {
-        const startOfDay = new Date(order_date as string);
-        startOfDay.setHours(0, 0, 0, 0); // Set waktu ke 00:00:00 agar menyaring pada hari yang tepat
-        const endOfDay = new Date(startOfDay);
-        endOfDay.setDate(startOfDay.getDate() + 1); // Set waktu ke hari berikutnya untuk memastikan menyaring seluruh hari
-
-        whereConditions.created_at = {
-          gte: startOfDay,
-          lt: endOfDay,
-        };
-      }
-
-      // Filter berdasarkan order_status jika diberikan
-      if (order_status) {
-        whereConditions.order_status = order_status as string;
-      }
-
-      // Menjalankan query untuk mendapatkan pesanan sesuai filter
+      // Query untuk mengambil data pesanan yang sesuai dengan filter
       const orders = await prisma.order.findMany({
         where: whereConditions,
         include: {
-          user: true, // Menyertakan informasi user
-          store: true, // Menyertakan informasi store
-          OrderItem: true, // Menyertakan item pesanan
-          Shipping: true, // Menyertakan informasi pengiriman
+          user: true, // Termasuk data pengguna
+          store: true, // Termasuk data toko
+          OrderItem: true, // Termasuk data item pesanan
+          Shipping: true, // Termasuk data pengiriman
         },
       });
 
@@ -652,6 +655,7 @@ export class OrdersController {
       return;
     }
   }
+
   async updateOrder(req: Request, res: Response): Promise<void> {
     try {
       console.log("updateOrder called with params:", req.params);
@@ -701,4 +705,165 @@ export class OrdersController {
       responseError(res, error.message);
     }
   }
+
+  async confirmOrder(req: Request, res: Response): Promise<void> {
+    const { order_id } = req.body; // order_id yang diberikan oleh pengguna
+    const userId = req.user?.id; // Mengambil user_id dari authenticated token
+
+    // Cek jika user_id tidak ada (ini berarti token tidak valid atau tidak ada)
+    if (!userId) {
+      res.status(403).json({ msg: "User is not authenticated" });
+      return;
+    }
+
+    // Pastikan order_id adalah tipe integer
+    const orderIdInt = parseInt(order_id, 10); // Mengonversi order_id menjadi integer
+
+    // Jika order_id tidak valid, kirimkan error
+    if (isNaN(orderIdInt)) {
+      res.status(400).json({ msg: "Invalid order_id" });
+      return;
+    }
+
+    try {
+      // Mencari pesanan berdasarkan order_id dan user_id
+      const order = await prisma.order.findUnique({
+        where: { order_id: orderIdInt },
+        include: {
+          Shipping: true, // Menyertakan relasi Shipping
+        },
+      });
+
+      // Jika pesanan tidak ditemukan
+      if (!order) {
+        res.status(404).json({ msg: "Order not found" });
+        return;
+      }
+
+      // Cek apakah user_id yang ada di pesanan cocok dengan user_id dari token
+      if (order.user_id !== userId) {
+        res
+          .status(403)
+          .json({ msg: "You are not authorized to confirm this order" });
+        return;
+      }
+
+      // Cek apakah status order sudah 'completed'
+      if (order.order_status !== "completed") {
+        res
+          .status(400)
+          .json({ msg: "Order must be completed before confirming delivery" });
+        return;
+      }
+
+      // Cek status pengiriman apakah sudah 'shipped'
+      const shippingStatus = order.Shipping?.[0]?.shipping_status;
+
+      // Jika status pengiriman tidak 'shipped'
+      if (shippingStatus !== "shipped") {
+        res.status(400).json({ msg: "Order is not shipped yet" });
+        return;
+      }
+
+      // Memperbarui status pengiriman menjadi 'delivered'
+      const updatedShipping = await prisma.shipping.update({
+        where: { shipping_id: order.Shipping[0].shipping_id }, // Pastikan menggunakan shipping_id yang unik
+        data: {
+          shipping_status: "delivered", // Update status pengiriman menjadi delivered
+          updated_at: new Date(),
+        },
+      });
+
+      // Memperbarui status pesanan menjadi 'completed' setelah konfirmasi
+      const updatedOrder = await prisma.order.update({
+        where: { order_id: orderIdInt },
+        data: {
+          order_status: "completed", // Memastikan order status tetap 'completed'
+          updated_at: new Date(),
+        },
+      });
+
+      // Jika berhasil memperbarui status pesanan dan pengiriman, kirimkan pesan sukses
+      res.json({
+        msg: "Order confirmed and shipping status updated to delivered",
+        order: updatedOrder,
+      });
+      return;
+    } catch (error) {
+      // Log error jika ada kesalahan dalam proses
+      console.error("Error:", error);
+      res.status(500).json({ msg: "Internal server error" });
+      return;
+    }
+  }
+  async autoConfirmOrder(): Promise<void> {
+    try {
+      // Mencari pesanan yang sudah dikirim dan belum dikonfirmasi dalam 2 hari
+      const ordersToConfirm = await prisma.order.findMany({
+        where: {
+          order_status: "shipped", // Status pesanan harus 'shipped'
+          updated_at: {
+            lt: new Date(new Date().getTime() - 2 * 24 * 60 * 60 * 1000), // 2x24 jam
+          },
+        },
+        include: {
+          Shipping: true, // Menyertakan relasi Shipping untuk mendapatkan shipping_status
+        },
+      });
+
+      // Memperbarui status pesanan secara otomatis untuk setiap order
+      for (let order of ordersToConfirm) {
+        // Cek apakah user_id dari pesanan cocok dengan user yang seharusnya
+        const userId = order.user_id;
+
+        if (!userId) {
+          console.log(`Skipping order ${order.order_id}, user_id is missing.`);
+          continue;
+        }
+
+        // Pastikan pesanan sudah 'completed' sebelum mengonfirmasi pengiriman
+        if (order.order_status !== "completed") {
+          console.log(`Order ${order.order_id} is not completed yet.`);
+          continue;
+        }
+
+        // Periksa status pengiriman apakah sudah 'shipped'
+        const shippingStatus = order.Shipping?.[0]?.shipping_status;
+
+        if (shippingStatus !== "shipped") {
+          console.log(
+            `Order ${order.order_id} shipping is not in shipped status.`
+          );
+          continue;
+        }
+
+        // Perbarui status pengiriman menjadi 'delivered'
+        await prisma.shipping.update({
+          where: { shipping_id: order.Shipping[0].shipping_id }, // Menggunakan shipping_id untuk update status pengiriman
+          data: {
+            shipping_status: "delivered", // Mengubah status pengiriman menjadi 'delivered'
+            updated_at: new Date(),
+          },
+        });
+
+        // Memperbarui status pesanan menjadi 'completed' setelah konfirmasi pengiriman
+        await prisma.order.update({
+          where: { order_id: order.order_id },
+          data: {
+            order_status: "completed", // Status pesanan tetap 'completed'
+            updated_at: new Date(),
+          },
+        });
+
+        console.log(
+          `Auto-confirmed order ${order.order_id}, shipping status updated to 'delivered'.`
+        );
+      }
+
+      console.log(`Auto-confirmed ${ordersToConfirm.length} orders.`);
+    } catch (error) {
+      console.error("Error in auto-confirming orders:", error);
+    }
+  }
 }
+export const ordersController = new OrdersController();

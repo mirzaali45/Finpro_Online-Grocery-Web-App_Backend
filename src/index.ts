@@ -23,6 +23,8 @@ import { ReportsRouter } from "./routers/reports-store.router";
 import { ReportSuperAdminRouter } from "./routers/reports-superadmin.router";
 import { RevenueStoreRouter } from "./routers/revenue-store.router";
 import { RevenueSuperAdminRouter } from "./routers/revenue-superadmin.router";
+import { StoreordermanagementsRouter } from "./routers/store-orderManagements.router";
+import { SuperordermanagementsRouter } from "./routers/super-orderManagements.router";
 
 const PORT: number = 8000;
 const base_url_fe = process.env.BASE_URL_FE;
@@ -60,6 +62,8 @@ const reportRouter = new ReportsRouter()
 const reportSuperAdminRouter = new ReportSuperAdminRouter();
 const revenueStoreRouter = new RevenueStoreRouter()
 const revenueSuperRouter = new RevenueSuperAdminRouter()
+const superordermanagementsRouter = new SuperordermanagementsRouter()
+const storeordermanagementsRouter = new StoreordermanagementsRouter()
 
 app.use("/api/auth", authRouter.getRouter()); // sasa
 app.use("/api/customer", customerRouter.getRouter()) // sasa
@@ -81,6 +85,8 @@ app.use("/api/reports/", reportRouter.getRouter())
 app.use("/api/reports-superadmin", reportSuperAdminRouter.getRouter());
 app.use("/api/revenueorder/", revenueStoreRouter.getRouter())
 app.use("/api/revenue-superadmin",revenueSuperRouter.getRouter())
+app.use("/api/super-ordermanagements", superordermanagementsRouter.getRouter())
+app.use("/api/store-ordermanagements", storeordermanagementsRouter.getRouter())
 
 
 app.get("/api", (req, res) => {
