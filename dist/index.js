@@ -88,7 +88,6 @@ app.use("/api/revenueorder/", revenueStoreRouter.getRouter());
 app.use("/api/revenue-superadmin", revenueSuperRouter.getRouter());
 app.use("/api/super-ordermanagements", superordermanagementsRouter.getRouter());
 app.use("/api/store-ordermanagements", storeordermanagementsRouter.getRouter());
-
 app.use("/api/getstore", storecustomerRouter.getRouter());
 app.get("/api", (req, res) => {
     res.send("Welcome to the API!");
