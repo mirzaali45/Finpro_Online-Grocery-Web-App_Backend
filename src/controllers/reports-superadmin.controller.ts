@@ -82,7 +82,7 @@ export class ReportSuperAdmin {
         // We need to get all the inventory items to check the qty
         const allInventoryItems = await prisma.inventory.findMany({
           where: inventoryFilter,
-          select: { qty: true },
+          select: { qty: true , total_qty:true },
         });
 
         // Filter for low stock and count
@@ -162,7 +162,7 @@ export class ReportSuperAdmin {
         0
       );
       const totalValue = filteredSummaryInventory.reduce(
-        (sum, item) => sum + item.qty * item.product.price,
+        (sum, item) => sum + (item.qty + item.total_qty) * item.product.price,
         0
       );
 
@@ -240,7 +240,7 @@ export class ReportSuperAdmin {
             },
             current_quantity: item.qty,
             total_quantity: item.total_qty,
-            stockValue: item.qty * item.product.price,
+            stockValue: (item.total_qty + item.qty) * item.product.price,
             lowStock: item.qty <= threshold,
           })),
           inventoryCount: totalInventoryCount, // Total count of inventory items

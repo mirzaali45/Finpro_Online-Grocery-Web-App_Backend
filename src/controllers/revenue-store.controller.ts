@@ -74,18 +74,31 @@ export class RevenueStoreController {
         },
       });
 
+      // Transform orders for frontend use
+      const formattedOrders = orders.map((order) => ({
+        id: order.order_id,
+        order_id: `ORD-${order.order_id.toString().padStart(6, "0")}`,
+        customer_name:
+          `${order.user.first_name || ""} ${
+            order.user.last_name || ""
+          }`.trim() || order.user.email,
+        order_date: order.updated_at.toISOString(),
+        status: order.order_status,
+        total_price: Number(order.total_price),
+      }));
+
       const totalRevenue = orders
         .filter(
           (order) =>
             order.order_status === "shipped" ||
             order.order_status === "completed"
         )
-        .reduce((sum, order) => sum + order.total_price, 0);
+        .reduce((sum, order) => sum + Number(order.total_price), 0);
 
       return res.status(200).json({
         totalOrders: orders.length,
         totalRevenue,
-        orders,
+        orders: formattedOrders,
       });
     } catch (error: unknown) {
       const message =
@@ -131,9 +144,9 @@ export class RevenueStoreController {
 
       // Add year condition for monthly period
       if (period === "monthly") {
-        whereConditions.updated_at = {
-          gte: new Date(`${currentYear}-01-01`),
-          lt: new Date(`${currentYear + 1}-01-01`),
+        whereConditions.created_at = {
+          gte: new Date(`${currentYear}-01-01T00:00:00.000Z`),
+          lt: new Date(`${currentYear + 1}-01-01T00:00:00.000Z`),
         };
       }
 
@@ -145,66 +158,57 @@ export class RevenueStoreController {
           endDateTime.setHours(23, 59, 59, 999); // Set to end of day
         }
 
-        whereConditions.updated_at = {
-          ...(whereConditions.updated_at || {}),
+        whereConditions.created_at = {
+          ...(whereConditions.created_at || {}),
           ...(startDate ? { gte: new Date(startDate as string) } : {}),
           ...(endDate ? { lte: endDateTime } : {}),
         };
       }
 
+      // Get all relevant orders
+      const orders = await prisma.order.findMany({
+        where: whereConditions,
+        select: {
+          order_id: true,
+          total_price: true,
+          created_at: true,
+        },
+      });
+
       let revenueData;
 
       if (period === "monthly") {
-        // Monthly revenue aggregation
-        const results = await prisma.order.groupBy({
-          by: ["updated_at"],
-          where: whereConditions,
-          _sum: {
-            total_price: true,
-          },
-        });
-
-        // Process results to get monthly data
-        const monthlyData = new Array(12).fill(0).map((_, i) => ({
+        // Initialize array with all 12 months
+        const monthlyData = Array.from({ length: 12 }, (_, i) => ({
           month: i + 1,
           total_revenue: 0,
         }));
 
-        results.forEach((result) => {
-          const month = new Date(result.updated_at).getMonth();
-          if (result._sum.total_price) {
-            monthlyData[month].total_revenue += Number(result._sum.total_price);
-          }
+        // Process orders into monthly buckets
+        orders.forEach((order) => {
+          const month = new Date(order.created_at).getMonth(); // 0-based index
+          monthlyData[month].total_revenue += Number(order.total_price);
         });
 
-        revenueData = monthlyData.filter((item) => item.total_revenue > 0);
+        revenueData = monthlyData;
       } else if (period === "yearly") {
-        // Yearly revenue aggregation
-        const results = await prisma.order.groupBy({
-          by: ["updated_at"],
-          where: whereConditions,
-          _sum: {
-            total_price: true,
-          },
+        // Create a map to aggregate by year
+        const yearlyMap = new Map<number, number>();
+
+        // Process orders into yearly buckets
+        orders.forEach((order) => {
+          const year = new Date(order.created_at).getFullYear();
+          const currentAmount = yearlyMap.get(year) || 0;
+          yearlyMap.set(year, currentAmount + Number(order.total_price));
         });
 
-        // Process results to get yearly data
-        const yearlyMap = new Map();
+        // If no data exists for current year in yearly view, add it with zero
+        if (!yearlyMap.has(currentYear)) {
+          yearlyMap.set(currentYear, 0);
+        }
 
-        results.forEach((result) => {
-          const year = new Date(result.updated_at).getFullYear();
-          if (!yearlyMap.has(year)) {
-            yearlyMap.set(year, 0);
-          }
-          if (result._sum.total_price) {
-            yearlyMap.set(
-              year,
-              yearlyMap.get(year) + Number(result._sum.total_price)
-            );
-          }
-        });
-
-        revenueData = Array.from(yearlyMap.entries())
+        // Convert map to array of objects
+        revenueData = Array.from(yearlyMap)
           .map(([year, total_revenue]) => ({
             year,
             total_revenue,
@@ -222,6 +226,7 @@ export class RevenueStoreController {
         revenue: revenueData,
       });
     } catch (error: unknown) {
+      console.error("Revenue error:", error);
       const message =
         error instanceof Error ? error.message : "Unknown error occurred";
       return res.status(500).json({ error: message });

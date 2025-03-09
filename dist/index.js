@@ -64,6 +64,10 @@ const revenueStoreRouter = new revenue_store_router_1.RevenueStoreRouter();
 const revenueSuperRouter = new revenue_superadmin_router_1.RevenueSuperAdminRouter();
 const superordermanagementsRouter = new super_orderManagements_router_1.SuperordermanagementsRouter();
 const storeordermanagementsRouter = new store_orderManagements_router_1.StoreordermanagementsRouter();
+<<<<<<< HEAD
+=======
+
+>>>>>>> 339f33b2407068890a33c8530e81c0e52805c8d1
 const storecustomerRouter = new getstore_router_1.StoreCustomerRouter();
 app.use("/api/auth", authRouter.getRouter()); // sasa
 app.use("/api/customer", customerRouter.getRouter()); // sasa
@@ -87,6 +91,10 @@ app.use("/api/revenueorder/", revenueStoreRouter.getRouter());
 app.use("/api/revenue-superadmin", revenueSuperRouter.getRouter());
 app.use("/api/super-ordermanagements", superordermanagementsRouter.getRouter());
 app.use("/api/store-ordermanagements", storeordermanagementsRouter.getRouter());
+<<<<<<< HEAD
+=======
+
+>>>>>>> 339f33b2407068890a33c8530e81c0e52805c8d1
 app.use("/api/getstore", storecustomerRouter.getRouter());
 app.get("/api", (req, res) => {
     res.send("Welcome to the API!");
