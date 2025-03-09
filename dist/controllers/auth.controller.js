@@ -161,7 +161,7 @@ class AuthController {
                 if (!req.user) {
                     return res.status(401).json({ error: "Unauthorized" });
                 }
-                const { username, firstName, lastName, phone, password, confirmPassword, referralCode } = req.body;
+                const { username, firstName, lastName, phone, password, confirmPassword, referralCode, } = req.body;
                 if (password !== confirmPassword) {
                     return res.status(400).json({ message: "Passwords do not match" });
                 }
@@ -170,7 +170,9 @@ class AuthController {
                     where: { user_id: userId },
                 });
                 if (!user || user.verified) {
-                    return res.status(400).json({ message: "Invalid verification request" });
+                    return res
+                        .status(400)
+                        .json({ message: "Invalid verification request" });
                 }
                 const hashedPassword = yield (0, hashpassword_1.hashPass)(password);
                 const generatedReferralCode = user.referral_code || (0, reffcode_1.generateReferralCode)(8);
@@ -247,7 +249,9 @@ class AuthController {
             }
             catch (error) {
                 console.error(error);
-                return res.status(500).json({ error: "Could not reach the server database" });
+                return res
+                    .status(500)
+                    .json({ error: "Could not reach the server database" });
             }
         });
     }
@@ -466,12 +470,11 @@ class AuthController {
                     return res.status(400).json({ message: "Invalid or expired token" });
                 }
                 const { userId, newEmail } = decoded;
-                const existingUser = yield prisma.user.findUnique({ where: { user_id: userId } });
+                const existingUser = yield prisma.user.findUnique({
+                    where: { user_id: userId },
+                });
                 if (!existingUser) {
                     return res.status(400).json({ message: "User not found" });
-                }
-                if (existingUser.verify_token !== token) {
-                    return res.status(400).json({ message: "Invalid or expired token" });
                 }
                 yield prisma.user.update({
                     where: { user_id: userId },

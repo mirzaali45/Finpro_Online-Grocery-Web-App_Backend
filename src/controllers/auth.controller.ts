@@ -1,7 +1,11 @@
 import { Request, Response } from "express";
 import { PrismaClient, Type } from "../../prisma/generated/client";
 import { tokenService } from "../helpers/createToken";
-import { sendResetPassEmail, sendReverificationEmail, sendVerificationEmail } from "../services/mailer";
+import {
+  sendResetPassEmail,
+  sendReverificationEmail,
+  sendVerificationEmail,
+} from "../services/mailer";
 import { hashPass } from "../helpers/hashpassword";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
@@ -161,116 +165,131 @@ export class AuthController {
 
   async verifyAccount(req: Request, res: Response) {
     try {
-        if (!req.user) {
-            return res.status(401).json({ error: "Unauthorized" });
-        }
+      if (!req.user) {
+        return res.status(401).json({ error: "Unauthorized" });
+      }
 
-        const { username, firstName, lastName, phone, password, confirmPassword, referralCode } = req.body;
+      const {
+        username,
+        firstName,
+        lastName,
+        phone,
+        password,
+        confirmPassword,
+        referralCode,
+      } = req.body;
 
-        if (password !== confirmPassword) {
-            return res.status(400).json({ message: "Passwords do not match" });
-        }
+      if (password !== confirmPassword) {
+        return res.status(400).json({ message: "Passwords do not match" });
+      }
 
-        const userId = req.user.id;
+      const userId = req.user.id;
 
-        const user = await prisma.user.findUnique({
-            where: { user_id: userId },
+      const user = await prisma.user.findUnique({
+        where: { user_id: userId },
+      });
+
+      if (!user || user.verified) {
+        return res
+          .status(400)
+          .json({ message: "Invalid verification request" });
+      }
+
+      const hashedPassword = await hashPass(password);
+      const generatedReferralCode =
+        user.referral_code || generateReferralCode(8);
+
+      await prisma.user.update({
+        where: { user_id: userId },
+        data: {
+          username,
+          first_name: firstName || null,
+          last_name: lastName || null,
+          phone,
+          password: hashedPassword,
+          verified: true,
+          verify_token: null,
+          referral_code: generatedReferralCode,
+        },
+      });
+
+      let referrer = null;
+
+      if (referralCode) {
+        referrer = await prisma.user.findFirst({
+          where: { referral_code: referralCode },
         });
 
-        if (!user || user.verified) {
-            return res.status(400).json({ message: "Invalid verification request" });
-        }
+        if (referrer && referrer.user_id !== userId) {
+          const existingReferral = await prisma.referral.findFirst({
+            where: { referrer_id: referrer.user_id, referred_id: userId },
+          });
 
-        const hashedPassword = await hashPass(password);
-        const generatedReferralCode = user.referral_code || generateReferralCode(8);
-
-        await prisma.user.update({
-            where: { user_id: userId },
-            data: {
-                username,
-                first_name: firstName || null,
-                last_name: lastName || null,
-                phone,
-                password: hashedPassword,
-                verified: true,
-                verify_token: null,
-                referral_code: generatedReferralCode,
-            },
-        });
-
-        let referrer = null;
-
-        if (referralCode) {
-            referrer = await prisma.user.findFirst({
-                where: { referral_code: referralCode },
+          if (!existingReferral) {
+            // **Langkah 1: Buat diskon baru**
+            const discount = await prisma.discount.create({
+              data: {
+                discount_code: `REF-${generateReferralCode(6)}`,
+                discount_type: "percentage",
+                discount_value: 10,
+                expires_at: new Date(
+                  new Date().setMonth(new Date().getMonth() + 1)
+                ),
+              },
             });
 
-            if (referrer && referrer.user_id !== userId) {
-                const existingReferral = await prisma.referral.findFirst({
-                    where: { referrer_id: referrer.user_id, referred_id: userId },
-                });
+            // **Langkah 2: Buat voucher unik untuk customer baru**
+            const userVoucherCode = `VOUCHER-${generateReferralCode(8)}`;
+            const userVoucher = await prisma.voucher.create({
+              data: {
+                user_id: userId,
+                discount_id: discount.discount_id,
+                voucher_code: userVoucherCode,
+                expires_at: new Date(
+                  new Date().setMonth(new Date().getMonth() + 1)
+                ),
+              },
+            });
 
-                if (!existingReferral) {
-                    // **Langkah 1: Buat diskon baru**
-                    const discount = await prisma.discount.create({
-                        data: {
-                            discount_code: `REF-${generateReferralCode(6)}`,
-                            discount_type: "percentage",
-                            discount_value: 10,
-                            expires_at: new Date(new Date().setMonth(new Date().getMonth() + 1)),
-                        },
-                    });
+            // **Langkah 3: Buat voucher unik untuk referrer**
+            const referrerVoucherCode = `VOUCHER-${generateReferralCode(8)}`;
+            const referrerVoucher = await prisma.voucher.create({
+              data: {
+                user_id: referrer.user_id,
+                discount_id: discount.discount_id,
+                voucher_code: referrerVoucherCode,
+                expires_at: new Date(
+                  new Date().setMonth(new Date().getMonth() + 1)
+                ),
+              },
+            });
 
-                    // **Langkah 2: Buat voucher unik untuk customer baru**
-                    const userVoucherCode = `VOUCHER-${generateReferralCode(8)}`;
-                    const userVoucher = await prisma.voucher.create({
-                        data: {
-                            user_id: userId,
-                            discount_id: discount.discount_id,
-                            voucher_code: userVoucherCode, 
-                            expires_at: new Date(new Date().setMonth(new Date().getMonth() + 1)),
-                        },
-                    });
-
-                    // **Langkah 3: Buat voucher unik untuk referrer**
-                    const referrerVoucherCode = `VOUCHER-${generateReferralCode(8)}`;
-                    const referrerVoucher = await prisma.voucher.create({
-                        data: {
-                            user_id: referrer.user_id,
-                            discount_id: discount.discount_id,
-                            voucher_code: referrerVoucherCode, 
-                            expires_at: new Date(new Date().setMonth(new Date().getMonth() + 1)),
-                        },
-                    });
-
-                    // **Langkah 4: Simpan referral ke database**
-                    await prisma.referral.create({
-                        data: {
-                            referrer_id: referrer.user_id,
-                            referred_id: userId,
-                            referral_code: referralCode,
-                            reward_id: referrerVoucher.voucher_id, // Simpan voucher ID untuk referrer
-                        },
-                    });
-                }
-            }
+            // **Langkah 4: Simpan referral ke database**
+            await prisma.referral.create({
+              data: {
+                referrer_id: referrer.user_id,
+                referred_id: userId,
+                referral_code: referralCode,
+                reward_id: referrerVoucher.voucher_id, // Simpan voucher ID untuk referrer
+              },
+            });
+          }
         }
+      }
 
-        return res.status(200).json({
-            status: "success",
-            message: "Email verified successfully",
-            role: user.role,
-            referralUsed: referrer ? referrer.username : null,
-        });
-
+      return res.status(200).json({
+        status: "success",
+        message: "Email verified successfully",
+        role: user.role,
+        referralUsed: referrer ? referrer.username : null,
+      });
     } catch (error) {
-        console.error(error);
-        return res.status(500).json({ error: "Could not reach the server database" });
+      console.error(error);
+      return res
+        .status(500)
+        .json({ error: "Could not reach the server database" });
     }
-}
-
-  
-  
+  }
 
   async resetPassword(req: Request, res: Response) {
     try {
@@ -351,8 +370,6 @@ export class AuthController {
       if (password !== confirmPassword) {
         return res.status(400).json({ message: "Passwords do not match" });
       }
-
-     
 
       const userId = req.user.id;
 
@@ -450,7 +467,7 @@ export class AuthController {
       return res.status(400).json({ error: "Invalid or expired token" });
     }
   }
-  
+
   async requestChangeEmail(req: Request, res: Response) {
     try {
       const userId = req.user?.id;
@@ -486,8 +503,6 @@ export class AuthController {
       // Kirim email verifikasi
       await sendReverificationEmail(newEmail, token);
 
-      
-
       return res.status(200).json({
         status: "success",
         message: "Verification email sent. Please check your inbox.",
@@ -504,27 +519,23 @@ export class AuthController {
       if (!token) {
         return res.status(400).json({ message: "Token is required" });
       }
-  
+
       let decoded;
       try {
         decoded = tokenService.verifyEmailChangeToken(token as string);
       } catch (error) {
         return res.status(400).json({ message: "Invalid or expired token" });
       }
-  
+
       const { userId, newEmail } = decoded;
-  
-      const existingUser = await prisma.user.findUnique({ where: { user_id: userId } });
+
+      const existingUser = await prisma.user.findUnique({
+        where: { user_id: userId },
+      });
       if (!existingUser) {
         return res.status(400).json({ message: "User not found" });
       }
 
-
-      if (existingUser.verify_token !== token) {
-        return res.status(400).json({ message: "Invalid or expired token" });
-    }
-  
-    
       await prisma.user.update({
         where: { user_id: userId },
         data: {
@@ -532,7 +543,7 @@ export class AuthController {
           verify_token: null,
         },
       });
-  
+
       return res.status(200).json({
         status: "success",
         message: "Email successfully changed",
@@ -542,9 +553,4 @@ export class AuthController {
       return res.status(500).json({ message: "Could not process request" });
     }
   }
-  
-  
-
-  
-
 }
