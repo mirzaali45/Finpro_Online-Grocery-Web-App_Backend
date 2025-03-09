@@ -6,6 +6,7 @@ import {
   sendReverificationEmail,
   sendVerificationEmail,
 } from "../services/mailer";
+
 import { hashPass } from "../helpers/hashpassword";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
@@ -543,7 +544,6 @@ export class AuthController {
           verify_token: null,
         },
       });
-
       return res.status(200).json({
         status: "success",
         message: "Email successfully changed",

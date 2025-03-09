@@ -65,6 +65,7 @@ const revenueStoreRouter = new RevenueStoreRouter()
 const revenueSuperRouter = new RevenueSuperAdminRouter()
 const superordermanagementsRouter = new SuperordermanagementsRouter()
 const storeordermanagementsRouter = new StoreordermanagementsRouter()
+
 const storecustomerRouter = new StoreCustomerRouter()
 
 app.use("/api/auth", authRouter.getRouter()); // sasa
@@ -89,6 +90,7 @@ app.use("/api/revenueorder/", revenueStoreRouter.getRouter())
 app.use("/api/revenue-superadmin",revenueSuperRouter.getRouter())
 app.use("/api/super-ordermanagements", superordermanagementsRouter.getRouter())
 app.use("/api/store-ordermanagements", storeordermanagementsRouter.getRouter())
+
 app.use("/api/getstore",storecustomerRouter.getRouter())
 
 
