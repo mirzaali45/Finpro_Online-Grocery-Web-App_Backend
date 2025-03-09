@@ -5,7 +5,6 @@ import {
   OrderStatus,
 } from "../../prisma/generated/client";
 import { responseError } from "../helpers/responseError";
-import { verify } from "jsonwebtoken";
 
 let prisma = new PrismaClient();
 if (process.env.NODE_ENV === "production") {
@@ -438,7 +437,6 @@ export class OrdersController {
       }
 
       // Check if order can be deleted (only if status is awaiting_payment)
-
       // Check if order can be deleted (only if status is awaiting_payment or pending)
       if (
         order.order_status !== OrderStatus.awaiting_payment &&
