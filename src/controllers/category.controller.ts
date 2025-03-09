@@ -33,7 +33,6 @@ export class CategoryController {
         category_name,
         description,
       };
-
       if (req.file) {
         try {
           const result = await uploadCategoryThumbnail(req.file.path);
@@ -45,7 +44,6 @@ export class CategoryController {
           });
         }
       }
-
       const category = await prisma.category.create({
         data: categoryData,
       });
