@@ -443,14 +443,12 @@ class PaymentsController {
                     const transactionData = yield checkMidtransStatus(order_id.toString());
                     console.log(`Got transaction status from Midtrans API: ${transactionData.transaction_status}`);
                     let newStatus;
-                    let newShippingStatus = null;
                     // Determine new order status based on Midtrans status
                     if (transactionData.transaction_status === "capture" ||
                         transactionData.transaction_status === "settlement") {
                         if (transactionData.fraud_status === "accept" ||
                             !transactionData.fraud_status) {
                             newStatus = client_1.OrderStatus.shipped;
-                            newShippingStatus = client_1.ShippingStatus.shipped;
                         }
                         else {
                             newStatus = client_1.OrderStatus.cancelled;
@@ -475,16 +473,6 @@ class PaymentsController {
                                 updated_at: new Date(),
                             },
                         });
-                        // Update shipping if needed
-                        if (newShippingStatus && order.Shipping.length > 0) {
-                            yield prisma.shipping.update({
-                                where: { shipping_id: order.Shipping[0].shipping_id },
-                                data: {
-                                    shipping_status: newShippingStatus,
-                                    updated_at: new Date(),
-                                },
-                            });
-                        }
                         res.status(200).json({
                             success: true,
                             message: "Payment status updated successfully",

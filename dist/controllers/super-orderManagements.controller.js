@@ -135,11 +135,11 @@ class SuperordermanagementsController {
                     return;
                 }
                 // Pastikan status order adalah 'completed' dan status pengiriman 'pending'
-                if (order.order_status !== "completed") {
+                if (!(order.order_status === "completed" || order.order_status === "shipped")) {
                     res
                         .status(400)
                         .json({
-                        message: "Order must be in 'completed' status to update shipping",
+                        message: "Order must be in 'completed' or 'shipped' status to update shipping",
                     });
                     return;
                 }
