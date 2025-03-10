@@ -38,7 +38,7 @@ export class OrdersRouter {
 
     // Delete/cancel the user's order
     this.router.delete(
-      "/my-orders/:order_id",
+      "/delete/:order_id",
       this.authMiddleware.verifyToken.bind(this.authMiddleware),
       this.ordersController.deleteMyOrder.bind(this.ordersController)
     );

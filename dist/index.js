@@ -64,7 +64,6 @@ const revenueStoreRouter = new revenue_store_router_1.RevenueStoreRouter();
 const revenueSuperRouter = new revenue_superadmin_router_1.RevenueSuperAdminRouter();
 const superordermanagementsRouter = new super_orderManagements_router_1.SuperordermanagementsRouter();
 const storeordermanagementsRouter = new store_orderManagements_router_1.StoreordermanagementsRouter();
-
 const storecustomerRouter = new getstore_router_1.StoreCustomerRouter();
 app.use("/api/auth", authRouter.getRouter()); // sasa
 app.use("/api/customer", customerRouter.getRouter()); // sasa

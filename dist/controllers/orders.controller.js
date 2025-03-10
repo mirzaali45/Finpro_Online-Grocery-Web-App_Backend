@@ -117,7 +117,7 @@ class OrdersController {
                 // Get cart items
                 const cartItems = yield prisma.cartItem.findMany({
                     where: { user_id: Number(user_id) },
-                    include: { product: { include: { store: true } } },
+                    include: { product: { include: { store: true, Discount: true } } },
                 });
                 if (cartItems.length === 0) {
                     (0, responseError_1.responseError)(res, "Keranjang belanja kosong.");
@@ -131,7 +131,20 @@ class OrdersController {
                 }
                 const storeId = cartItems[0].product.store_id;
                 // Calculate total price
-                const total_price = cartItems.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
+                const total_price = cartItems.reduce((sum, item) => {
+                    let price = item.product.price;
+                    // Cek jika ada diskon dan hitung harga setelah diskon
+                    if (item.product.Discount && item.product.Discount.length > 0) {
+                        const discount = item.product.Discount[0]; // Asumsi satu diskon per produk
+                        if (discount.discount_type === "percentage") {
+                            price = price - (price * discount.discount_value) / 100;
+                        }
+                        else if (discount.discount_type === "point") {
+                            price = price - discount.discount_value;
+                        }
+                    }
+                    return sum + price * item.quantity;
+                }, 0);
                 // Check inventories
                 const productIds = cartItems.map((item) => item.product_id);
                 const inventories = yield prisma.inventory.findMany({
@@ -244,6 +257,113 @@ class OrdersController {
             }
         });
     }
+    // async getMyOrders(req: Request, res: Response): Promise<void> {
+    //   try {
+    //     const user_id = req.user?.id;
+    //     const { status } = req.query as { status?: string };
+    //     // Validate user is authenticated
+    //     if (!user_id) {
+    //       responseError(res, "User tidak terautentikasi.");
+    //       return;
+    //     }
+    //     // Build query conditions
+    //     const where: any = {
+    //       user_id: Number(user_id),
+    //     };
+    //     // Add status filter if provided
+    //     if (
+    //       status &&
+    //       Object.values(OrderStatus).includes(status as OrderStatus)
+    //     ) {
+    //       where.order_status = status as OrderStatus;
+    //     }
+    //     // Get all orders for the authenticated user
+    //     const orders = await prisma.order.findMany({
+    //       where,
+    //       include: {
+    //         store: {
+    //           select: {
+    //             store_id: true,
+    //             store_name: true,
+    //             address: true,
+    //             city: true,
+    //             province: true,
+    //           },
+    //         },
+    //         OrderItem: {
+    //           include: {
+    //             product: {
+    //               include: {
+    //                 ProductImage: {
+    //                   take: 1, // Include just the first image
+    //                 },
+    //               },
+    //             },
+    //           },
+    //         },
+    //         Shipping: true,
+    //       },
+    //       orderBy: { created_at: "desc" },
+    //     });
+    //     if (orders.length === 0) {
+    //       res.status(200).json({
+    //         message: "Belum ada pesanan untuk akun Anda.",
+    //         data: [],
+    //       });
+    //       return;
+    //     }
+    //     // Format the response to be more client-friendly
+    //     const formattedOrders = orders.map((order) => {
+    //       // Calculate total items in the order
+    //       const totalItems = order.OrderItem.reduce(
+    //         (sum, item) => sum + item.qty,
+    //         0
+    //       );
+    //       // Format order items with essential details
+    //       const items = order.OrderItem.map((item) => ({
+    //         product_id: item.product_id,
+    //         name: item.product.name,
+    //         price: item.price,
+    //         quantity: item.qty,
+    //         total_price: item.total_price,
+    //         image:
+    //           item.product.ProductImage && item.product.ProductImage.length > 0
+    //             ? item.product.ProductImage[0].url
+    //             : null,
+    //       }));
+    //       return {
+    //         order_id: order.order_id,
+    //         order_date: order.created_at,
+    //         status: order.order_status,
+    //         total_price: order.total_price,
+    //         total_items: totalItems,
+    //         store: {
+    //           store_id: order.store.store_id,
+    //           store_name: order.store.store_name,
+    //           location: `${order.store.city}, ${order.store.province}`,
+    //         },
+    //         shipping:
+    //           order.Shipping.length > 0
+    //             ? {
+    //                 status: order.Shipping[0].shipping_status,
+    //                 address: order.Shipping[0].shipping_address,
+    //                 cost: order.Shipping[0].shipping_cost,
+    //               }
+    //             : null,
+    //         items: items,
+    //       };
+    //     });
+    //     res.status(200).json({
+    //       message: "Daftar pesanan berhasil dimuat.",
+    //       data: formattedOrders,
+    //     });
+    //     return;
+    //   } catch (error: any) {
+    //     console.error("getMyOrders error:", error);
+    //     responseError(res, error.message);
+    //     return;
+    //   }
+    // }
     getMyOrders(req, res) {
         return __awaiter(this, void 0, void 0, function* () {
             var _a;
@@ -284,6 +404,7 @@ class OrdersController {
                                         ProductImage: {
                                             take: 1, // Include just the first image
                                         },
+                                        Discount: true, // Include discounts for product
                                     },
                                 },
                             },
@@ -303,11 +424,26 @@ class OrdersController {
                 const formattedOrders = orders.map((order) => {
                     // Calculate total items in the order
                     const totalItems = order.OrderItem.reduce((sum, item) => sum + item.qty, 0);
+                    // Calculate total price for the order considering discounts
+                    const totalPrice = order.OrderItem.reduce((sum, item) => {
+                        let price = item.product.price;
+                        // Apply product-level discounts
+                        if (item.product.Discount && item.product.Discount.length > 0) {
+                            const discount = item.product.Discount[0]; // Assuming one discount per product
+                            if (discount.discount_type === "percentage") {
+                                price = price - (price * discount.discount_value) / 100;
+                            }
+                            else if (discount.discount_type === "point") {
+                                price = price - discount.discount_value;
+                            }
+                        }
+                        return sum + price * item.qty; // Multiply price by quantity
+                    }, 0);
                     // Format order items with essential details
                     const items = order.OrderItem.map((item) => ({
                         product_id: item.product_id,
                         name: item.product.name,
-                        price: item.price,
+                        price: item.product.price,
                         quantity: item.qty,
                         total_price: item.total_price,
                         image: item.product.ProductImage && item.product.ProductImage.length > 0
@@ -318,7 +454,7 @@ class OrdersController {
                         order_id: order.order_id,
                         order_date: order.created_at,
                         status: order.order_status,
-                        total_price: order.total_price,
+                        total_price: totalPrice, // Use the calculated total price
                         total_items: totalItems,
                         store: {
                             store_id: order.store.store_id,
@@ -650,11 +786,12 @@ class OrdersController {
                         .json({ msg: "You are not authorized to confirm this order" });
                     return;
                 }
-                // Cek apakah status order sudah 'completed'
-                if (order.order_status !== "completed") {
-                    res
-                        .status(400)
-                        .json({ msg: "Order must be completed before confirming delivery" });
+                // Cek apakah status order sudah 'completed' atau 'shipped'
+                if (order.order_status !== "completed" &&
+                    order.order_status !== "shipped") {
+                    res.status(400).json({
+                        msg: "Order must be either 'completed' or 'shipped' to confirm delivery",
+                    });
                     return;
                 }
                 // Cek status pengiriman apakah sudah 'shipped'

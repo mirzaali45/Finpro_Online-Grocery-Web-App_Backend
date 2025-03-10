@@ -343,7 +343,11 @@ const config = {
       "value": "prisma-client-js"
     },
     "output": {
+<<<<<<< HEAD
+      "value": "E:\\FinPro_Online Grocery Web App\\Finpro_Online-Grocery-Web-App_Backend\\prisma\\generated\\client",
+=======
       "value": "D:\\FinproBackend\\prisma\\generated\\client",
+>>>>>>> ed1bfcd4890218304d3864e85854f1f2d0509878
       "fromEnvVar": null
     },
     "config": {
@@ -357,7 +361,11 @@ const config = {
       }
     ],
     "previewFeatures": [],
+<<<<<<< HEAD
+    "sourceFilePath": "E:\\FinPro_Online Grocery Web App\\Finpro_Online-Grocery-Web-App_Backend\\prisma\\schema.prisma",
+=======
     "sourceFilePath": "D:\\FinproBackend\\prisma\\schema.prisma",
+>>>>>>> ed1bfcd4890218304d3864e85854f1f2d0509878
     "isCustomOutput": true
   },
   "relativeEnvPaths": {
