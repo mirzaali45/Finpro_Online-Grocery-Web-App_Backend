@@ -74,26 +74,45 @@ class CategoryController {
     getCategories(req, res) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
+                // Check if "all" parameter is present to return all categories
+                const getAll = req.query.all === "true";
+                // Get pagination parameters if not getting all
                 const page = parseInt(req.query.page) || 1;
                 const limit = parseInt(req.query.limit) || 8;
-                const skip = (page - 1) * limit;
+                // Count total categories
                 const totalCount = yield prisma.category.count();
-                const categories = yield prisma.category.findMany({
+                // Define query options
+                const queryOptions = {
                     include: {
                         Product: true,
                     },
-                    skip,
-                    take: limit,
-                });
-                return res.status(200).json({
-                    data: categories,
-                    pagination: {
-                        currentPage: page,
-                        totalPages: Math.ceil(totalCount / limit),
+                };
+                // Add pagination if not getting all
+                if (!getAll) {
+                    const skip = (page - 1) * limit;
+                    queryOptions.skip = skip;
+                    queryOptions.take = limit;
+                }
+                // Get categories with options
+                const categories = yield prisma.category.findMany(queryOptions);
+                // Return response with or without pagination details
+                if (getAll) {
+                    return res.status(200).json({
+                        data: categories,
                         totalItems: totalCount,
-                        itemsPerPage: limit,
-                    },
-                });
+                    });
+                }
+                else {
+                    return res.status(200).json({
+                        data: categories,
+                        pagination: {
+                            currentPage: page,
+                            totalPages: Math.ceil(totalCount / limit),
+                            totalItems: totalCount,
+                            itemsPerPage: limit,
+                        },
+                    });
+                }
             }
             catch (error) {
                 const message = error instanceof Error ? error.message : "Unknown error occurred";
