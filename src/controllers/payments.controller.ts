@@ -535,7 +535,6 @@ export class PaymentsController {
         );
 
         let newStatus: OrderStatus;
-        let newShippingStatus: ShippingStatus | null = null;
 
         // Determine new order status based on Midtrans status
         if (
@@ -547,7 +546,6 @@ export class PaymentsController {
             !transactionData.fraud_status
           ) {
             newStatus = OrderStatus.shipped;
-            newShippingStatus = ShippingStatus.shipped;
           } else {
             newStatus = OrderStatus.cancelled;
           }
@@ -576,17 +574,6 @@ export class PaymentsController {
               updated_at: new Date(),
             },
           });
-
-          // Update shipping if needed
-          if (newShippingStatus && order.Shipping.length > 0) {
-            await prisma.shipping.update({
-              where: { shipping_id: order.Shipping[0].shipping_id },
-              data: {
-                shipping_status: newShippingStatus,
-                updated_at: new Date(),
-              },
-            });
-          }
 
           res.status(200).json({
             success: true,
