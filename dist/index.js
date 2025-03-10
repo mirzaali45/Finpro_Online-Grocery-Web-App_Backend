@@ -92,9 +92,12 @@ app.use("/api/revenue-superadmin", revenueSuperRouter.getRouter());
 app.use("/api/super-ordermanagements", superordermanagementsRouter.getRouter());
 app.use("/api/store-ordermanagements", storeordermanagementsRouter.getRouter());
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
 
 >>>>>>> 339f33b2407068890a33c8530e81c0e52805c8d1
+=======
+>>>>>>> ed1bfcd4890218304d3864e85854f1f2d0509878
 app.use("/api/getstore", storecustomerRouter.getRouter());
 app.get("/api", (req, res) => {
     res.send("Welcome to the API!");
