@@ -1,11 +1,7 @@
 import { Request, Response } from "express";
 import { PrismaClient, Type } from "../../prisma/generated/client";
 import { tokenService } from "../helpers/createToken";
-import {
-  sendResetPassEmail,
-  sendReverificationEmail,
-  sendVerificationEmail,
-} from "../services/mailer";
+import { sendResetPassEmail, sendReverificationEmail, sendVerificationEmail } from "../services/mailer";
 import { hashPass } from "../helpers/hashpassword";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
@@ -225,18 +221,16 @@ export class AuthController {
             where: { referrer_id: referrer.user_id, referred_id: userId },
           });
 
-          if (!existingReferral) {
-            // **Langkah 1: Buat diskon baru**
-            const discount = await prisma.discount.create({
-              data: {
-                discount_code: `REF-${generateReferralCode(6)}`,
-                discount_type: "percentage",
-                discount_value: 10,
-                expires_at: new Date(
-                  new Date().setMonth(new Date().getMonth() + 1)
-                ),
-              },
-            });
+                if (!existingReferral) {
+                    // **Langkah 1: Buat diskon baru**
+                    const discount = await prisma.discount.create({
+                        data: {
+                            discount_code: `REF-${generateReferralCode(6)}`,
+                            discount_type: "percentage",
+                            discount_value: 10,
+                            expires_at: new Date(new Date().setMonth(new Date().getMonth() + 1)),
+                        },
+                    });
 
             // **Langkah 2: Buat voucher unik untuk customer baru**
             const userVoucherCode = `VOUCHER-${generateReferralCode(8)}`;
@@ -251,31 +245,29 @@ export class AuthController {
               },
             });
 
-            // **Langkah 3: Buat voucher unik untuk referrer**
-            const referrerVoucherCode = `VOUCHER-${generateReferralCode(8)}`;
-            const referrerVoucher = await prisma.voucher.create({
-              data: {
-                user_id: referrer.user_id,
-                discount_id: discount.discount_id,
-                voucher_code: referrerVoucherCode,
-                expires_at: new Date(
-                  new Date().setMonth(new Date().getMonth() + 1)
-                ),
-              },
-            });
+                    // **Langkah 3: Buat voucher unik untuk referrer**
+                    const referrerVoucherCode = `VOUCHER-${generateReferralCode(8)}`;
+                    const referrerVoucher = await prisma.voucher.create({
+                        data: {
+                            user_id: referrer.user_id,
+                            discount_id: discount.discount_id,
+                            voucher_code: referrerVoucherCode, 
+                            expires_at: new Date(new Date().setMonth(new Date().getMonth() + 1)),
+                        },
+                    });
 
-            // **Langkah 4: Simpan referral ke database**
-            await prisma.referral.create({
-              data: {
-                referrer_id: referrer.user_id,
-                referred_id: userId,
-                referral_code: referralCode,
-                reward_id: referrerVoucher.voucher_id, // Simpan voucher ID untuk referrer
-              },
-            });
-          }
+                    // **Langkah 4: Simpan referral ke database**
+                    await prisma.referral.create({
+                        data: {
+                            referrer_id: referrer.user_id,
+                            referred_id: userId,
+                            referral_code: referralCode,
+                            reward_id: referrerVoucher.voucher_id, // Simpan voucher ID untuk referrer
+                        },
+                    });
+                }
+            }
         }
-      }
 
       return res.status(200).json({
         status: "success",
@@ -543,7 +535,7 @@ export class AuthController {
           verify_token: null,
         },
       });
-
+  
       return res.status(200).json({
         status: "success",
         message: "Email successfully changed",

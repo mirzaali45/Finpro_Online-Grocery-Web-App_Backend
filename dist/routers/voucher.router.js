@@ -16,6 +16,8 @@ class VoucherRouter {
         this.router.post("/", this.authMiddleware.verifyToken, this.voucherController.claimDiscount);
         // Get user's vouchers
         this.router.get("/my-vouchers", this.authMiddleware.verifyToken, this.voucherController.getUserVouchers);
+        // Use a voucher
+        this.router.post("/use", this.authMiddleware.verifyToken, this.voucherController.useVoucher);
         // Delete a voucher
         this.router.delete("/:voucher_id", this.authMiddleware.verifyToken, this.voucherController.deleteVoucher);
     }

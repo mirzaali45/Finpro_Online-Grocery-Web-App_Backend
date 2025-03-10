@@ -162,6 +162,197 @@ export class VoucherController {
     }
   }
 
+  async useVoucher(req: AuthenticatedRequest, res: Response) {
+    try {
+      // Ensure user is authenticated
+      if (!req.user) {
+        return res.status(401).json({
+          success: false,
+          message: "Authentication required",
+        });
+      }
+
+      const { voucher_code, order_id } = req.body;
+
+      // Validate input
+      if (!voucher_code) {
+        return res.status(400).json({
+          success: false,
+          message: "Voucher code is required",
+        });
+      }
+
+      if (!order_id) {
+        return res.status(400).json({
+          success: false,
+          message: "Order ID is required",
+        });
+      }
+
+      // Find the voucher
+      const voucher = await prisma.voucher.findUnique({
+        where: { voucher_code },
+        include: {
+          discount: {
+            include: {
+              product: true,
+              store: true,
+            },
+          },
+        },
+      });
+
+      // Check if voucher exists
+      if (!voucher) {
+        return res.status(404).json({
+          success: false,
+          message: "Voucher not found",
+        });
+      }
+
+      // Verify the voucher belongs to the user
+      if (voucher.user_id !== req.user.id) {
+        return res.status(403).json({
+          success: false,
+          message: "You do not have permission to use this voucher",
+        });
+      }
+
+      // Check if voucher has already been redeemed
+      if (voucher.is_redeemed) {
+        return res.status(400).json({
+          success: false,
+          message: "Voucher has already been redeemed",
+        });
+      }
+
+      // Check if voucher is expired
+      if (new Date(voucher.expires_at) < new Date()) {
+        return res.status(400).json({
+          success: false,
+          message: "Voucher has expired",
+        });
+      }
+
+      // Find the order
+      const order = await prisma.order.findUnique({
+        where: { order_id: Number(order_id) },
+        include: {
+          OrderItem: true,
+        },
+      });
+
+      // Check if order exists
+      if (!order) {
+        return res.status(404).json({
+          success: false,
+          message: "Order not found",
+        });
+      }
+
+      // Verify the order belongs to the user
+      if (order.user_id !== req.user.id) {
+        return res.status(403).json({
+          success: false,
+          message: "You do not have permission to modify this order",
+        });
+      }
+
+      // Verify the order status is appropriate for applying a voucher
+      if (
+        order.order_status !== "pending" &&
+        order.order_status !== "awaiting_payment"
+      ) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "Voucher can only be applied to pending or awaiting payment orders",
+        });
+      }
+
+      // Check store-specific voucher conditions
+      if (
+        voucher.discount.store_id &&
+        voucher.discount.store_id !== order.store_id
+      ) {
+        return res.status(400).json({
+          success: false,
+          message: "This voucher can only be used for the specified store",
+        });
+      }
+
+      // Check product-specific voucher conditions
+      if (voucher.discount.product_id) {
+        const hasProduct = order.OrderItem.some(
+          (item) => item.product_id === voucher.discount.product_id
+        );
+        if (!hasProduct) {
+          return res.status(400).json({
+            success: false,
+            message: "This voucher can only be used for the specified product",
+          });
+        }
+      }
+
+      // Check minimum order condition
+      if (
+        voucher.discount.minimum_order &&
+        order.total_price < voucher.discount.minimum_order
+      ) {
+        return res.status(400).json({
+          success: false,
+          message: `Order total does not meet the minimum requirement of ${voucher.discount.minimum_order}`,
+        });
+      }
+
+      // Calculate discount
+      let discountAmount = 0;
+      if (voucher.discount.discount_type === "percentage") {
+        discountAmount =
+          (order.total_price * voucher.discount.discount_value) / 100;
+      } else {
+        // Point/fixed amount discount
+        discountAmount = voucher.discount.discount_value;
+      }
+
+      // Ensure discount doesn't exceed order total
+      discountAmount = Math.min(discountAmount, order.total_price);
+
+      // Update the order with the discount
+      const newTotalPrice = order.total_price - discountAmount;
+      await prisma.order.update({
+        where: { order_id: Number(order_id) },
+        data: {
+          total_price: newTotalPrice,
+        },
+      });
+
+      // Mark voucher as redeemed
+      const updatedVoucher = await prisma.voucher.update({
+        where: { voucher_id: voucher.voucher_id },
+        data: {
+          is_redeemed: true,
+          redeemed_at: new Date(),
+        },
+      });
+
+      res.status(200).json({
+        success: true,
+        message: "Voucher applied successfully",
+        discountAmount,
+        newTotalPrice,
+        voucher: updatedVoucher,
+      });
+    } catch (error) {
+      console.error("Error using voucher:", error);
+      res.status(500).json({
+        success: false,
+        message: "Failed to use voucher",
+        error: error instanceof Error ? error.message : "Unknown error",
+      });
+    }
+  }
+
   async deleteVoucher(req: AuthenticatedRequest, res: Response) {
     try {
       // Ensure user is authenticated

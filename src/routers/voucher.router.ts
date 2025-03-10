@@ -30,6 +30,13 @@ export class VoucherRouter {
       this.voucherController.getUserVouchers as unknown as RequestHandler
     );
 
+    // Use a voucher
+    this.router.post(
+      "/use",
+      this.authMiddleware.verifyToken as unknown as RequestHandler,
+      this.voucherController.useVoucher as unknown as RequestHandler
+    );
+
     // Delete a voucher
     this.router.delete(
       "/:voucher_id",

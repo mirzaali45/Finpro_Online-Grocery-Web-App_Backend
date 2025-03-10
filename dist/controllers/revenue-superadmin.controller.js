@@ -121,7 +121,7 @@ class RevenueSuperAdminController {
                         lte: endDate,
                     },
                     order_status: {
-                        not: client_1.OrderStatus.cancelled,
+                        in: ["completed", "shipped"],
                     },
                 };
                 if (storeId) {
@@ -268,21 +268,21 @@ class RevenueSuperAdminController {
                     prisma.$transaction([
                         prisma.order.aggregate({
                             where: {
-                                order_status: { not: client_1.OrderStatus.cancelled },
+                                order_status: { in: ["completed", "shipped"] },
                             },
                             _sum: { total_price: true },
                         }),
                         prisma.order.aggregate({
                             where: {
                                 created_at: { gte: thirtyDaysAgo },
-                                order_status: { not: client_1.OrderStatus.cancelled },
+                                order_status: { in: ["completed", "shipped"] },
                             },
                             _sum: { total_price: true },
                         }),
                         prisma.order.aggregate({
                             where: {
                                 created_at: { gte: sixtyDaysAgo, lt: thirtyDaysAgo },
-                                order_status: { not: client_1.OrderStatus.cancelled },
+                                order_status: { in: ["completed", "shipped"] },
                             },
                             _sum: { total_price: true },
                         }),
@@ -293,7 +293,7 @@ class RevenueSuperAdminController {
                         by: ["store_id"],
                         where: {
                             created_at: { gte: thirtyDaysAgo },
-                            order_status: { not: client_1.OrderStatus.cancelled },
+                            order_status: { in: ["completed", "shipped"] },
                         },
                         _sum: { total_price: true },
                         orderBy: { _sum: { total_price: "desc" } },
