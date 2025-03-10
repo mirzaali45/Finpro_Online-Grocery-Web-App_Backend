@@ -143,6 +143,156 @@ async function createPaymentTransaction(
 // Payment Controller
 export class PaymentsController {
   // Method to initiate a payment for an order
+  // initiatePayment = async (req: Request, res: Response): Promise<void> => {
+  //   try {
+  //     // Get user ID from authenticated token or request body
+  //     const userId = req.user?.id || req.body.user_id;
+
+  //     // Get order_id from URL parameters
+  //     const { order_id } = req.params;
+
+  //     // Log request data for debugging
+  //     console.log("Payment initiation request:", {
+  //       userId,
+  //       order_id,
+  //       body: req.body,
+  //       hasAuthHeader: !!req.headers.authorization,
+  //     });
+
+  //     // Validate required parameters
+  //     if (!userId) {
+  //       responseError(res, "User ID missing. Please ensure you are logged in.");
+  //       return;
+  //     }
+
+  //     if (!order_id) {
+  //       responseError(res, "Order ID missing");
+  //       return;
+  //     }
+
+  //     // Fetch the order from the database with all needed associations
+  //     const order = await prisma.order.findUnique({
+  //       where: { order_id: Number(order_id) },
+  //       include: {
+  //         OrderItem: {
+  //           include: {
+  //             product: true, // Include product details
+  //           },
+  //         },
+  //         user: true, // Include user details
+  //         Shipping: true, // Include shipping details
+  //       },
+  //     });
+
+  //     // Check if order exists
+  //     if (!order) {
+  //       responseError(res, "Order not found");
+  //       return;
+  //     }
+
+  //     // Validate order ownership
+  //     if (order.user_id !== Number(userId)) {
+  //       responseError(
+  //         res,
+  //         "Unauthorized: You don't have permission to access this order"
+  //       );
+  //       return;
+  //     }
+
+  //     // Update order status to awaiting_payment if it's pending
+  //     if (order.order_status === OrderStatus.pending) {
+  //       await prisma.order.update({
+  //         where: { order_id: Number(order_id) },
+  //         data: { order_status: OrderStatus.awaiting_payment },
+  //       });
+  //     }
+  //     // Check if order can be paid
+  //     else if (order.order_status !== OrderStatus.awaiting_payment) {
+  //       responseError(res, "Order is not in a valid state for payment");
+  //       return;
+  //     }
+
+  //     let updatedTotalPrice = order.total_price;
+
+  //     // Update shipping details if provided
+  //     if (req.body.shipping_method && order.Shipping.length > 0) {
+  //       // Update shipping record with the selected method details
+  //       await prisma.shipping.update({
+  //         where: { shipping_id: order.Shipping[0].shipping_id },
+  //         data: {
+  //           shipping_cost: req.body.shipping_method.cost,
+  //           // You can also update other shipping details if needed
+  //           updated_at: new Date(),
+  //         },
+  //       });
+
+  //       // Calculate new total price including shipping
+  //       updatedTotalPrice = order.total_price + req.body.shipping_method.cost;
+
+  //       // Update order total price
+  //       await prisma.order.update({
+  //         where: { order_id: Number(order_id) },
+  //         data: {
+  //           total_price: updatedTotalPrice,
+  //           updated_at: new Date(),
+  //         },
+  //       });
+
+  //       // Refetch order to get updated data
+  //       const updatedOrder = await prisma.order.findUnique({
+  //         where: { order_id: Number(order_id) },
+  //         include: {
+  //           OrderItem: {
+  //             include: {
+  //               product: true,
+  //             },
+  //           },
+  //           user: true,
+  //           Shipping: true,
+  //         },
+  //       });
+
+  //       if (!updatedOrder) {
+  //         responseError(res, "Error fetching updated order");
+  //         return;
+  //       }
+
+  //       // Create payment transaction with Midtrans using updated order
+  //       const paymentResponse = await createPaymentTransaction(
+  //         updatedOrder,
+  //         updatedTotalPrice
+  //       );
+
+  //       // Send response with payment URL
+  //       res.status(200).json({
+  //         success: true,
+  //         message: "Payment initiation successful",
+  //         payment_url: paymentResponse.redirect_url,
+  //         order_id: updatedOrder.order_id,
+  //       });
+  //     } else {
+  //       // Use existing order data if no shipping method was provided
+  //       const paymentResponse = await createPaymentTransaction(order);
+
+  //       // Send response with payment URL
+  //       res.status(200).json({
+  //         success: true,
+  //         message: "Payment initiation successful",
+  //         payment_url: paymentResponse.redirect_url,
+  //         order_id: order.order_id,
+  //       });
+  //     }
+
+  //     // Do not automatically set to processing here
+  //     // Let the payment callback handle status updates based on actual payment result
+  //   } catch (error: any) {
+  //     console.error("Error initiating payment:", error);
+  //     responseError(
+  //       res,
+  //       error.message || "An error occurred while initiating payment"
+  //     );
+  //   }
+  // };
   initiatePayment = async (req: Request, res: Response): Promise<void> => {
     try {
       // Get user ID from authenticated token or request body
@@ -176,11 +326,15 @@ export class PaymentsController {
         include: {
           OrderItem: {
             include: {
-              product: true, // Include product details
+              product: {
+                include: {
+                  Discount: true, // Include Discount relation
+                },
+              },
             },
           },
-          user: true, // Include user details
-          Shipping: true, // Include shipping details
+          user: true,
+          Shipping: true,
         },
       });
 
@@ -199,6 +353,23 @@ export class PaymentsController {
         return;
       }
 
+      // Calculate the total price considering product-level discounts
+      let totalPrice = order.OrderItem.reduce((sum, item) => {
+        let price = item.product.price;
+
+        // Apply product-level discounts
+        if (item.product.Discount && item.product.Discount.length > 0) {
+          const discount = item.product.Discount[0]; // Assuming one discount per product
+          if (discount.discount_type === "percentage") {
+            price = price - (price * discount.discount_value) / 100;
+          } else if (discount.discount_type === "point") {
+            price = price - discount.discount_value;
+          }
+        }
+
+        return sum + price * item.qty; // Multiply price by quantity
+      }, 0);
+
       // Update order status to awaiting_payment if it's pending
       if (order.order_status === OrderStatus.pending) {
         await prisma.order.update({
@@ -212,7 +383,33 @@ export class PaymentsController {
         return;
       }
 
-      let updatedTotalPrice = order.total_price;
+      // Apply voucher discount if available
+      if (req.body.voucher && req.body.voucher.discount) {
+        const voucher = req.body.voucher;
+        let discountAmount = 0;
+
+        if (voucher.discount.discount_type === "percentage") {
+          discountAmount = (totalPrice * voucher.discount.discount_value) / 100;
+        } else {
+          // Point/fixed amount discount
+          discountAmount = voucher.discount.discount_value;
+        }
+
+        // Ensure discount doesn't exceed order total
+        discountAmount = Math.min(discountAmount, totalPrice);
+
+        // Apply the discount to the total price
+        totalPrice -= discountAmount;
+
+        // Update the order with the new total price
+        await prisma.order.update({
+          where: { order_id: Number(order_id) },
+          data: {
+            total_price: totalPrice,
+            updated_at: new Date(),
+          },
+        });
+      }
 
       // Update shipping details if provided
       if (req.body.shipping_method && order.Shipping.length > 0) {
@@ -221,70 +418,56 @@ export class PaymentsController {
           where: { shipping_id: order.Shipping[0].shipping_id },
           data: {
             shipping_cost: req.body.shipping_method.cost,
-            // You can also update other shipping details if needed
             updated_at: new Date(),
           },
         });
 
-        // Calculate new total price including shipping
-        updatedTotalPrice = order.total_price + req.body.shipping_method.cost;
+        // Add shipping cost to the total price
+        totalPrice += req.body.shipping_method.cost;
 
-        // Update order total price
+        // Update the order total price in the database
         await prisma.order.update({
           where: { order_id: Number(order_id) },
           data: {
-            total_price: updatedTotalPrice,
+            total_price: totalPrice,
             updated_at: new Date(),
           },
         });
-
-        // Refetch order to get updated data
-        const updatedOrder = await prisma.order.findUnique({
-          where: { order_id: Number(order_id) },
-          include: {
-            OrderItem: {
-              include: {
-                product: true,
-              },
-            },
-            user: true,
-            Shipping: true,
-          },
-        });
-
-        if (!updatedOrder) {
-          responseError(res, "Error fetching updated order");
-          return;
-        }
-
-        // Create payment transaction with Midtrans using updated order
-        const paymentResponse = await createPaymentTransaction(
-          updatedOrder,
-          updatedTotalPrice
-        );
-
-        // Send response with payment URL
-        res.status(200).json({
-          success: true,
-          message: "Payment initiation successful",
-          payment_url: paymentResponse.redirect_url,
-          order_id: updatedOrder.order_id,
-        });
-      } else {
-        // Use existing order data if no shipping method was provided
-        const paymentResponse = await createPaymentTransaction(order);
-
-        // Send response with payment URL
-        res.status(200).json({
-          success: true,
-          message: "Payment initiation successful",
-          payment_url: paymentResponse.redirect_url,
-          order_id: order.order_id,
-        });
       }
 
-      // Do not automatically set to processing here
-      // Let the payment callback handle status updates based on actual payment result
+      const updatedOrder = await prisma.order.findUnique({
+        where: { order_id: Number(order_id) },
+        include: {
+          OrderItem: {
+            include: {
+              product: {
+                include: {
+                  Discount: true,
+                },
+              },
+            },
+          },
+          user: true,
+          Shipping: true,
+        },
+      });
+
+      if (!updatedOrder) {
+        responseError(res, "Error fetching updated order");
+        return;
+      }
+
+      const paymentResponse = await createPaymentTransaction(
+        updatedOrder,
+        totalPrice
+      );
+
+      res.status(200).json({
+        success: true,
+        message: "Payment initiation successful",
+        payment_url: paymentResponse.redirect_url,
+        order_id: updatedOrder.order_id,
+      });
     } catch (error: any) {
       console.error("Error initiating payment:", error);
       responseError(
