@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "build": "tsc && shx cp -r public dist && shx cp -r src/templates dist",
+    "build": "tsc && cp -rv public dist && cp -rv src/templates dist",
     "start": "npm run build && node dist/index.js",
     "dev": "ts-node-dev src/index.ts",
     "test": "echo \"Error: no test specified\" && exit 1",
