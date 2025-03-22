@@ -22,7 +22,7 @@ export class GetStoreCustomer {
           message: "Invalid store ID format",
         });
         return;
-      }
+      } 
 
       // Get total product count for pagination
       const totalProducts = await prisma.product.count({
