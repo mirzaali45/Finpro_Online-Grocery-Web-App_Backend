@@ -143,165 +143,11 @@ async function createPaymentTransaction(
 // Payment Controller
 export class PaymentsController {
   // Method to initiate a payment for an order
-  // initiatePayment = async (req: Request, res: Response): Promise<void> => {
-  //   try {
-  //     // Get user ID from authenticated token or request body
-  //     const userId = req.user?.id || req.body.user_id;
-
-  //     // Get order_id from URL parameters
-  //     const { order_id } = req.params;
-
-  //     // Log request data for debugging
-  //     console.log("Payment initiation request:", {
-  //       userId,
-  //       order_id,
-  //       body: req.body,
-  //       hasAuthHeader: !!req.headers.authorization,
-  //     });
-
-  //     // Validate required parameters
-  //     if (!userId) {
-  //       responseError(res, "User ID missing. Please ensure you are logged in.");
-  //       return;
-  //     }
-
-  //     if (!order_id) {
-  //       responseError(res, "Order ID missing");
-  //       return;
-  //     }
-
-  //     // Fetch the order from the database with all needed associations
-  //     const order = await prisma.order.findUnique({
-  //       where: { order_id: Number(order_id) },
-  //       include: {
-  //         OrderItem: {
-  //           include: {
-  //             product: true, // Include product details
-  //           },
-  //         },
-  //         user: true, // Include user details
-  //         Shipping: true, // Include shipping details
-  //       },
-  //     });
-
-  //     // Check if order exists
-  //     if (!order) {
-  //       responseError(res, "Order not found");
-  //       return;
-  //     }
-
-  //     // Validate order ownership
-  //     if (order.user_id !== Number(userId)) {
-  //       responseError(
-  //         res,
-  //         "Unauthorized: You don't have permission to access this order"
-  //       );
-  //       return;
-  //     }
-
-  //     // Update order status to awaiting_payment if it's pending
-  //     if (order.order_status === OrderStatus.pending) {
-  //       await prisma.order.update({
-  //         where: { order_id: Number(order_id) },
-  //         data: { order_status: OrderStatus.awaiting_payment },
-  //       });
-  //     }
-  //     // Check if order can be paid
-  //     else if (order.order_status !== OrderStatus.awaiting_payment) {
-  //       responseError(res, "Order is not in a valid state for payment");
-  //       return;
-  //     }
-
-  //     let updatedTotalPrice = order.total_price;
-
-  //     // Update shipping details if provided
-  //     if (req.body.shipping_method && order.Shipping.length > 0) {
-  //       // Update shipping record with the selected method details
-  //       await prisma.shipping.update({
-  //         where: { shipping_id: order.Shipping[0].shipping_id },
-  //         data: {
-  //           shipping_cost: req.body.shipping_method.cost,
-  //           // You can also update other shipping details if needed
-  //           updated_at: new Date(),
-  //         },
-  //       });
-
-  //       // Calculate new total price including shipping
-  //       updatedTotalPrice = order.total_price + req.body.shipping_method.cost;
-
-  //       // Update order total price
-  //       await prisma.order.update({
-  //         where: { order_id: Number(order_id) },
-  //         data: {
-  //           total_price: updatedTotalPrice,
-  //           updated_at: new Date(),
-  //         },
-  //       });
-
-  //       // Refetch order to get updated data
-  //       const updatedOrder = await prisma.order.findUnique({
-  //         where: { order_id: Number(order_id) },
-  //         include: {
-  //           OrderItem: {
-  //             include: {
-  //               product: true,
-  //             },
-  //           },
-  //           user: true,
-  //           Shipping: true,
-  //         },
-  //       });
-
-  //       if (!updatedOrder) {
-  //         responseError(res, "Error fetching updated order");
-  //         return;
-  //       }
-
-  //       // Create payment transaction with Midtrans using updated order
-  //       const paymentResponse = await createPaymentTransaction(
-  //         updatedOrder,
-  //         updatedTotalPrice
-  //       );
-
-  //       // Send response with payment URL
-  //       res.status(200).json({
-  //         success: true,
-  //         message: "Payment initiation successful",
-  //         payment_url: paymentResponse.redirect_url,
-  //         order_id: updatedOrder.order_id,
-  //       });
-  //     } else {
-  //       // Use existing order data if no shipping method was provided
-  //       const paymentResponse = await createPaymentTransaction(order);
-
-  //       // Send response with payment URL
-  //       res.status(200).json({
-  //         success: true,
-  //         message: "Payment initiation successful",
-  //         payment_url: paymentResponse.redirect_url,
-  //         order_id: order.order_id,
-  //       });
-  //     }
-
-  //     // Do not automatically set to processing here
-  //     // Let the payment callback handle status updates based on actual payment result
-  //   } catch (error: any) {
-  //     console.error("Error initiating payment:", error);
-  //     responseError(
-  //       res,
-  //       error.message || "An error occurred while initiating payment"
-  //     );
-  //   }
-  // };
   initiatePayment = async (req: Request, res: Response): Promise<void> => {
     try {
-      // Get user ID from authenticated token or request body
       const userId = req.user?.id || req.body.user_id;
-
-      // Get order_id from URL parameters
       const { order_id } = req.params;
 
-      // Log request data for debugging
       console.log("Payment initiation request:", {
         userId,
         order_id,
@@ -309,26 +155,25 @@ export class PaymentsController {
         hasAuthHeader: !!req.headers.authorization,
       });
 
-      // Validate required parameters
       if (!userId) {
         responseError(res, "User ID missing. Please ensure you are logged in.");
         return;
       }
 
-      if (!order_id) {
-        responseError(res, "Order ID missing");
+      const orderId = parseInt(order_id, 10);
+      if (isNaN(orderId)) {
+        responseError(res, "Invalid Order ID format");
         return;
       }
 
-      // Fetch the order from the database with all needed associations
       const order = await prisma.order.findUnique({
-        where: { order_id: Number(order_id) },
+        where: { order_id: orderId },
         include: {
           OrderItem: {
             include: {
               product: {
                 include: {
-                  Discount: true, // Include Discount relation
+                  Discount: true,
                 },
               },
             },
@@ -338,13 +183,11 @@ export class PaymentsController {
         },
       });
 
-      // Check if order exists
       if (!order) {
         responseError(res, "Order not found");
         return;
       }
 
-      // Validate order ownership
       if (order.user_id !== Number(userId)) {
         responseError(
           res,
@@ -353,57 +196,43 @@ export class PaymentsController {
         return;
       }
 
-      // Calculate the total price considering product-level discounts
       let totalPrice = order.OrderItem.reduce((sum, item) => {
         let price = item.product.price;
 
-        // Apply product-level discounts
-        if (item.product.Discount && item.product.Discount.length > 0) {
-          const discount = item.product.Discount[0]; // Assuming one discount per product
+        if (item.product.Discount?.length) {
+          const discount = item.product.Discount[0];
           if (discount.discount_type === "percentage") {
-            price = price - (price * discount.discount_value) / 100;
+            price -= (price * discount.discount_value) / 100;
           } else if (discount.discount_type === "point") {
-            price = price - discount.discount_value;
+            price = Math.max(0, price - discount.discount_value);
           }
         }
 
-        return sum + price * item.qty; // Multiply price by quantity
+        return sum + price * item.qty;
       }, 0);
 
-      // Update order status to awaiting_payment if it's pending
-      if (order.order_status === OrderStatus.pending) {
+      if (order.order_status === "pending") {
         await prisma.order.update({
-          where: { order_id: Number(order_id) },
-          data: { order_status: OrderStatus.awaiting_payment },
+          where: { order_id: orderId },
+          data: { order_status: "awaiting_payment" },
         });
-      }
-      // Check if order can be paid
-      else if (order.order_status !== OrderStatus.awaiting_payment) {
+      } else if (order.order_status !== "awaiting_payment") {
         responseError(res, "Order is not in a valid state for payment");
         return;
       }
 
-      // Apply voucher discount if available
-      if (req.body.voucher && req.body.voucher.discount) {
+      if (req.body.voucher?.discount) {
         const voucher = req.body.voucher;
-        let discountAmount = 0;
+        let discountAmount =
+          voucher.discount.discount_type === "percentage"
+            ? (totalPrice * voucher.discount.discount_value) / 100
+            : voucher.discount.discount_value;
 
-        if (voucher.discount.discount_type === "percentage") {
-          discountAmount = (totalPrice * voucher.discount.discount_value) / 100;
-        } else {
-          // Point/fixed amount discount
-          discountAmount = voucher.discount.discount_value;
-        }
-
-        // Ensure discount doesn't exceed order total
         discountAmount = Math.min(discountAmount, totalPrice);
-
-        // Apply the discount to the total price
         totalPrice -= discountAmount;
 
-        // Update the order with the new total price
         await prisma.order.update({
-          where: { order_id: Number(order_id) },
+          where: { order_id: orderId },
           data: {
             total_price: totalPrice,
             updated_at: new Date(),
@@ -411,9 +240,7 @@ export class PaymentsController {
         });
       }
 
-      // Update shipping details if provided
-      if (req.body.shipping_method && order.Shipping.length > 0) {
-        // Update shipping record with the selected method details
+      if (req.body.shipping_method && order.Shipping?.length > 0) {
         await prisma.shipping.update({
           where: { shipping_id: order.Shipping[0].shipping_id },
           data: {
@@ -422,12 +249,10 @@ export class PaymentsController {
           },
         });
 
-        // Add shipping cost to the total price
         totalPrice += req.body.shipping_method.cost;
 
-        // Update the order total price in the database
         await prisma.order.update({
-          where: { order_id: Number(order_id) },
+          where: { order_id: orderId },
           data: {
             total_price: totalPrice,
             updated_at: new Date(),
@@ -436,7 +261,7 @@ export class PaymentsController {
       }
 
       const updatedOrder = await prisma.order.findUnique({
-        where: { order_id: Number(order_id) },
+        where: { order_id: orderId },
         include: {
           OrderItem: {
             include: {
@@ -457,10 +282,17 @@ export class PaymentsController {
         return;
       }
 
-      const paymentResponse = await createPaymentTransaction(
-        updatedOrder,
-        totalPrice
-      );
+      let paymentResponse;
+      try {
+        paymentResponse = await createPaymentTransaction(
+          updatedOrder,
+          totalPrice
+        );
+      } catch (paymentError) {
+        console.error("Payment transaction error:", paymentError);
+        responseError(res, "Failed to create payment transaction");
+        return;
+      }
 
       res.status(200).json({
         success: true,
@@ -676,31 +508,144 @@ export class PaymentsController {
   };
 
   // Check payment status directly from Midtrans and update if needed
-  checkPaymentStatus = async (req: Request, res: Response): Promise<void> => {
+  // checkPaymentStatus = async (req: Request, res: Response): Promise<void> => {
+  //   try {
+  //     const { order_id } = req.params;
+
+  //     if (!order_id) {
+  //       responseError(res, "Order ID missing");
+  //       return;
+  //     }
+
+  //     // First get current order status
+  //     const order = await prisma.order.findUnique({
+  //       where: { order_id: Number(order_id) },
+  //       include: { Shipping: true },
+  //     });
+
+  //     if (!order) {
+  //       responseError(res, "Order not found");
+  //       return;
+  //     }
+
+  //     console.log(
+  //       `Checking payment status for order ${order_id}, current status: ${order.order_status}`
+  //     );
+
+  //     // Only check payments that are in awaiting_payment status
+  //     if (order.order_status !== OrderStatus.awaiting_payment) {
+  //       res.status(200).json({
+  //         success: true,
+  //         message: "Order is not in awaiting_payment status",
+  //         current_status: order.order_status,
+  //       });
+  //       return;
+  //     }
+
+  //     // Check status with Midtrans API
+  //     try {
+  //       const transactionData = await checkMidtransStatus(order_id.toString());
+  //       console.log(
+  //         `Got transaction status from Midtrans API: ${transactionData.transaction_status}`
+  //       );
+
+  //       let newStatus: OrderStatus;
+
+  //       // Determine new order status based on Midtrans status
+  //       if (
+  //         transactionData.transaction_status === "capture" ||
+  //         transactionData.transaction_status === "settlement"
+  //       ) {
+  //         if (
+  //           transactionData.fraud_status === "accept" ||
+  //           !transactionData.fraud_status
+  //         ) {
+  //           newStatus = OrderStatus.shipped;
+  //         } else {
+  //           newStatus = OrderStatus.cancelled;
+  //         }
+  //       } else if (transactionData.transaction_status === "pending") {
+  //         newStatus = OrderStatus.awaiting_payment;
+  //       } else if (
+  //         ["cancel", "deny", "expire"].includes(
+  //           transactionData.transaction_status
+  //         )
+  //       ) {
+  //         newStatus = OrderStatus.cancelled;
+  //       } else {
+  //         newStatus = order.order_status; // Keep current status if unknown
+  //       }
+
+  //       // Update order status if it needs to change
+  //       if (newStatus !== order.order_status) {
+  //         console.log(
+  //           `Updating order ${order_id} status from ${order.order_status} to ${newStatus}`
+  //         );
+
+  //         const updatedOrder = await prisma.order.update({
+  //           where: { order_id: Number(order_id) },
+  //           data: {
+  //             order_status: newStatus,
+  //             updated_at: new Date(),
+  //           },
+  //         });
+
+  //         res.status(200).json({
+  //           success: true,
+  //           message: "Payment status updated successfully",
+  //           previous_status: order.order_status,
+  //           current_status: updatedOrder.order_status,
+  //           transaction_status: transactionData.transaction_status,
+  //         });
+  //       } else {
+  //         res.status(200).json({
+  //           success: true,
+  //           message: "Payment status verified, no update needed",
+  //           current_status: order.order_status,
+  //           transaction_status: transactionData.transaction_status,
+  //         });
+  //       }
+  //     } catch (apiError: any) {
+  //       console.error(
+  //         `Error checking transaction status with Midtrans API: ${apiError.message}`
+  //       );
+  //       responseError(
+  //         res,
+  //         `Error checking payment status: ${apiError.message}`
+  //       );
+  //     }
+  //   } catch (error: any) {
+  //     console.error("Error in checkPaymentStatus:", error);
+  //     responseError(res, error.message || "Error checking payment status");
+  //   }
+  // };
+  async checkPaymentStatus(req: Request, res: Response): Promise<void> {
     try {
       const { order_id } = req.params;
 
       if (!order_id) {
-        responseError(res, "Order ID missing");
+        console.error("❌ Order ID missing in request");
+        res.status(400).json({ success: false, message: "Order ID missing" });
         return;
       }
 
-      // First get current order status
+      // 🔍 Cek order di database
       const order = await prisma.order.findUnique({
         where: { order_id: Number(order_id) },
         include: { Shipping: true },
       });
 
       if (!order) {
-        responseError(res, "Order not found");
+        console.error(`❌ Order not found: ${order_id}`);
+        res.status(404).json({ success: false, message: "Order not found" });
         return;
       }
 
       console.log(
-        `Checking payment status for order ${order_id}, current status: ${order.order_status}`
+        `🔍 Checking payment status for order ${order_id}, current status: ${order.order_status}`
       );
 
-      // Only check payments that are in awaiting_payment status
+      // 🛑 Jika status bukan `awaiting_payment`, tidak perlu cek ke Midtrans
       if (order.order_status !== OrderStatus.awaiting_payment) {
         res.status(200).json({
           success: true,
@@ -710,52 +655,48 @@ export class PaymentsController {
         return;
       }
 
-      // Check status with Midtrans API
+      // 🔥 Cek status pembayaran dari Midtrans
       try {
         const transactionData = await checkMidtransStatus(order_id.toString());
+
         console.log(
-          `Got transaction status from Midtrans API: ${transactionData.transaction_status}`
+          `🔍 Midtrans API Response for ${order_id}:`,
+          transactionData
         );
 
-        let newStatus: OrderStatus;
+        let newStatus: OrderStatus = order.order_status;
 
-        // Determine new order status based on Midtrans status
-        if (
-          transactionData.transaction_status === "capture" ||
-          transactionData.transaction_status === "settlement"
-        ) {
-          if (
-            transactionData.fraud_status === "accept" ||
-            !transactionData.fraud_status
-          ) {
-            newStatus = OrderStatus.shipped;
-          } else {
+        switch (transactionData.transaction_status) {
+          case "capture":
+          case "settlement":
+            newStatus =
+              transactionData.fraud_status === "accept"
+                ? OrderStatus.shipped
+                : OrderStatus.cancelled;
+            break;
+          case "pending":
+            newStatus = OrderStatus.awaiting_payment;
+            break;
+          case "cancel":
+          case "deny":
+          case "expire":
             newStatus = OrderStatus.cancelled;
-          }
-        } else if (transactionData.transaction_status === "pending") {
-          newStatus = OrderStatus.awaiting_payment;
-        } else if (
-          ["cancel", "deny", "expire"].includes(
-            transactionData.transaction_status
-          )
-        ) {
-          newStatus = OrderStatus.cancelled;
-        } else {
-          newStatus = order.order_status; // Keep current status if unknown
+            break;
+          default:
+            console.warn(
+              `⚠️ Unrecognized Midtrans status: ${transactionData.transaction_status}`
+            );
         }
 
-        // Update order status if it needs to change
+        // 🛠 Jika status berubah, update di database
         if (newStatus !== order.order_status) {
           console.log(
-            `Updating order ${order_id} status from ${order.order_status} to ${newStatus}`
+            `🔄 Updating order ${order_id} status from ${order.order_status} to ${newStatus}`
           );
 
           const updatedOrder = await prisma.order.update({
             where: { order_id: Number(order_id) },
-            data: {
-              order_status: newStatus,
-              updated_at: new Date(),
-            },
+            data: { order_status: newStatus, updated_at: new Date() },
           });
 
           res.status(200).json({
@@ -765,28 +706,38 @@ export class PaymentsController {
             current_status: updatedOrder.order_status,
             transaction_status: transactionData.transaction_status,
           });
-        } else {
-          res.status(200).json({
-            success: true,
-            message: "Payment status verified, no update needed",
-            current_status: order.order_status,
-            transaction_status: transactionData.transaction_status,
-          });
+          return;
         }
+
+        res.status(200).json({
+          success: true,
+          message: "Payment status verified, no update needed",
+          current_status: order.order_status,
+          transaction_status: transactionData.transaction_status,
+        });
+        return;
       } catch (apiError: any) {
         console.error(
-          `Error checking transaction status with Midtrans API: ${apiError.message}`
+          `❌ Error checking transaction status with Midtrans API: ${apiError.message}`
         );
-        responseError(
-          res,
-          `Error checking payment status: ${apiError.message}`
-        );
+
+        res.status(500).json({
+          success: false,
+          message: "Error checking payment status with Midtrans",
+          error: apiError.message,
+        });
+        return;
       }
     } catch (error: any) {
-      console.error("Error in checkPaymentStatus:", error);
-      responseError(res, error.message || "Error checking payment status");
+      console.error("❌ Error in checkPaymentStatus:", error);
+      res.status(500).json({
+        success: false,
+        message: "Internal server error",
+        error: error.message,
+      });
+      return;
     }
-  };
+  }
 
   // Add new method to handle frontend redirect after payment
   handlePaymentRedirect = async (

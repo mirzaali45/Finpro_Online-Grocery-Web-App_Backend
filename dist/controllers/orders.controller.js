@@ -257,113 +257,6 @@ class OrdersController {
             }
         });
     }
-    // async getMyOrders(req: Request, res: Response): Promise<void> {
-    //   try {
-    //     const user_id = req.user?.id;
-    //     const { status } = req.query as { status?: string };
-    //     // Validate user is authenticated
-    //     if (!user_id) {
-    //       responseError(res, "User tidak terautentikasi.");
-    //       return;
-    //     }
-    //     // Build query conditions
-    //     const where: any = {
-    //       user_id: Number(user_id),
-    //     };
-    //     // Add status filter if provided
-    //     if (
-    //       status &&
-    //       Object.values(OrderStatus).includes(status as OrderStatus)
-    //     ) {
-    //       where.order_status = status as OrderStatus;
-    //     }
-    //     // Get all orders for the authenticated user
-    //     const orders = await prisma.order.findMany({
-    //       where,
-    //       include: {
-    //         store: {
-    //           select: {
-    //             store_id: true,
-    //             store_name: true,
-    //             address: true,
-    //             city: true,
-    //             province: true,
-    //           },
-    //         },
-    //         OrderItem: {
-    //           include: {
-    //             product: {
-    //               include: {
-    //                 ProductImage: {
-    //                   take: 1, // Include just the first image
-    //                 },
-    //               },
-    //             },
-    //           },
-    //         },
-    //         Shipping: true,
-    //       },
-    //       orderBy: { created_at: "desc" },
-    //     });
-    //     if (orders.length === 0) {
-    //       res.status(200).json({
-    //         message: "Belum ada pesanan untuk akun Anda.",
-    //         data: [],
-    //       });
-    //       return;
-    //     }
-    //     // Format the response to be more client-friendly
-    //     const formattedOrders = orders.map((order) => {
-    //       // Calculate total items in the order
-    //       const totalItems = order.OrderItem.reduce(
-    //         (sum, item) => sum + item.qty,
-    //         0
-    //       );
-    //       // Format order items with essential details
-    //       const items = order.OrderItem.map((item) => ({
-    //         product_id: item.product_id,
-    //         name: item.product.name,
-    //         price: item.price,
-    //         quantity: item.qty,
-    //         total_price: item.total_price,
-    //         image:
-    //           item.product.ProductImage && item.product.ProductImage.length > 0
-    //             ? item.product.ProductImage[0].url
-    //             : null,
-    //       }));
-    //       return {
-    //         order_id: order.order_id,
-    //         order_date: order.created_at,
-    //         status: order.order_status,
-    //         total_price: order.total_price,
-    //         total_items: totalItems,
-    //         store: {
-    //           store_id: order.store.store_id,
-    //           store_name: order.store.store_name,
-    //           location: `${order.store.city}, ${order.store.province}`,
-    //         },
-    //         shipping:
-    //           order.Shipping.length > 0
-    //             ? {
-    //                 status: order.Shipping[0].shipping_status,
-    //                 address: order.Shipping[0].shipping_address,
-    //                 cost: order.Shipping[0].shipping_cost,
-    //               }
-    //             : null,
-    //         items: items,
-    //       };
-    //     });
-    //     res.status(200).json({
-    //       message: "Daftar pesanan berhasil dimuat.",
-    //       data: formattedOrders,
-    //     });
-    //     return;
-    //   } catch (error: any) {
-    //     console.error("getMyOrders error:", error);
-    //     responseError(res, error.message);
-    //     return;
-    //   }
-    // }
     getMyOrders(req, res) {
         return __awaiter(this, void 0, void 0, function* () {
             var _a;
@@ -425,7 +318,7 @@ class OrdersController {
                     // Calculate total items in the order
                     const totalItems = order.OrderItem.reduce((sum, item) => sum + item.qty, 0);
                     // Calculate total price for the order considering discounts
-                    const totalPrice = order.OrderItem.reduce((sum, item) => {
+                    let totalPrice = order.OrderItem.reduce((sum, item) => {
                         let price = item.product.price;
                         // Apply product-level discounts
                         if (item.product.Discount && item.product.Discount.length > 0) {
@@ -439,6 +332,11 @@ class OrdersController {
                         }
                         return sum + price * item.qty; // Multiply price by quantity
                     }, 0);
+                    // If shipping is available, add shipping cost to the total
+                    if (order.Shipping.length > 0) {
+                        const shippingCost = order.Shipping[0].shipping_cost;
+                        totalPrice += shippingCost; // Add shipping cost to the total price
+                    }
                     // Format order items with essential details
                     const items = order.OrderItem.map((item) => ({
                         product_id: item.product_id,
@@ -454,7 +352,7 @@ class OrdersController {
                         order_id: order.order_id,
                         order_date: order.created_at,
                         status: order.order_status,
-                        total_price: totalPrice, // Use the calculated total price
+                        total_price: totalPrice, // Use the calculated total price including shipping
                         total_items: totalItems,
                         store: {
                             store_id: order.store.store_id,
@@ -656,51 +554,182 @@ class OrdersController {
             }
         });
     }
+    // async QueryOrders(req: Request, res: Response): Promise<void> {
+    //   const { order_date, order_id, product_name } = req.query;
+    //   const userId = req.user?.id; // Mengambil user_id dari token autentikasi
+    //   if (!userId) {
+    //     res.status(400).json({ msg: "User not authenticated" });
+    //     return;
+    //   }
+    //   try {
+    //     // Membentuk kondisi `where` untuk filtering
+    //     const whereConditions: any = {
+    //       user_id: userId, // Filter berdasarkan user_id dari token
+    //     };
+    //     // Filter berdasarkan order_date jika diberikan
+    //     if (order_date) {
+    //       const startOfDay = new Date(order_date as string);
+    //       startOfDay.setHours(0, 0, 0, 0); // Mulai dari jam 00:00:00
+    //       const endOfDay = new Date(startOfDay);
+    //       endOfDay.setDate(startOfDay.getDate() + 1); // Akhir hari
+    //       whereConditions.created_at = {
+    //         gte: startOfDay, // Lebih besar atau sama dengan tanggal mulai
+    //         lt: endOfDay, // Kurang dari tanggal akhir
+    //       };
+    //     }
+    //     // Filter berdasarkan order_id jika diberikan
+    //     if (order_id) {
+    //       whereConditions.order_id = parseInt(order_id as string);
+    //     }
+    //     // Query untuk mengambil data pesanan
+    //     const orders = await prisma.order.findMany({
+    //       where: whereConditions,
+    //       include: {
+    //         user: true, // Data pengguna
+    //         store: true, // Data toko
+    //         OrderItem: {
+    //           include: {
+    //             product: {
+    //               include: {
+    //                 Discount: true, // Ambil informasi diskon produk
+    //               },
+    //             },
+    //           },
+    //         },
+    //         Shipping: true, // Data pengiriman
+    //       },
+    //     });
+    //     // Filter berdasarkan product_name jika diberikan
+    //     let filteredOrders = orders;
+    //     if (product_name) {
+    //       filteredOrders = orders.filter((order) =>
+    //         order.OrderItem.some((item) =>
+    //           item.product?.name
+    //             ?.toLowerCase()
+    //             .includes((product_name as string).toLowerCase())
+    //         )
+    //       );
+    //     }
+    //     // Format hasil dengan perhitungan harga dan jumlah item
+    //     const formattedOrders = filteredOrders.map((order) => {
+    //       // Hitung total item dalam pesanan
+    //       const totalItems = order.OrderItem.reduce(
+    //         (sum, item) => sum + item.qty,
+    //         0
+    //       );
+    //       // Hitung total harga dengan mempertimbangkan diskon
+    //       const totalPrice = order.OrderItem.reduce((sum, item) => {
+    //         let price = item.product?.price || 0; // Harga default 0 jika tidak ada produk
+    //         // Terapkan diskon produk jika ada
+    //         if (item.product?.Discount?.length > 0) {
+    //           const discount = item.product.Discount[0]; // Ambil diskon pertama
+    //           if (discount.discount_type === "percentage") {
+    //             price -= (price * discount.discount_value) / 100;
+    //           } else if (discount.discount_type === "point") {
+    //             price -= discount.discount_value;
+    //           }
+    //         }
+    //         return sum + price * item.qty; // Kalikan harga per item dengan jumlah
+    //       }, 0);
+    //       return {
+    //         ...order,
+    //         total_items: totalItems,
+    //         total_price: totalPrice,
+    //       };
+    //     });
+    //     res.json({ data: formattedOrders });
+    //   } catch (error) {
+    //     console.error(error);
+    //     res.status(500).json({ msg: "Failed to fetch orders" });
+    //   }
+    // }
     QueryOrders(req, res) {
         return __awaiter(this, void 0, void 0, function* () {
             var _a;
-            const { order_date, order_id } = req.query;
-            const userId = (_a = req.user) === null || _a === void 0 ? void 0 : _a.id; // Mengambil user_id dari authenticated token yang ada di req.user
+            const { order_date, order_id, product_name } = req.query;
+            const userId = (_a = req.user) === null || _a === void 0 ? void 0 : _a.id; // Mengambil user_id dari token autentikasi
             if (!userId) {
                 res.status(400).json({ msg: "User not authenticated" });
                 return;
             }
             try {
+                // Membentuk kondisi `where` untuk filtering
                 const whereConditions = {
-                    user_id: userId, // Filter berdasarkan user_id yang ada di token
+                    user_id: userId, // Filter berdasarkan user_id dari token
                 };
                 // Filter berdasarkan order_date jika diberikan
                 if (order_date) {
                     const startOfDay = new Date(order_date);
-                    startOfDay.setHours(0, 0, 0, 0); // Menyaring data pada waktu 00:00:00
+                    startOfDay.setHours(0, 0, 0, 0); // Mulai dari jam 00:00:00
                     const endOfDay = new Date(startOfDay);
-                    endOfDay.setDate(startOfDay.getDate() + 1); // Memastikan hanya satu hari yang tercakup
+                    endOfDay.setDate(startOfDay.getDate() + 1); // Akhir hari
                     whereConditions.created_at = {
-                        gte: startOfDay, // Pesanan yang lebih besar atau sama dengan tanggal mulai
-                        lt: endOfDay, // Pesanan yang lebih kecil dari tanggal akhir
+                        gte: startOfDay, // Lebih besar atau sama dengan tanggal mulai
+                        lt: endOfDay, // Kurang dari tanggal akhir
                     };
                 }
                 // Filter berdasarkan order_id jika diberikan
                 if (order_id) {
                     whereConditions.order_id = parseInt(order_id);
                 }
-                // Query untuk mengambil data pesanan yang sesuai dengan filter
+                // Query untuk mengambil data pesanan
                 const orders = yield prisma.order.findMany({
                     where: whereConditions,
                     include: {
-                        user: true, // Termasuk data pengguna
-                        store: true, // Termasuk data toko
-                        OrderItem: true, // Termasuk data item pesanan
-                        Shipping: true, // Termasuk data pengiriman
+                        user: true, // Data pengguna
+                        store: true, // Data toko
+                        OrderItem: {
+                            include: {
+                                product: {
+                                    include: {
+                                        Discount: true, // Ambil informasi diskon produk
+                                    },
+                                },
+                            },
+                        },
+                        Shipping: true, // Data pengiriman
                     },
                 });
-                res.json({ data: orders });
-                return;
+                // Filter berdasarkan product_name jika diberikan
+                let filteredOrders = orders;
+                if (product_name) {
+                    filteredOrders = orders.filter((order) => order.OrderItem.some((item) => {
+                        var _a, _b;
+                        return (_b = (_a = item.product) === null || _a === void 0 ? void 0 : _a.name) === null || _b === void 0 ? void 0 : _b.toLowerCase().includes(product_name.toLowerCase());
+                    }));
+                }
+                // Format hasil dengan perhitungan harga dan jumlah item
+                const formattedOrders = filteredOrders.map((order) => {
+                    // Hitung total item dalam pesanan
+                    const totalItems = order.OrderItem.reduce((sum, item) => sum + item.qty, 0);
+                    // Hitung total harga dengan mempertimbangkan diskon produk
+                    let totalPrice = order.OrderItem.reduce((sum, item) => {
+                        var _a, _b, _c;
+                        let price = ((_a = item.product) === null || _a === void 0 ? void 0 : _a.price) || 0; // Harga default 0 jika tidak ada produk
+                        // Terapkan diskon produk jika ada
+                        if (((_c = (_b = item.product) === null || _b === void 0 ? void 0 : _b.Discount) === null || _c === void 0 ? void 0 : _c.length) > 0) {
+                            const discount = item.product.Discount[0]; // Ambil diskon pertama
+                            if (discount.discount_type === "percentage") {
+                                price -= (price * discount.discount_value) / 100;
+                            }
+                            else if (discount.discount_type === "point") {
+                                price -= discount.discount_value;
+                            }
+                        }
+                        return sum + price * item.qty; // Kalikan harga per item dengan jumlah
+                    }, 0);
+                    // Jika ada shipping cost, tambahkan ke total harga
+                    if (order.Shipping.length > 0) {
+                        const shippingCost = order.Shipping[0].shipping_cost;
+                        totalPrice += shippingCost; // Tambahkan biaya pengiriman
+                    }
+                    return Object.assign(Object.assign({}, order), { total_items: totalItems, total_price: totalPrice });
+                });
+                res.json({ data: formattedOrders });
             }
             catch (error) {
                 console.error(error);
                 res.status(500).json({ msg: "Failed to fetch orders" });
-                return;
             }
         });
     }
@@ -818,7 +847,7 @@ class OrdersController {
                     },
                 });
                 // Jika berhasil memperbarui status pesanan dan pengiriman, kirimkan pesan sukses
-                res.json({
+                res.status(200).json({
                     msg: "Order confirmed and shipping status updated to delivered",
                     order: updatedOrder,
                 });
@@ -857,7 +886,8 @@ class OrdersController {
                         continue;
                     }
                     // Pastikan pesanan sudah 'completed' sebelum mengonfirmasi pengiriman
-                    if (order.order_status !== "completed") {
+                    if (order.order_status !== "completed" &&
+                        order.order_status !== "shipped") {
                         console.log(`Order ${order.order_id} is not completed yet.`);
                         continue;
                     }

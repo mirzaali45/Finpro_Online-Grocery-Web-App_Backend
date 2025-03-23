@@ -153,12 +153,15 @@ export class SuperordermanagementsController {
       }
 
       // Pastikan status order adalah 'completed' dan status pengiriman 'pending'
-      if (!(order.order_status === "completed" || order.order_status === "shipped")) {
-        res
-          .status(400)
-          .json({
-            message: "Order must be in 'completed' or 'shipped' status to update shipping",
-          });
+      if (
+        !(
+          order.order_status === "completed" || order.order_status === "shipped"
+        )
+      ) {
+        res.status(400).json({
+          message:
+            "Order must be in 'completed' or 'shipped' status to update shipping",
+        });
         return;
       }
 
@@ -179,22 +182,22 @@ export class SuperordermanagementsController {
       });
 
       res.status(200).json({ message: "Shipping status updated to 'shipped'" });
-      return
+      return;
     } catch (error) {
       console.error("Error updating shipping status:", error);
       res.status(500).json({ message: "Failed to update shipping status" });
-      return
+      return;
     }
   }
   async cancelOrder(req: Request, res: Response): Promise<void> {
     try {
       const { order_id } = req.body; // order_id yang diberikan oleh pengguna
-  
+
       if (!order_id) {
         res.status(400).json({ message: "Order ID is required" });
         return;
       }
-  
+
       // Cari pesanan berdasarkan order_id
       const order = await prisma.order.findUnique({
         where: { order_id: Number(order_id) },
@@ -203,23 +206,31 @@ export class SuperordermanagementsController {
           OrderItem: true, // Sertakan data item pesanan untuk mengelola stok
         },
       });
-  
+
       if (!order) {
         res.status(404).json({ message: "Order not found" });
-        return
+        return;
       }
-  
+
       // Pastikan status order adalah 'completed' dan status pengiriman 'pending'
-      if (order.order_status !== "completed") {
-        res.status(400).json({ message: "Order must be in 'completed' status to cancel" });
-        return
+      if (
+        !(
+          order.order_status === "completed" || order.order_status === "shipped"
+        )
+      ) {
+        res
+          .status(400)
+          .json({ message: "Order must be in 'completed' status to cancel" });
+        return;
       }
-  
+
       if (order.Shipping[0]?.shipping_status !== "pending") {
-        res.status(400).json({ message: "Shipping must be 'pending' to cancel the order" });
-        return
+        res
+          .status(400)
+          .json({ message: "Shipping must be 'pending' to cancel the order" });
+        return;
       }
-  
+
       // Update order status to 'cancelled'
       await prisma.order.update({
         where: { order_id: order.order_id },
@@ -228,13 +239,13 @@ export class SuperordermanagementsController {
           updated_at: new Date(),
         },
       });
-  
+
       // Update the stock for each OrderItem (reverting the quantity) in the Inventory table
       for (const item of order.OrderItem) {
         // Update the inventory by incrementing the stock
         await prisma.inventory.updateMany({
           where: {
-            store_id: order.store_id,   // Ensure inventory is updated for the correct store
+            store_id: order.store_id, // Ensure inventory is updated for the correct store
             product_id: item.product_id, // Find the inventory for the correct product
           },
           data: {
@@ -244,13 +255,13 @@ export class SuperordermanagementsController {
           },
         });
       }
-  
+
       res.status(200).json({ message: "Order cancelled and stock reverted" });
-      return
+      return;
     } catch (error) {
       console.error("Error cancelling order:", error);
       res.status(500).json({ message: "Failed to cancel order" });
-      return
+      return;
     }
   }
 }

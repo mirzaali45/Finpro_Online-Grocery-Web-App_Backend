@@ -136,9 +136,7 @@ class SuperordermanagementsController {
                 }
                 // Pastikan status order adalah 'completed' dan status pengiriman 'pending'
                 if (!(order.order_status === "completed" || order.order_status === "shipped")) {
-                    res
-                        .status(400)
-                        .json({
+                    res.status(400).json({
                         message: "Order must be in 'completed' or 'shipped' status to update shipping",
                     });
                     return;
@@ -189,12 +187,16 @@ class SuperordermanagementsController {
                     return;
                 }
                 // Pastikan status order adalah 'completed' dan status pengiriman 'pending'
-                if (order.order_status !== "completed") {
-                    res.status(400).json({ message: "Order must be in 'completed' status to cancel" });
+                if (!(order.order_status === "completed" || order.order_status === "shipped")) {
+                    res
+                        .status(400)
+                        .json({ message: "Order must be in 'completed' status to cancel" });
                     return;
                 }
                 if (((_a = order.Shipping[0]) === null || _a === void 0 ? void 0 : _a.shipping_status) !== "pending") {
-                    res.status(400).json({ message: "Shipping must be 'pending' to cancel the order" });
+                    res
+                        .status(400)
+                        .json({ message: "Shipping must be 'pending' to cancel the order" });
                     return;
                 }
                 // Update order status to 'cancelled'
