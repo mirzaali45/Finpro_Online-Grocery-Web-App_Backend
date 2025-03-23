@@ -24,6 +24,7 @@ class OrdersRouter {
         // Update order total price
         this.router.put("/:order_id", this.authMiddleware.verifyToken.bind(this.authMiddleware), this.ordersController.updateOrder.bind(this.ordersController));
         this.router.post("/confirm", this.authMiddleware.verifyToken.bind(this.authMiddleware), this.ordersController.confirmOrder.bind(this.ordersController));
+        this.router.patch("/:order_id/update-status", this.authMiddleware.verifyToken.bind(this.authMiddleware), this.ordersController.updateOrderStatus.bind(this.ordersController));
     }
     getRouter() {
         return this.router;

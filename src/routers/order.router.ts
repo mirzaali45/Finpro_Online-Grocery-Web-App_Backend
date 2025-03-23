@@ -59,6 +59,11 @@ export class OrdersRouter {
       this.authMiddleware.verifyToken.bind(this.authMiddleware),
       this.ordersController.confirmOrder.bind(this.ordersController)
     );
+    this.router.patch(
+      "/:order_id/update-status",
+      this.authMiddleware.verifyToken.bind(this.authMiddleware),
+      this.ordersController.updateOrderStatus.bind(this.ordersController)
+    );
   }
 
   getRouter(): Router {

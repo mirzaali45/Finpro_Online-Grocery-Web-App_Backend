@@ -922,6 +922,56 @@ class OrdersController {
             }
         });
     }
+    updateOrderStatus(req, res) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const { order_id } = req.params;
+            const { status } = req.body;
+            try {
+                // Validate the provided status
+                if (!status ||
+                    !Object.values(client_1.OrderStatus).includes(status)) {
+                    res.status(400).json({ msg: "Invalid order status" });
+                    return;
+                }
+                // Validate if the order exists in the database
+                const order = yield prisma.order.findUnique({
+                    where: { order_id: parseInt(order_id) },
+                });
+                if (!order) {
+                    res.status(404).json({ msg: "Order not found" });
+                    return;
+                }
+                // Optional: You can restrict certain status transitions based on the current order status.
+                // Example: An order cannot go back to "awaiting_payment" after being shipped.
+                if (order.order_status === "shipped" && status === "awaiting_payment") {
+                    res.status(400).json({
+                        msg: "Cannot change status back to awaiting_payment after shipping",
+                    });
+                    return;
+                }
+                if (order.order_status === "completed" && status !== "completed") {
+                    res.status(400).json({
+                        msg: "Order cannot transition from 'completed' to another status",
+                    });
+                    return;
+                }
+                // Update the order status in the database
+                const updatedOrder = yield prisma.order.update({
+                    where: { order_id: parseInt(order_id) },
+                    data: { order_status: status },
+                });
+                // Respond with the updated order
+                res.status(200).json({
+                    msg: `Order status successfully updated to ${status}`,
+                    order: updatedOrder,
+                });
+            }
+            catch (error) {
+                console.error("Error updating order status:", error);
+                res.status(500).json({ msg: "Failed to update order status" });
+            }
+        });
+    }
 }
 exports.OrdersController = OrdersController;
 exports.ordersController = new OrdersController();
